@@ -47,6 +47,8 @@ npm run build:linux   # AppImage + rpm (the only bundle targets currently config
 
 For other platforms, adjust the `bundle.targets` in `src-tauri/tauri.conf.json` and run `npm run tauri build`.
 
+**Platform support:** currently built and tested on Linux only. No native Windows build yet (tracked as future work) — Windows users can run it today under [WSL](https://learn.microsoft.com/windows/wsl/install).
+
 ### Using the AI assistant
 
 Open "AI Assistant…" (or any other AI-powered button) and set up a provider under its settings: a base URL, an optional API key, and a model name. This works with a local model server just as well as a cloud API — nothing is sent anywhere unless you configure a provider yourself.
