@@ -15,6 +15,7 @@ A desktop editor for [SillyTavern](https://github.com/SillyTavern/SillyTavern) c
 - Inline warnings for common authoring mistakes (unbalanced `{{macro}}` braces, empty name, empty first message, a lorebook entry with no keys)
 - Lenient recovery for cards that fail strict validation, backing up the original file first
 - Auto-backup before every overwrite, drag-and-drop to open a file, a recent-files list with thumbnails, and keyboard shortcuts (Ctrl+N/O/S)
+- "Save as Copy…" to export the current card to another path/format without changing what "Save" points at
 
 **Working with several characters at once**
 - Multiple character tabs open simultaneously — build a whole group (a family, a class, an NPC roster) in one sitting
@@ -23,6 +24,7 @@ A desktop editor for [SillyTavern](https://github.com/SillyTavern/SillyTavern) c
 
 **AI assistant (optional, bring your own endpoint)**
 Point the app at any OpenAI-compatible `/v1/chat/completions` endpoint — a local server (llama.cpp, LM Studio, text-generation-webui, ...) or a cloud provider you supply your own API key for. Every AI feature is opt-in; the editor works fully without configuring one.
+- Multiple saved provider profiles (switch between a local model and one or more cloud APIs) with a one-click connection test
 - Iteratively refine individual card fields from a free-text instruction
 - Propose new lorebook entries from a description
 - Generate an avatar image-generation prompt, tuned to different image models (Stable Diffusion, Pony Diffusion, Qwen-Image, Z-Image, Krea 2/FLUX) and art styles
