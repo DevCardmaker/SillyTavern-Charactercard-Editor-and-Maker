@@ -198,8 +198,13 @@ export async function saveGroupToFolder(folder: string): Promise<{ saved: number
       let path = slot.currentFilePath;
       let format = slot.currentFileFormat;
 
+      if (format === "json" && slot.avatarPng) {
+        format = "png";
+        if (path) path = path.replace(/\.json$/i, ".png");
+      }
+
       if (!path) {
-        format = format ?? "json";
+        format = format ?? (slot.avatarPng ? "png" : "json");
         const baseName = slot.card.name;
         let fileName = baseName;
         let suffix = 2;
@@ -234,6 +239,11 @@ export async function saveCard(mode: "save" | "saveAs"): Promise<void> {
   let path = state.currentFilePath;
   let format = state.currentFileFormat;
 
+  if (format === "json" && state.avatarPng) {
+    format = "png";
+    if (path) path = path.replace(/\.json$/i, ".png");
+  }
+
   if (mode === "saveAs" || !path) {
     const defaultExt = format ?? "png";
     const chosen = await save({
@@ -260,7 +270,7 @@ export async function saveCardAsCopy(): Promise<void> {
   const state = useCardStore.getState();
   if (!state.card) return;
 
-  const defaultExt = state.currentFileFormat ?? "png";
+  const defaultExt = state.avatarPng ? "png" : (state.currentFileFormat ?? "png");
   const chosen = await save({
     filters: CARD_FILTERS,
     defaultPath: state.card.name ? `${state.card.name}.${defaultExt}` : undefined,

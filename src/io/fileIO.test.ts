@@ -289,6 +289,27 @@ describe("saveCard", () => {
     const recent = JSON.parse(fs.readFileSync(path.join(configDir, "recent-cards.json"), "utf-8"));
     expect(recent).toContain(target);
   });
+
+  it("upgrades a json-tracked card to png when an avatar is set, instead of silently dropping it", async () => {
+    const jsonPath = path.join(dir, "Aragorn.json");
+    fs.writeFileSync(jsonPath, "stale json from before the avatar was added");
+    setSingleActiveCard({
+      card: { ...createBlankCard(), name: "Aragorn" },
+      avatarPng: buildMinimalPng(),
+      currentFilePath: jsonPath,
+      currentFileFormat: "json",
+      isDirty: true,
+    });
+
+    await saveCard("save");
+
+    const pngPath = path.join(dir, "Aragorn.png");
+    expect(fs.existsSync(pngPath)).toBe(true);
+    expect(fs.readFileSync(jsonPath, "utf-8")).toBe("stale json from before the avatar was added");
+    expect(useCardStore.getState().currentFilePath).toBe(pngPath);
+    expect(useCardStore.getState().currentFileFormat).toBe("png");
+    expect(useCardStore.getState().isDirty).toBe(false);
+  });
 });
 
 describe("openFolderAsTabs", () => {
