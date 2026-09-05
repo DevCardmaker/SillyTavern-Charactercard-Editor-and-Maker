@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildSystemPrompt } from "./aiPrompt";
+import { buildGroupGenerateSystemPrompt, buildSystemPrompt } from "./aiPrompt";
 
 describe("buildSystemPrompt", () => {
   it("lists every selected field", () => {
@@ -41,5 +41,21 @@ describe("buildSystemPrompt", () => {
     const prompt = buildSystemPrompt(["description", "personality"]);
     expect(prompt).toMatch(/physical appearance/i);
     expect(prompt).toMatch(/kinks/i);
+  });
+});
+
+describe("buildGroupGenerateSystemPrompt", () => {
+  it("carries the same description/personality checklists as buildSystemPrompt", () => {
+    const prompt = buildGroupGenerateSystemPrompt(4);
+    expect(prompt).toMatch(/physical appearance/i);
+    expect(prompt).toMatch(/formative experience/i);
+    expect(prompt).toMatch(/causal link/i);
+    expect(prompt).toMatch(/kinks/i);
+  });
+
+  it("states the requested member count", () => {
+    const prompt = buildGroupGenerateSystemPrompt(4);
+    expect(prompt).toMatch(/4 new, related/);
+    expect(prompt).toMatch(/exactly 4 entries/);
   });
 });

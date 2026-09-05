@@ -11,13 +11,20 @@ export interface AiChatMessage {
 /** Content checklists for fields where the model tends to drift toward only part of what the
  * field conventionally holds (e.g. "description" turning into pure backstory, appearance
  * forgotten) — same idea as `imageModelStyleGuidance` in aiImagePrompt.ts: hardcoded guidance the
- * model shouldn't have to infer, not something derived from the character itself. Fields without
- * an entry here (name, scenario, first_mes, …) get no extra guidance line. */
+ * model shouldn't have to infer, not something derived from the character itself. Named
+ * constants (not just map values) so `buildGroupGenerateSystemPrompt` below can reuse the exact
+ * same text without duplicating it — group generation has its own fixed description/personality
+ * fields but doesn't go through `buildSystemPrompt`'s per-field-selection logic. */
+const DESCRIPTION_CHECKLIST =
+  "Cover physical appearance (build, hair, eyes, distinguishing features like scars or tattoos), typical clothing style, species/race if not human, age, and occupation/role. For the background/origin, include one specific formative experience rather than a neutral biography — something concrete enough to plausibly explain a fear, quirk, or behavior pattern the character has today.";
+
+const PERSONALITY_CHECKLIST =
+  "Cover core personality traits, likes, dislikes, quirks or speech mannerisms, notable skills or talents, fears or weaknesses, goals or motivations, secrets, and kinks (where relevant). Don't just list these as isolated facts: for at least one trait, quirk, or fear, name the causal link back to a past event or relationship (what happened, what belief or fear it created, how it shows up as a concrete behavior or tell today) — this makes the character playable, not just described.";
+
+/** Fields without an entry here (name, scenario, first_mes, …) get no extra guidance line. */
 const AI_FIELD_GUIDANCE: Partial<Record<AiFieldKey, string>> = {
-  description:
-    "Cover physical appearance (build, hair, eyes, distinguishing features like scars or tattoos), typical clothing style, species/race if not human, age, and occupation/role. For the background/origin, include one specific formative experience rather than a neutral biography — something concrete enough to plausibly explain a fear, quirk, or behavior pattern the character has today.",
-  personality:
-    "Cover core personality traits, likes, dislikes, quirks or speech mannerisms, notable skills or talents, fears or weaknesses, goals or motivations, secrets, and kinks (where relevant). Don't just list these as isolated facts: for at least one trait, quirk, or fear, name the causal link back to a past event or relationship (what happened, what belief or fear it created, how it shows up as a concrete behavior or tell today) — this makes the character playable, not just described.",
+  description: DESCRIPTION_CHECKLIST,
+  personality: PERSONALITY_CHECKLIST,
 };
 
 /** Static instructions for the current turn — only mentions the fields the user actually
@@ -157,6 +164,8 @@ export function buildGroupGenerateSystemPrompt(count: number): string {
     "Keep the characters consistent with each other: plausible age gaps, consistent surnames/family or relationship claims, no contradictions between members.",
     `Respond only with a JSON object of the form { "characters": [...] } with exactly ${count} entries.`,
     "Each entry has: name, description, personality, scenario, first_mes.",
+    `For description: ${DESCRIPTION_CHECKLIST}`,
+    `For personality: ${PERSONALITY_CHECKLIST}`,
     "Give no explanations, no prose outside the JSON, and no extra fields.",
   ].join("\n");
 }
