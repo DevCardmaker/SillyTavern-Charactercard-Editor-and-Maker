@@ -66,6 +66,10 @@ struct ChatCompletionRequest {
     model: String,
     messages: Vec<serde_json::Value>,
     json_schema: serde_json::Value,
+    #[serde(default)]
+    temperature: Option<f64>,
+    #[serde(default)]
+    max_tokens: Option<u32>,
 }
 
 #[derive(serde::Serialize)]
@@ -79,11 +83,17 @@ async fn post_chat_completion(
     req: &ChatCompletionRequest,
     response_format: serde_json::Value,
 ) -> Result<(reqwest::StatusCode, String), String> {
-    let body = serde_json::json!({
+    let mut body = serde_json::json!({
         "model": req.model,
         "messages": req.messages,
         "response_format": response_format,
     });
+    if let Some(t) = req.temperature {
+        body["temperature"] = serde_json::json!(t);
+    }
+    if let Some(m) = req.max_tokens {
+        body["max_tokens"] = serde_json::json!(m);
+    }
 
     let mut builder = client.post(url).json(&body);
     if let Some(key) = req.api_key.as_deref().filter(|k| !k.is_empty()) {

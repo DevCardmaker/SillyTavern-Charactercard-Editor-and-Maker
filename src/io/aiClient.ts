@@ -10,6 +10,8 @@ export interface AiProviderConfig {
   baseUrl: string;
   apiKey: string;
   model: string;
+  temperature?: number;
+  maxTokens?: number;
 }
 
 function truncate(text: string, max = 300): string {
@@ -28,6 +30,8 @@ async function callChatCompletion(
       model: config.model,
       messages,
       json_schema: jsonSchema,
+      temperature: config.temperature ?? null,
+      max_tokens: config.maxTokens ?? null,
     },
   });
   return result.content;

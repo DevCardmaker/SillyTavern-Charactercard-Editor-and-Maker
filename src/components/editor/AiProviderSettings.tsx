@@ -120,6 +120,38 @@ export function AiProviderSettings() {
                 onChange={(e) => updateProfile(activeProfile.id, { model: e.target.value })}
               />
             </label>
+            <label>
+              Temperature (optional)
+              <input
+                className="field-input"
+                type="number"
+                step="0.1"
+                min="0"
+                max="2"
+                value={activeProfile.temperature ?? ""}
+                onChange={(e) =>
+                  updateProfile(activeProfile.id, {
+                    temperature: e.target.value === "" ? undefined : Number(e.target.value),
+                  })
+                }
+                placeholder="Provider default"
+              />
+            </label>
+            <label>
+              Max tokens (optional)
+              <input
+                className="field-input"
+                type="number"
+                min="1"
+                value={activeProfile.maxTokens ?? ""}
+                onChange={(e) =>
+                  updateProfile(activeProfile.id, {
+                    maxTokens: e.target.value === "" ? undefined : Number(e.target.value),
+                  })
+                }
+                placeholder="Provider default"
+              />
+            </label>
 
             <div className="ai-assist-test-row">
               <button
