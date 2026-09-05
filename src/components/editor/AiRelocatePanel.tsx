@@ -76,12 +76,28 @@ export function AiRelocatePanel({ onClose }: Props) {
   }
 
   function handleApply() {
+    const skipped: string[] = [];
+    let appliedCount = 0;
     for (const [i, member] of draft.entries()) {
       if (!selected.has(i)) continue;
-      const match = characters.find((c) => c.card.name === member.name);
-      if (!match) continue; // model didn't echo the name back exactly — leave that tab untouched
+      // .trim() guards against the model echoing the name back with incidental leading/trailing
+      // whitespace — the visible label still matches, but a strict === would silently skip it.
+      const match = characters.find((c) => c.card.name.trim() === member.name.trim());
+      if (!match) {
+        skipped.push(member.name || "(unnamed)");
+        continue;
+      }
       const { name: _name, ...patch } = member;
       updateSlotCard(match.id, patch);
+      appliedCount++;
+    }
+    if (skipped.length > 0) {
+      // Keep the panel open on a partial/total mismatch instead of closing silently — the user
+      // needs to see which names didn't match before deciding what to do next.
+      setSendError(
+        `Applied to ${appliedCount} of ${appliedCount + skipped.length} selected character(s). No open tab matched: ${skipped.join(", ")}.`,
+      );
+      return;
     }
     onClose();
   }
@@ -101,7 +117,7 @@ export function AiRelocatePanel({ onClose }: Props) {
         {draft.length > 0 && (
           <div className="ai-assist-draft">
             {draft.map((member, i) => {
-              const current = characters.find((c) => c.card.name === member.name);
+              const current = characters.find((c) => c.card.name.trim() === member.name.trim());
               return (
                 <label key={i} className="ai-lorebook-draft-entry">
                   <input type="checkbox" checked={selected.has(i)} onChange={() => toggleSelected(i)} />
