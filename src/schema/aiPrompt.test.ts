@@ -14,11 +14,21 @@ describe("buildSystemPrompt", () => {
     expect(prompt).toMatch(/clothing/i);
   });
 
+  it("asks description's background to be one formative experience, not a neutral biography", () => {
+    const prompt = buildSystemPrompt(["description"]);
+    expect(prompt).toMatch(/formative experience/i);
+  });
+
   it("adds a likes/quirks/kinks/secrets checklist for the personality field", () => {
     const prompt = buildSystemPrompt(["personality"]);
     expect(prompt).toMatch(/likes, dislikes/i);
     expect(prompt).toMatch(/secrets/i);
     expect(prompt).toMatch(/kinks/i);
+  });
+
+  it("asks personality to causally link at least one trait/quirk/fear to a past event", () => {
+    const prompt = buildSystemPrompt(["personality"]);
+    expect(prompt).toMatch(/causal link/i);
   });
 
   it("gives fields without a checklist entry no extra guidance line", () => {

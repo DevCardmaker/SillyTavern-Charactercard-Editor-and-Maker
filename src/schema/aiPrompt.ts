@@ -15,9 +15,9 @@ export interface AiChatMessage {
  * an entry here (name, scenario, first_mes, …) get no extra guidance line. */
 const AI_FIELD_GUIDANCE: Partial<Record<AiFieldKey, string>> = {
   description:
-    "Cover physical appearance (build, hair, eyes, distinguishing features like scars or tattoos), typical clothing style, species/race if not human, age, and occupation/role, plus a brief background or origin.",
+    "Cover physical appearance (build, hair, eyes, distinguishing features like scars or tattoos), typical clothing style, species/race if not human, age, and occupation/role. For the background/origin, include one specific formative experience rather than a neutral biography — something concrete enough to plausibly explain a fear, quirk, or behavior pattern the character has today.",
   personality:
-    "Cover core personality traits, likes, dislikes, quirks or speech mannerisms, notable skills or talents, fears or weaknesses, goals or motivations, secrets, and kinks (where relevant to the character).",
+    "Cover core personality traits, likes, dislikes, quirks or speech mannerisms, notable skills or talents, fears or weaknesses, goals or motivations, secrets, and kinks (where relevant). Don't just list these as isolated facts: for at least one trait, quirk, or fear, name the causal link back to a past event or relationship (what happened, what belief or fear it created, how it shows up as a concrete behavior or tell today) — this makes the character playable, not just described.",
 };
 
 /** Static instructions for the current turn — only mentions the fields the user actually
