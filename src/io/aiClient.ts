@@ -3,6 +3,7 @@ import { type AiFieldKey, type AiFieldPatch, aiFieldsToJsonSchema, parseAiPatch 
 import { type AiConsistencyFinding, aiConsistencyCheckToJsonSchema, parseAiConsistencyCheck } from "../schema/aiConsistencyCheck";
 import { type AiGroupMemberDraft, aiGroupToJsonSchema, parseAiGroup } from "../schema/aiGroupGenerate";
 import { aiImagePromptToJsonSchema, parseAiImagePrompt } from "../schema/aiImagePrompt";
+import { type AiRelocateMember, aiRelocateToJsonSchema, parseAiRelocate } from "../schema/aiRelocate";
 import { type AiLorebookEntryDraft, aiLorebookEntriesToJsonSchema, parseAiLorebookEntries } from "../schema/aiLorebookAssist";
 import type { AiChatMessage } from "../schema/aiPrompt";
 
@@ -166,6 +167,34 @@ export async function requestGroupGenerate(
   }
 
   const parsed = parseAiGroup(count, raw);
+  if (!parsed.success) {
+    throw new Error(`Model response did not match the expected format: ${parsed.error}`);
+  }
+
+  return parsed.data;
+}
+
+/** Sends one turn to the configured LLM and validates its reply as exactly `count` relocated
+ * members (name + updated scenario). Same validate-or-throw contract as `requestFieldPatch`. */
+export async function requestRelocate(
+  config: AiProviderConfig,
+  count: number,
+  messages: AiChatMessage[],
+): Promise<AiRelocateMember[]> {
+  const content = await callChatCompletion(config, messages, {
+    name: "relocated_characters",
+    strict: true,
+    schema: aiRelocateToJsonSchema(count),
+  });
+
+  let raw: unknown;
+  try {
+    raw = JSON.parse(content);
+  } catch {
+    throw new Error(`Model response was not valid JSON: ${truncate(content)}`);
+  }
+
+  const parsed = parseAiRelocate(count, raw);
   if (!parsed.success) {
     throw new Error(`Model response did not match the expected format: ${parsed.error}`);
   }

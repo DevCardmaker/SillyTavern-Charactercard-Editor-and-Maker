@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildGroupGenerateSystemPrompt, buildSystemPrompt } from "./aiPrompt";
+import { buildGroupGenerateSystemPrompt, buildRelocateSystemPrompt, buildRelocateUserTurn, buildSystemPrompt } from "./aiPrompt";
 
 describe("buildSystemPrompt", () => {
   it("lists every selected field", () => {
@@ -57,5 +57,28 @@ describe("buildGroupGenerateSystemPrompt", () => {
     const prompt = buildGroupGenerateSystemPrompt(4);
     expect(prompt).toMatch(/4 new, related/);
     expect(prompt).toMatch(/exactly 4 entries/);
+  });
+});
+
+describe("buildRelocateSystemPrompt", () => {
+  it("states the member count and asks only for name/scenario", () => {
+    const prompt = buildRelocateSystemPrompt(3);
+    expect(prompt).toMatch(/exactly 3 entries/);
+    expect(prompt).toMatch(/name: exactly as given/i);
+    expect(prompt).toMatch(/scenario: the updated setting/i);
+  });
+
+  it("tells the model to keep identity and personality unchanged", () => {
+    const prompt = buildRelocateSystemPrompt(2);
+    expect(prompt).toMatch(/identity, personality, and relationships/i);
+  });
+});
+
+describe("buildRelocateUserTurn", () => {
+  it("includes the character summaries and the new setting", () => {
+    const summary = { name: "Mom", description: "d", personality: "p", scenario: "old home", first_mes: "hi" };
+    const turn = buildRelocateUserTurn([summary], "moves to Tokyo");
+    expect(turn.content).toContain("old home");
+    expect(turn.content).toContain("moves to Tokyo");
   });
 });

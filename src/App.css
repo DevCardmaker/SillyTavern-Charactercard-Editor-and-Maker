@@ -845,3 +845,8 @@ button.secondary.active {
   color: var(--text-dim);
   cursor: default;
 }
+
+.ai-relocate-old-value {
+  text-decoration: line-through;
+  color: var(--text-dim);
+}

@@ -38,6 +38,10 @@ interface CardState extends ActiveMirror {
   /** Opens a loaded card as a new tab and activates it — never replaces an existing tab. */
   loadCard: (card: NormalizedCard, avatarPng: Uint8Array | null, path: string, format: FileFormat) => void;
   updateCard: (patch: Partial<NormalizedCard>) => void;
+  /** Patches an arbitrary slot's card, active or not — needed for bulk operations like relocating
+   * every open character at once, which mostly touch slots other than whichever one happens to be
+   * active. `updateCard` above is just this applied to the current `activeId`. */
+  updateSlotCard: (id: string, patch: Partial<NormalizedCard>) => void;
   setAvatarPng: (bytes: Uint8Array) => void;
   /** Marks the *active* slot as saved — a thin wrapper over `markSlotSaved` for the common case. */
   markSaved: (path: string, format: FileFormat) => void;
@@ -101,9 +105,14 @@ export const useCardStore = create<CardState>((set, get) => ({
   },
 
   updateCard: (patch) => {
-    const { characters, activeId } = get();
+    const { activeId } = get();
     if (!activeId) return;
-    const next = characters.map((c) => (c.id === activeId ? { ...c, card: { ...c.card, ...patch }, isDirty: true } : c));
+    get().updateSlotCard(activeId, patch);
+  },
+
+  updateSlotCard: (id, patch) => {
+    const { characters, activeId } = get();
+    const next = characters.map((c) => (c.id === id ? { ...c, card: { ...c.card, ...patch }, isDirty: true } : c));
     set({ characters: next, ...mirrorOf(next, activeId) });
   },
 

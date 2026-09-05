@@ -173,3 +173,30 @@ export function buildGroupGenerateSystemPrompt(count: number): string {
 export function buildGroupGenerateUserTurn(instruction: string): AiChatMessage {
   return { role: "user", content: `Instruction: ${instruction}` };
 }
+
+/** Static instructions for moving a group of *existing* characters to a new setting together
+ * (e.g. "the family moves from New York to Tokyo"). Unlike `buildGroupGenerateSystemPrompt`, this
+ * doesn't invent new characters — identity, personality, and relationships stay untouched, only
+ * `scenario` is rewritten per member, matched back to the existing tab by name. */
+export function buildRelocateSystemPrompt(count: number): string {
+  return [
+    `You update the scenario (setting/situation) for ${count} existing, related SillyTavern characters who are being moved to a new setting together.`,
+    "Keep each character's own identity, personality, and relationships to the others exactly as given — only rewrite where and how their story now plays out.",
+    `Respond only with a JSON object of the form { "characters": [...] } with exactly ${count} entries.`,
+    "Each entry has:",
+    "- name: exactly as given for that character, unchanged",
+    "- scenario: the updated setting, reflecting the new instruction",
+    "Give no explanations, no prose outside the JSON, and no extra fields.",
+  ].join("\n");
+}
+
+/** Feeds every open character's current summary as context (so the model can see who's who and
+ * keep them consistent) plus the new setting/instruction — same shape as
+ * `buildConsistencyCheckUserTurn`. */
+export function buildRelocateUserTurn(characters: AiCharacterSummary[], instruction: string): AiChatMessage {
+  const payload = JSON.stringify(characters, null, 2);
+  return {
+    role: "user",
+    content: `Characters:\n${payload}\n\nNew setting: ${instruction}`,
+  };
+}

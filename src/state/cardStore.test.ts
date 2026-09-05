@@ -95,6 +95,22 @@ describe("cardStore — multiple simultaneously open characters", () => {
     expect(useCardStore.getState().avatarPng).toEqual(new Uint8Array([1, 2, 3]));
   });
 
+  it("updateSlotCard patches an arbitrary slot without changing which tab is active", () => {
+    useCardStore.getState().newCard();
+    const firstId = useCardStore.getState().activeId as string;
+    useCardStore.getState().updateCard({ name: "Father" });
+    useCardStore.getState().newCard();
+    const secondId = useCardStore.getState().activeId as string;
+    useCardStore.getState().updateCard({ name: "Mother" });
+
+    useCardStore.getState().updateSlotCard(firstId, { scenario: "New setting" });
+
+    expect(useCardStore.getState().activeId).toBe(secondId);
+    expect(useCardStore.getState().characters.find((c) => c.id === firstId)?.card.scenario).toBe("New setting");
+    expect(useCardStore.getState().characters.find((c) => c.id === firstId)?.isDirty).toBe(true);
+    expect(useCardStore.getState().card?.scenario).not.toBe("New setting");
+  });
+
   it("closeCharacter on the active tab falls back to a remaining tab and clears its autosave", () => {
     useCardStore.getState().newCard();
     const firstId = useCardStore.getState().activeId as string;
