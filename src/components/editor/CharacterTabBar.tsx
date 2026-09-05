@@ -117,7 +117,7 @@ export function CharacterTabBar({ onError }: Props) {
       )}
       {characters.length >= 2 && (
         <button type="button" className="character-tab-group-folder" onClick={() => setIsRelocateOpen(true)}>
-          Relocate Group…
+          Edit Group…
         </button>
       )}
 

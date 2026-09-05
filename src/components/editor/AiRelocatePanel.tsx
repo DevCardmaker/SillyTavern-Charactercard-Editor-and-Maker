@@ -89,7 +89,7 @@ export function AiRelocatePanel({ onClose }: Props) {
   return (
     <div className="modal-overlay">
       <div className="modal ai-assist-modal">
-        <h3>Relocate Group</h3>
+        <h3>Edit Group</h3>
         <p className="field-hint">
           Adapts description, personality, scenario, first message, and example dialogue for all {characters.length}{" "}
           currently open characters to a new shared setting — core identity and backstory are meant to carry over,
