@@ -141,7 +141,6 @@ export function AiRelocatePanel({ onClose }: Props) {
         {!providerReady && (
           <p className="field-hint">Please set a base URL and model in the provider settings.</p>
         )}
-        {sendError && <p className="field-error">{sendError}</p>}
 
         <div className="ai-assist-input-row">
           <textarea
@@ -160,6 +159,7 @@ export function AiRelocatePanel({ onClose }: Props) {
             Waiting for a response — with a local model running partly on CPU this can take several minutes.
           </p>
         )}
+        {sendError && <p className="field-error">{sendError}</p>}
 
         <div className="modal-actions">
           <button type="button" className="secondary" onClick={onClose}>
