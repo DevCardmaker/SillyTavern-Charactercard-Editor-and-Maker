@@ -8,10 +8,28 @@ export interface AiChatMessage {
   content: string;
 }
 
+/** Content checklists for fields where the model tends to drift toward only part of what the
+ * field conventionally holds (e.g. "description" turning into pure backstory, appearance
+ * forgotten) — same idea as `imageModelStyleGuidance` in aiImagePrompt.ts: hardcoded guidance the
+ * model shouldn't have to infer, not something derived from the character itself. Fields without
+ * an entry here (name, scenario, first_mes, …) get no extra guidance line. */
+const AI_FIELD_GUIDANCE: Partial<Record<AiFieldKey, string>> = {
+  description:
+    "Cover physical appearance (build, hair, eyes, distinguishing features like scars or tattoos), typical clothing style, species/race if not human, age, and occupation/role, plus a brief background or origin.",
+  personality:
+    "Cover core personality traits, likes, dislikes, quirks or speech mannerisms, notable skills or talents, fears or weaknesses, goals or motivations, secrets, and kinks (where relevant to the character).",
+};
+
 /** Static instructions for the current turn — only mentions the fields the user actually
  * selected, so the model isn't tempted to invent content for fields it wasn't asked about. */
 export function buildSystemPrompt(selected: readonly AiFieldKey[]): string {
-  const fieldList = selected.map((key) => `- ${key}: ${aiFieldLabel(key)}`).join("\n");
+  const fieldList = selected
+    .map((key) => {
+      const guidance = AI_FIELD_GUIDANCE[key];
+      const line = `- ${key}: ${aiFieldLabel(key)}`;
+      return guidance ? `${line}\n  ${guidance}` : line;
+    })
+    .join("\n");
   return [
     "You help fill in or revise a SillyTavern character card.",
     "Respond only with a JSON object containing exactly the following fields:",
