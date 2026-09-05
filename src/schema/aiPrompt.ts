@@ -174,26 +174,40 @@ export function buildGroupGenerateUserTurn(instruction: string): AiChatMessage {
   return { role: "user", content: `Instruction: ${instruction}` };
 }
 
+/** `summarizeCardForAi` leaves out `mes_example` (not "biographically relevant" for the consistency
+ * check / group generate use cases) — relocate needs it too, since example dialogue can reference
+ * the old setting. Kept as its own summary rather than widening `AiCharacterSummary` for every
+ * consumer that doesn't need it. */
+export interface AiRelocateSummary extends AiCharacterSummary {
+  mes_example: string;
+}
+
+export function summarizeCardForRelocate(card: NormalizedCard): AiRelocateSummary {
+  return { ...summarizeCardForAi(card), mes_example: card.mes_example };
+}
+
 /** Static instructions for moving a group of *existing* characters to a new setting together
- * (e.g. "the family moves from New York to Tokyo"). Unlike `buildGroupGenerateSystemPrompt`, this
- * doesn't invent new characters — identity, personality, and relationships stay untouched, only
- * `scenario` is rewritten per member, matched back to the existing tab by name. */
+ * (e.g. "the family moves from New York to Tokyo"). This is an *adaptation*, not a rewrite from
+ * scratch like `buildGroupGenerateSystemPrompt` — deliberately does NOT reuse
+ * `DESCRIPTION_CHECKLIST`/`PERSONALITY_CHECKLIST` (those are for inventing a formative experience,
+ * which would fight against preserving the one the character already has). Core identity and
+ * backstory must survive; only setting-tied details change. */
 export function buildRelocateSystemPrompt(count: number): string {
   return [
-    `You update the scenario (setting/situation) for ${count} existing, related SillyTavern characters who are being moved to a new setting together.`,
-    "Keep each character's own identity, personality, and relationships to the others exactly as given — only rewrite where and how their story now plays out.",
+    `You update ${count} existing, related SillyTavern characters who are being moved to a new setting together.`,
+    "Keep each character's core identity the same: personality traits, backstory, formative experiences, and relationships to the others. Only adapt details tied to the old location — where they live/work/spend time, local references, and any setting-specific details in their scenario, first message, or example dialogue.",
     `Respond only with a JSON object of the form { "characters": [...] } with exactly ${count} entries.`,
     "Each entry has:",
     "- name: exactly as given for that character, unchanged",
-    "- scenario: the updated setting, reflecting the new instruction",
+    "- description, personality, scenario, first_mes, mes_example: the same character, each adapted to the new setting only where relevant — copy through unchanged whatever isn't location-tied",
     "Give no explanations, no prose outside the JSON, and no extra fields.",
   ].join("\n");
 }
 
 /** Feeds every open character's current summary as context (so the model can see who's who and
  * keep them consistent) plus the new setting/instruction — same shape as
- * `buildConsistencyCheckUserTurn`. */
-export function buildRelocateUserTurn(characters: AiCharacterSummary[], instruction: string): AiChatMessage {
+ * `buildConsistencyCheckUserTurn`, but with `mes_example` included too (see `AiRelocateSummary`). */
+export function buildRelocateUserTurn(characters: AiRelocateSummary[], instruction: string): AiChatMessage {
   const payload = JSON.stringify(characters, null, 2);
   return {
     role: "user",

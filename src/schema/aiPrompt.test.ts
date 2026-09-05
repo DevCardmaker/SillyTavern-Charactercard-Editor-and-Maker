@@ -61,24 +61,38 @@ describe("buildGroupGenerateSystemPrompt", () => {
 });
 
 describe("buildRelocateSystemPrompt", () => {
-  it("states the member count and asks only for name/scenario", () => {
+  it("states the member count and lists all five adaptable fields", () => {
     const prompt = buildRelocateSystemPrompt(3);
     expect(prompt).toMatch(/exactly 3 entries/);
     expect(prompt).toMatch(/name: exactly as given/i);
-    expect(prompt).toMatch(/scenario: the updated setting/i);
+    expect(prompt).toMatch(/description, personality, scenario, first_mes, mes_example/);
   });
 
-  it("tells the model to keep identity and personality unchanged", () => {
+  it("tells the model to preserve core identity/backstory and only adapt location-tied details", () => {
     const prompt = buildRelocateSystemPrompt(2);
-    expect(prompt).toMatch(/identity, personality, and relationships/i);
+    expect(prompt).toMatch(/core identity/i);
+    expect(prompt).toMatch(/formative experiences/i);
+  });
+
+  it("does not reuse the from-scratch generation checklists — this is an adaptation, not invention", () => {
+    const prompt = buildRelocateSystemPrompt(2);
+    expect(prompt).not.toMatch(/physical appearance/i);
   });
 });
 
 describe("buildRelocateUserTurn", () => {
-  it("includes the character summaries and the new setting", () => {
-    const summary = { name: "Mom", description: "d", personality: "p", scenario: "old home", first_mes: "hi" };
+  it("includes the character summaries (with mes_example) and the new setting", () => {
+    const summary = {
+      name: "Mom",
+      description: "d",
+      personality: "p",
+      scenario: "old home",
+      first_mes: "hi",
+      mes_example: "old dialogue line",
+    };
     const turn = buildRelocateUserTurn([summary], "moves to Tokyo");
     expect(turn.content).toContain("old home");
+    expect(turn.content).toContain("old dialogue line");
     expect(turn.content).toContain("moves to Tokyo");
   });
 });
