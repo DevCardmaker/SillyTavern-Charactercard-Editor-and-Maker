@@ -36,3 +36,48 @@ export const lorebookSchema = z
 
 export type LorebookEntry = z.infer<typeof lorebookEntrySchema>;
 export type Lorebook = z.infer<typeof lorebookSchema>;
+
+/** SillyTavern's numeric World Info positions; only 0/1 have a V2 equivalent. */
+const ST_POSITION_TO_V2: Record<number, "before_char" | "after_char"> = { 0: "before_char", 1: "after_char" };
+
+/** Converts SillyTavern's native World Info export (as downloaded from e.g. Chub) into the
+ * Character Card V2 `character_book` shape `lorebookSchema` expects. ST's format keys `entries`
+ * by uid (`{"0": {...}}`) instead of using an array, names its fields `key`/`keysecondary`/
+ * `order`/`disable`, and stores `position` as a number. Some exporters write both naming styles
+ * side by side; existing V2 fields always win. Mirrors ST's own V2 conversion: positions other
+ * than 0/1 (Author's Note, @depth, ...) fall back to `after_char`, with the original number kept
+ * in `extensions.position` so SillyTavern restores it on re-import. Anything that's already a
+ * V2 lorebook passes through untouched. */
+export function normalizeWorldInfo(raw: unknown): unknown {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return raw;
+  const book = raw as Record<string, unknown>;
+  const { entries } = book;
+  if (!entries || typeof entries !== "object") return raw;
+
+  const isStFormat = !Array.isArray(entries);
+  const list = (isStFormat ? Object.values(entries) : (entries as unknown[])) as Record<string, unknown>[];
+  if (isStFormat) {
+    // Keep ST's on-screen order; plain object key order would sort uids numerically instead.
+    list.sort((a, b) => Number(a.displayIndex ?? a.uid ?? 0) - Number(b.displayIndex ?? b.uid ?? 0));
+  }
+
+  const converted = list.map((entry) => {
+    if (!entry || typeof entry !== "object") return entry;
+    const out: Record<string, unknown> = { ...entry };
+    out.keys ??= entry.key ?? [];
+    out.content ??= "";
+    out.enabled ??= entry.disable === undefined ? true : !entry.disable;
+    out.insertion_order ??= entry.order ?? 0;
+    if (out.secondary_keys === undefined && entry.keysecondary !== undefined) out.secondary_keys = entry.keysecondary;
+    if (out.id === undefined && typeof entry.uid === "number") out.id = entry.uid;
+    if (typeof entry.position === "number") {
+      const extensions = { ...((entry.extensions as Record<string, unknown> | undefined) ?? {}) };
+      extensions.position ??= entry.position;
+      out.extensions = extensions;
+      out.position = ST_POSITION_TO_V2[entry.position] ?? "after_char";
+    }
+    return out;
+  });
+
+  return { ...book, entries: converted };
+}

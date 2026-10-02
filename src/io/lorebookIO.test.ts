@@ -71,6 +71,37 @@ describe("exportLorebook / importLorebook", () => {
     expect(await importLorebook()).toBeNull();
   });
 
+  it("imports SillyTavern's native World Info export (entries keyed by uid, numeric position)", async () => {
+    const target = path.join(dir, "world_info.json");
+    fs.writeFileSync(
+      target,
+      JSON.stringify({
+        name: "Harbor Town",
+        entries: {
+          "7": { uid: 7, key: ["Lighthouse"], keysecondary: [], content: "Old tower.", order: 50, disable: true, position: 4, displayIndex: 1 },
+          "3": { uid: 3, key: ["Harbor"], keysecondary: ["docks"], content: "Busy port.", order: 100, disable: false, position: 0, displayIndex: 0 },
+        },
+      }),
+    );
+    mockOpenDialog.mockResolvedValueOnce(target);
+
+    const imported = await importLorebook();
+    expect(imported?.name).toBe("Harbor Town");
+    expect(imported?.entries).toHaveLength(2);
+    expect(imported?.entries[0]).toMatchObject({
+      keys: ["Harbor"],
+      secondary_keys: ["docks"],
+      content: "Busy port.",
+      enabled: true,
+      insertion_order: 100,
+      id: 3,
+      position: "before_char",
+      extensions: { position: 0 },
+    });
+    // @depth (4) has no V2 equivalent: falls back to after_char, original kept for SillyTavern.
+    expect(imported?.entries[1]).toMatchObject({ keys: ["Lighthouse"], enabled: false, position: "after_char", extensions: { position: 4 } });
+  });
+
   it("rejects a file that isn't a valid lorebook", async () => {
     const target = path.join(dir, "not-a-lorebook.json");
     fs.writeFileSync(target, JSON.stringify({ hello: "world" }));

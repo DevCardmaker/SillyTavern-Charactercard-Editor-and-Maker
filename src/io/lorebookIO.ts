@@ -1,6 +1,6 @@
 import { open, save } from "@tauri-apps/plugin-dialog";
 import type { AiLorebookEntryDraft } from "../schema/aiLorebookAssist";
-import { lorebookSchema, type Lorebook, type LorebookEntry } from "../schema/lorebook";
+import { lorebookSchema, normalizeWorldInfo, type Lorebook, type LorebookEntry } from "../schema/lorebook";
 import { readBinary, writeBinary } from "./rawFile";
 
 const LOREBOOK_FILTERS = [{ name: "Lorebook (World Info)", extensions: ["json"] }];
@@ -17,14 +17,15 @@ export async function exportLorebook(book: Lorebook): Promise<void> {
 }
 
 /** Opens a standalone lorebook JSON file the user picks and returns the validated result, or
- * `null` if the dialog was cancelled. Throws (via the schema) if the file isn't a valid
+ * `null` if the dialog was cancelled. Accepts both V2 `character_book` JSON and SillyTavern's
+ * native World Info export (see `normalizeWorldInfo`). Throws (via the schema) if the file isn't a valid
  * lorebook — same "let it throw, caller shows the error banner" pattern as card loading. */
 export async function importLorebook(): Promise<Lorebook | null> {
   const selected = await open({ multiple: false, filters: LOREBOOK_FILTERS });
   if (!selected || Array.isArray(selected)) return null;
   const bytes = await readBinary(selected);
   const json = JSON.parse(new TextDecoder().decode(bytes));
-  return lorebookSchema.parse(json);
+  return lorebookSchema.parse(normalizeWorldInfo(json));
 }
 
 /** Appends AI-proposed entries to an existing lorebook (creating one if the card doesn't have one
