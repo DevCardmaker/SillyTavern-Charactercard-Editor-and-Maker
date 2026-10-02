@@ -1,14 +1,9 @@
 import { useState } from "react";
 import { confirmAction } from "../../io/confirmDiscard";
 import { exportLorebook, importLorebook } from "../../io/lorebookIO";
-import type { LorebookEntry } from "../../schema/lorebook";
 import { AiLorebookAssistPanel } from "./AiLorebookAssistPanel";
-import { LorebookEntryEditor } from "./LorebookEntryEditor";
+import { LorebookBody } from "./LorebookBody";
 import type { TabProps } from "./types";
-
-function blankEntry(): LorebookEntry {
-  return { keys: [], content: "", extensions: {}, enabled: true, insertion_order: 0 };
-}
 
 export function LorebookTab({ card, onChange, onError }: TabProps) {
   const book = card.character_book;
@@ -59,7 +54,7 @@ export function LorebookTab({ card, onChange, onError }: TabProps) {
         </div>
         {isAiAssistOpen && (
           <AiLorebookAssistPanel
-            book={book ?? undefined}
+            book={undefined}
             onChange={(merged) => onChange({ character_book: merged })}
             onClose={() => setIsAiAssistOpen(false)}
           />
@@ -68,71 +63,27 @@ export function LorebookTab({ card, onChange, onError }: TabProps) {
     );
   }
 
-  function updateEntry(index: number, patch: Partial<LorebookEntry>) {
-    const entries = [...book!.entries];
-    entries[index] = { ...entries[index], ...patch };
-    onChange({ character_book: { ...book!, entries } });
-  }
-
-  function removeEntry(index: number) {
-    onChange({ character_book: { ...book!, entries: book!.entries.filter((_, i) => i !== index) } });
-  }
-
-  function addEntry() {
-    onChange({ character_book: { ...book!, entries: [...book!.entries, blankEntry()] } });
-  }
-
   return (
-    <div className="tab-panel">
-      <div className="field-row">
-        <label className="field">
-          <span className="field-label">Lorebook name</span>
-          <input
-            className="field-input"
-            type="text"
-            value={book.name ?? ""}
-            onChange={(e) => onChange({ character_book: { ...book, name: e.target.value } })}
-          />
-        </label>
-        <button type="button" className="secondary" onClick={handleExport}>
-          Export…
-        </button>
-        <button type="button" className="secondary" onClick={handleImport}>
-          Import…
-        </button>
-        <button type="button" className="secondary" onClick={() => setIsAiAssistOpen(true)}>
-          Suggest entries with AI…
-        </button>
-        <button
-          type="button"
-          className="danger secondary"
-          onClick={() => onChange({ character_book: undefined })}
-        >
-          Remove lorebook
-        </button>
-      </div>
-
-      {book.entries.length === 0 && <p>No entries yet.</p>}
-      {book.entries.map((entry, index) => (
-        <LorebookEntryEditor
-          key={index}
-          entry={entry}
-          onChange={(patch) => updateEntry(index, patch)}
-          onRemove={() => removeEntry(index)}
-        />
-      ))}
-
-      <button type="button" className="secondary" onClick={addEntry}>
-        + Add entry
-      </button>
-
-      {isAiAssistOpen && (
-        <AiLorebookAssistPanel
-          book={book}
-          onChange={(merged) => onChange({ character_book: merged })}
-          onClose={() => setIsAiAssistOpen(false)}
-        />
-      )}
-    </div>
+    <LorebookBody
+      book={book}
+      onChange={(next) => onChange({ character_book: next })}
+      actions={
+        <>
+          <button type="button" className="secondary" onClick={handleExport}>
+            Export…
+          </button>
+          <button type="button" className="secondary" onClick={handleImport}>
+            Import…
+          </button>
+          <button
+            type="button"
+            className="danger secondary"
+            onClick={() => onChange({ character_book: undefined })}
+          >
+            Remove lorebook
+          </button>
+        </>
+      }
+    />
   );
 }

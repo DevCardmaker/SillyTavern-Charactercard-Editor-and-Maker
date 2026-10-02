@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { requestLorebookEntries } from "../../io/aiClient";
 import { mergeLorebookEntries } from "../../io/lorebookIO";
 import type { AiLorebookEntryDraft } from "../../schema/aiLorebookAssist";
-import { buildLorebookSystemPrompt, buildLorebookUserTurn } from "../../schema/aiPrompt";
+import { buildLorebookSystemPrompt, buildLorebookUserTurn, summarizeLorebookForAi } from "../../schema/aiPrompt";
 import type { Lorebook } from "../../schema/lorebook";
 import { useAiProviderConfigStore } from "../../state/aiProviderConfigStore";
 import { AiProviderSettings } from "./AiProviderSettings";
@@ -17,7 +17,8 @@ interface Props {
  * `AiAssistPanel`, but additive rather than replace-a-field: each proposed entry has its own
  * checkbox (default checked, since nothing existing is at risk of being overwritten here), and
  * "Add selected" appends the checked ones to the card's lorebook via `mergeLorebookEntries` —
- * existing entries are never touched. */
+ * existing entries are never touched. The model also sees an overview of the existing entries
+ * (labels + keys, see `summarizeLorebookForAi`) so it stays consistent and doesn't duplicate them. */
 export function AiLorebookAssistPanel({ book, onChange, onClose }: Props) {
   const configFile = useAiProviderConfigStore((s) => s.file);
   const ensureConfigLoaded = useAiProviderConfigStore((s) => s.ensureLoaded);
@@ -53,7 +54,7 @@ export function AiLorebookAssistPanel({ book, onChange, onClose }: Props) {
     try {
       const entries = await requestLorebookEntries(activeProfile, [
         { role: "system", content: buildLorebookSystemPrompt() },
-        buildLorebookUserTurn(instruction, draft),
+        buildLorebookUserTurn(instruction, draft, summarizeLorebookForAi(book)),
       ]);
       setDraft(entries);
       setSelected(new Set(entries.map((_, i) => i))); // fresh batch: everything checked by default
@@ -117,7 +118,7 @@ export function AiLorebookAssistPanel({ book, onChange, onClose }: Props) {
             className="field-textarea"
             value={instruction}
             onChange={(e) => setInstruction(e.target.value)}
-            placeholder="e.g. “Family: mother Elara, father Tom. Best friend: Jonas, a blacksmith.”"
+            placeholder="e.g. “Create a family for Mira: mother, father, two siblings” or “A basic fantasy world: name, races, magic”"
             rows={2}
           />
           <button type="button" onClick={handleSend} disabled={!canSend}>

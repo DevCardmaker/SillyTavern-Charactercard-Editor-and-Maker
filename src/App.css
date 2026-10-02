@@ -40,6 +40,36 @@ body {
   height: 100vh;
 }
 
+/* Mode switch (Characters / Lorebooks) — topmost strip, above each mode's own toolbar. */
+
+.mode-switch {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.4rem 0.75rem 0;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+
+.mode-button {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  padding: 0.4rem 1rem;
+  border-radius: 6px 6px 0 0;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+.mode-button:hover {
+  color: var(--text);
+}
+
+.mode-button.active {
+  background: var(--bg-panel);
+  color: var(--text);
+  font-weight: 600;
+}
+
 /* Toolbar */
 
 .toolbar {
@@ -106,6 +136,12 @@ body {
   flex-direction: column;
   min-width: 0;
   overflow: hidden;
+}
+
+/* In the Lorebooks mode, editor-main sits directly in the .app column, so it needs min-height: 0
+   for its .tab-panel to scroll instead of growing the window. */
+.lorebook-workspace {
+  min-height: 0;
 }
 
 .empty-state {

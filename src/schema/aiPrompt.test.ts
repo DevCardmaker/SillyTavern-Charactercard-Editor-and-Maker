@@ -1,5 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { buildGroupGenerateSystemPrompt, buildRelocateSystemPrompt, buildRelocateUserTurn, buildSystemPrompt } from "./aiPrompt";
+import {
+  buildGroupGenerateSystemPrompt,
+  buildLorebookEditSystemPrompt,
+  buildLorebookEditUserTurn,
+  buildLorebookSystemPrompt,
+  buildLorebookUserTurn,
+  buildRelocateSystemPrompt,
+  buildRelocateUserTurn,
+  buildSystemPrompt,
+  DEFAULT_LOREBOOK_EDIT_INSTRUCTION,
+  summarizeLorebookForAi,
+} from "./aiPrompt";
 
 describe("buildSystemPrompt", () => {
   it("lists every selected field", () => {
@@ -94,5 +105,49 @@ describe("buildRelocateUserTurn", () => {
     expect(turn.content).toContain("old home");
     expect(turn.content).toContain("old dialogue line");
     expect(turn.content).toContain("moves to Tokyo");
+  });
+});
+
+describe("lorebook prompts", () => {
+  const book = {
+    name: "World",
+    description: "Fantasy",
+    extensions: {},
+    entries: Array.from({ length: 5 }, (_, i) => ({
+      keys: [`k${i}`],
+      content: `long content ${i}`,
+      comment: `Entry ${i}`,
+      extensions: {},
+      enabled: true,
+      insertion_order: 0,
+    })),
+  };
+
+  it("summarizes a lorebook as labels + keys only, honoring exclusions and the cap", () => {
+    const overview = summarizeLorebookForAi(book, new Set([1]), 2);
+    expect(overview.entries).toEqual([
+      { index: 0, comment: "Entry 0", keys: ["k0"] },
+      { index: 2, comment: "Entry 2", keys: ["k2"] },
+    ]);
+    expect(overview.omittedEntries).toBe(2);
+    expect(JSON.stringify(overview)).not.toContain("long content");
+  });
+
+  it("includes the existing lorebook in the suggest-entries turn when given", () => {
+    const turn = buildLorebookUserTurn("a family", [], summarizeLorebookForAi(book));
+    expect(turn.content).toContain("Existing lorebook");
+    expect(turn.content).toContain("Entry 4");
+    expect(buildLorebookUserTurn("a family", []).content).not.toContain("Existing lorebook");
+  });
+
+  it("asks for brief foundational entries in both lorebook system prompts", () => {
+    expect(buildLorebookSystemPrompt()).toContain("foundational entries");
+    expect(buildLorebookEditSystemPrompt(3)).toContain("foundational entries");
+    expect(buildLorebookEditSystemPrompt(3)).toContain("exactly 3 entries");
+  });
+
+  it("falls back to filling empty entries when the edit instruction is blank", () => {
+    const turn = buildLorebookEditUserTurn(summarizeLorebookForAi(book), [], "  ");
+    expect(turn.content).toContain(DEFAULT_LOREBOOK_EDIT_INSTRUCTION);
   });
 });

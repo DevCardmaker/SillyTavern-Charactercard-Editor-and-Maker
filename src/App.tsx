@@ -1,6 +1,6 @@
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AvatarPanel } from "./components/image/AvatarPanel";
 import { AiAssistPanel } from "./components/editor/AiAssistPanel";
 import { BasicTab } from "./components/editor/BasicTab";
@@ -12,9 +12,12 @@ import { PromptsTab } from "./components/editor/PromptsTab";
 import { Toolbar } from "./components/editor/Toolbar";
 import type { TabProps } from "./components/editor/types";
 import { RecentCardsList } from "./components/editor/RecentCardsList";
+import { LorebookWorkspace } from "./components/lorebook/LorebookWorkspace";
 import { confirmDiscardChanges } from "./io/confirmDiscard";
 import { openCardAtPath } from "./io/fileIO";
+import { openLorebookPaths } from "./io/lorebookIO";
 import { useCardStore } from "./state/cardStore";
+import { useLorebookStore } from "./state/lorebookStore";
 import "./App.css";
 
 const TABS: { id: string; label: string; Component: (props: TabProps) => React.JSX.Element }[] = [
@@ -34,16 +37,26 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [isAiAssistOpen, setIsAiAssistOpen] = useState(false);
+  // Characters vs. standalone Lorebooks. Both stores live on regardless, so switching never loses
+  // open tabs or unsaved work on the other side. The ref is for the once-registered Tauri
+  // listeners below, which would otherwise only ever see the initial mode.
+  const [mode, setMode] = useState<"characters" | "lorebooks">("characters");
+  const modeRef = useRef(mode);
+  modeRef.current = mode;
+  const activeLorebook = useLorebookStore((s) => s.lorebooks.find((l) => l.id === s.activeId) ?? null);
+  const anyLorebookDirty = useLorebookStore((s) => s.lorebooks.some((l) => l.isDirty));
 
   const ActiveTab = TABS.find((t) => t.id === activeTab)?.Component ?? BasicTab;
 
   // Mirrors the toolbar's filename/dirty display into the native window title, so the card in
   // progress is distinguishable from the taskbar or Alt+Tab without focusing the window first.
   useEffect(() => {
-    const fileName = currentFilePath ? currentFilePath.split(/[\\/]/).pop() : "New card";
-    const dirtyMarker = isDirty ? "● " : "";
+    const inLorebooks = mode === "lorebooks";
+    const path = inLorebooks ? activeLorebook?.currentFilePath : currentFilePath;
+    const fileName = path ? path.split(/[\\/]/).pop() : inLorebooks ? "New lorebook" : "New card";
+    const dirtyMarker = (inLorebooks ? activeLorebook?.isDirty : isDirty) ? "● " : "";
     getCurrentWindow().setTitle(`${dirtyMarker}${fileName} — SillyTavern Card Editor`);
-  }, [currentFilePath, isDirty]);
+  }, [mode, activeLorebook, currentFilePath, isDirty]);
 
   // Warn before the window closes with unsaved changes, same confirmation as New/Open.
   // destroy() (rather than close()) bypasses onCloseRequested entirely, so confirming doesn't
@@ -54,7 +67,9 @@ function App() {
       err instanceof Error ? err.message : typeof err === "string" ? err : JSON.stringify(err);
 
     const unlisten = win.onCloseRequested(async (event) => {
-      if (!useCardStore.getState().characters.some((c) => c.isDirty)) return;
+      const cardsDirty = useCardStore.getState().characters.some((c) => c.isDirty);
+      const lorebooksDirty = useLorebookStore.getState().lorebooks.some((l) => l.isDirty);
+      if (!cardsDirty && !lorebooksDirty) return;
       event.preventDefault();
       try {
         if (await confirmDiscardChanges()) {
@@ -86,6 +101,15 @@ function App() {
       }
       // payload.type === "drop" — opens as a new tab, so there's nothing to discard-confirm here
       setIsDragOver(false);
+      if (modeRef.current === "lorebooks") {
+        try {
+          const failed = await openLorebookPaths(payload.paths);
+          if (failed.length > 0) setError(failed.join(" — "));
+        } catch (err) {
+          setError(err instanceof Error ? err.message : String(err));
+        }
+        return;
+      }
       const [path] = payload.paths;
       if (!path) return;
       try {
@@ -103,14 +127,40 @@ function App() {
     <div className="app">
       {isDragOver && (
         <div className="drop-overlay">
-          <p>Drop a file here to open it (.png / .json)</p>
+          <p>
+            {mode === "lorebooks"
+              ? "Drop lorebook files here to open them (.json)"
+              : "Drop a file here to open it (.png / .json)"}
+          </p>
         </div>
       )}
 
-      <Toolbar onError={setError} onOpenAiAssist={() => setIsAiAssistOpen(true)} />
-      <CharacterTabBar onError={setError} />
+      <nav className="mode-switch">
+        <button
+          type="button"
+          className={mode === "characters" ? "mode-button active" : "mode-button"}
+          onClick={() => setMode("characters")}
+        >
+          Characters
+        </button>
+        <button
+          type="button"
+          className={mode === "lorebooks" ? "mode-button active" : "mode-button"}
+          onClick={() => setMode("lorebooks")}
+        >
+          Lorebooks
+          {anyLorebookDirty && <span className="dirty-indicator" title="Unsaved changes"> ●</span>}
+        </button>
+      </nav>
 
-      {isAiAssistOpen && card && (
+      {mode === "characters" && (
+        <>
+          <Toolbar onError={setError} onOpenAiAssist={() => setIsAiAssistOpen(true)} />
+          <CharacterTabBar onError={setError} />
+        </>
+      )}
+
+      {mode === "characters" && isAiAssistOpen && card && (
         <AiAssistPanel card={card} onChange={updateCard} onClose={() => setIsAiAssistOpen(false)} />
       )}
 
@@ -123,7 +173,9 @@ function App() {
         </div>
       )}
 
-      {!card ? (
+      {mode === "lorebooks" ? (
+        <LorebookWorkspace onError={setError} />
+      ) : !card ? (
         <div className="empty-state">
           <p>No card loaded. Create a new card or open an existing one.</p>
           <RecentCardsList onError={setError} />

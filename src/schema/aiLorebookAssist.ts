@@ -13,6 +13,20 @@ const aiLorebookEntrySchema = z.object({
 
 export type AiLorebookEntryDraft = z.infer<typeof aiLorebookEntrySchema>;
 
+/** Trims AI-proposed keys and drops empty ones and case-insensitive duplicates — local models
+ * occasionally repeat a key verbatim, which would only clutter the keyword list. */
+export function cleanAiKeys(keys: string[]): string[] {
+  const seen = new Set<string>();
+  return keys
+    .map((k) => k.trim())
+    .filter((k) => {
+      const norm = k.toLowerCase();
+      if (k === "" || seen.has(norm)) return false;
+      seen.add(norm);
+      return true;
+    });
+}
+
 const aiLorebookEntriesSchema = z.object({ entries: z.array(aiLorebookEntrySchema) });
 
 /** `response_format: json_schema` requires an object at the top level, hence the `{ entries }`
@@ -31,5 +45,5 @@ export function parseAiLorebookEntries(raw: unknown): ParseAiLorebookEntriesResu
   if (!result.success) {
     return { success: false, error: result.error.message };
   }
-  return { success: true, data: result.data.entries };
+  return { success: true, data: result.data.entries.map((e) => ({ ...e, keys: cleanAiKeys(e.keys) })) };
 }

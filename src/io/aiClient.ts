@@ -5,6 +5,7 @@ import { type AiGroupMemberDraft, aiGroupToJsonSchema, parseAiGroup } from "../s
 import { aiImagePromptToJsonSchema, parseAiImagePrompt } from "../schema/aiImagePrompt";
 import { type AiRelocateMember, aiRelocateToJsonSchema, parseAiRelocate } from "../schema/aiRelocate";
 import { type AiLorebookEntryDraft, aiLorebookEntriesToJsonSchema, parseAiLorebookEntries } from "../schema/aiLorebookAssist";
+import { type AiLorebookEditEntry, aiLorebookEditToJsonSchema, parseAiLorebookEdit } from "../schema/aiLorebookEdit";
 import type { AiChatMessage } from "../schema/aiPrompt";
 
 export interface AiProviderConfig {
@@ -87,6 +88,35 @@ export async function requestLorebookEntries(
   }
 
   const parsed = parseAiLorebookEntries(raw);
+  if (!parsed.success) {
+    throw new Error(`Model response did not match the expected format: ${parsed.error}`);
+  }
+
+  return parsed.data;
+}
+
+/** Sends one "fill / revise entries" turn and validates the reply against exactly the entry
+ * indices that were sent (see `parseAiLorebookEdit`). Same validate-or-throw contract as
+ * `requestFieldPatch`. */
+export async function requestLorebookEdit(
+  config: AiProviderConfig,
+  indices: readonly number[],
+  messages: AiChatMessage[],
+): Promise<AiLorebookEditEntry[]> {
+  const content = await callChatCompletion(config, messages, {
+    name: "lorebook_edit",
+    strict: true,
+    schema: aiLorebookEditToJsonSchema(indices.length),
+  });
+
+  let raw: unknown;
+  try {
+    raw = JSON.parse(content);
+  } catch {
+    throw new Error(`Model response was not valid JSON: ${truncate(content)}`);
+  }
+
+  const parsed = parseAiLorebookEdit(indices, raw);
   if (!parsed.success) {
     throw new Error(`Model response did not match the expected format: ${parsed.error}`);
   }

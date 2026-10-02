@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { LorebookEntry } from "../../schema/lorebook";
 import { lorebookEntryMissingKeysWarning, unbalancedMacroWarning } from "../../schema/warnings";
 import { ListEditor } from "../common/ListEditor";
@@ -5,15 +6,19 @@ import { TextAreaField } from "../common/FormField";
 
 interface Props {
   entry: LorebookEntry;
+  /** Only the initial state — the user can still expand/collapse freely afterwards. */
+  defaultOpen?: boolean;
   onChange: (patch: Partial<LorebookEntry>) => void;
   onRemove: () => void;
 }
 
-export function LorebookEntryEditor({ entry, onChange, onRemove }: Props) {
+export function LorebookEntryEditor({ entry, defaultOpen = true, onChange, onRemove }: Props) {
   const keysWarning = lorebookEntryMissingKeysWarning(entry);
+  // Uncontrolled on purpose: a controlled `open` would snap back on every keystroke re-render.
+  const [initiallyOpen] = useState(defaultOpen);
 
   return (
-    <details className="lorebook-entry" open>
+    <details className="lorebook-entry" open={initiallyOpen}>
       <summary>
         {entry.comment || entry.keys.join(", ") || "(new entry)"}
         <button type="button" className="danger" onClick={onRemove} title="Remove entry">

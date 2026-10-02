@@ -10,6 +10,7 @@ A desktop editor for [SillyTavern](https://github.com/SillyTavern/SillyTavern) c
 - Open and save character cards as PNG (with the card embedded as a chunk) or standalone `.json`, spec V2 and V3
 - Avatar image handling with cropping
 - Lorebook (World Info) editor, with import/export as a standalone file
+- A separate **Lorebooks** mode for standalone World Info files, independent of any card: several open as tabs, saved in SillyTavern's World Info format (importable straight into ST), and SillyTavern exports / Chub downloads open directly
 - Reusable prompt presets for System Prompt / Post-History Instructions
 - Live token counter for the main text fields
 - Inline warnings for common authoring mistakes (unbalanced `{{macro}}` braces, empty name, empty first message, a lorebook entry with no keys)
@@ -26,7 +27,8 @@ A desktop editor for [SillyTavern](https://github.com/SillyTavern/SillyTavern) c
 Point the app at any OpenAI-compatible `/v1/chat/completions` endpoint — a local server (llama.cpp, LM Studio, text-generation-webui, ...) or a cloud provider you supply your own API key for. Every AI feature is opt-in; the editor works fully without configuring one.
 - Multiple saved provider profiles (switch between a local model and one or more cloud APIs) with a one-click connection test
 - Iteratively refine individual card fields from a free-text instruction
-- Propose new lorebook entries from a description
+- Propose new lorebook entries from a description — including whole topics at once ("a family for this character", "a basic fantasy world"), kept brief and consistent with the entries already there
+- Fill in empty lorebook entries from their name and keys, or revise selected entries from an instruction, with an old/new preview before applying
 - Generate an avatar image-generation prompt, tuned to different image models (Stable Diffusion, Pony Diffusion, Qwen-Image, Z-Image, Krea 2/FLUX) and art styles
 - Check every currently open character together for contradictions (ages, relationships, names, timeline)
 - Generate a whole group of new, mutually consistent characters from a single prompt

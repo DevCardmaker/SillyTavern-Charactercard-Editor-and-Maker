@@ -25,7 +25,10 @@ vi.mock("@tauri-apps/plugin-dialog", () => ({
   open: () => mockOpenDialog(),
 }));
 
-const { exportLorebook, importLorebook, mergeLorebookEntries } = await import("./lorebookIO");
+const { exportLorebook, importLorebook, mergeLorebookEntries, openLorebookPaths, saveActiveLorebook } = await import(
+  "./lorebookIO"
+);
+const { useLorebookStore } = await import("../state/lorebookStore");
 
 const SAMPLE_BOOK = {
   name: "Enchanted Forest",
@@ -133,5 +136,60 @@ describe("mergeLorebookEntries", () => {
 
     expect(merged.entries).toHaveLength(1);
     expect(merged.entries[0]).toMatchObject({ keys: ["Jonas"], content: "Bester Freund." });
+  });
+});
+
+describe("standalone lorebooks (Lorebooks workspace)", () => {
+  let dir: string;
+
+  beforeEach(() => {
+    dir = fs.mkdtempSync(path.join(os.tmpdir(), "st-card-editor-test-"));
+    mockSaveDialog.mockReset();
+    useLorebookStore.setState({ lorebooks: [], activeId: null });
+  });
+
+  afterEach(() => {
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("opens each file as a tab and reports the ones that aren't lorebooks", async () => {
+    const good = path.join(dir, "good.json");
+    const bad = path.join(dir, "bad.json");
+    fs.writeFileSync(good, JSON.stringify(SAMPLE_BOOK));
+    fs.writeFileSync(bad, JSON.stringify({ hello: "world" }));
+
+    const failed = await openLorebookPaths([good, bad]);
+
+    expect(useLorebookStore.getState().lorebooks).toHaveLength(1);
+    expect(failed).toEqual(['"bad.json" is not a lorebook (World Info) file.']);
+  });
+
+  it("saves in SillyTavern format, backs up the previous file, and clears the dirty flag", async () => {
+    const target = path.join(dir, "Enchanted Forest.json");
+    fs.writeFileSync(target, JSON.stringify(SAMPLE_BOOK));
+    await openLorebookPaths([target]);
+    const store = useLorebookStore.getState();
+    store.updateActive({ ...SAMPLE_BOOK, entries: [...SAMPLE_BOOK.entries, { ...SAMPLE_BOOK.entries[0], keys: ["Elf"] }] });
+    expect(useLorebookStore.getState().lorebooks[0].isDirty).toBe(true);
+
+    await saveActiveLorebook("save");
+
+    const written = JSON.parse(fs.readFileSync(target, "utf-8"));
+    expect(Object.keys(written.entries)).toEqual(["0", "1"]);
+    expect(written.entries["1"]).toMatchObject({ key: ["Elf"], keys: ["Elf"], uid: 1 });
+    expect(fs.readdirSync(path.join(dir, "backups"))).toHaveLength(1);
+    expect(useLorebookStore.getState().lorebooks[0].isDirty).toBe(false);
+    expect(mockSaveDialog).not.toHaveBeenCalled();
+  });
+
+  it("asks for a path when a new lorebook is saved for the first time", async () => {
+    useLorebookStore.getState().newLorebook();
+    const target = path.join(dir, "new.json");
+    mockSaveDialog.mockResolvedValueOnce(target);
+
+    await saveActiveLorebook("save");
+
+    expect(fs.existsSync(target)).toBe(true);
+    expect(useLorebookStore.getState().lorebooks[0].currentFilePath).toBe(target);
   });
 });

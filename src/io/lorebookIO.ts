@@ -1,6 +1,8 @@
 import { open, save } from "@tauri-apps/plugin-dialog";
 import type { AiLorebookEntryDraft } from "../schema/aiLorebookAssist";
-import { lorebookSchema, normalizeWorldInfo, type Lorebook, type LorebookEntry } from "../schema/lorebook";
+import { lorebookSchema, normalizeWorldInfo, toWorldInfo, type Lorebook, type LorebookEntry } from "../schema/lorebook";
+import { useLorebookStore } from "../state/lorebookStore";
+import { backupExistingFile } from "./fileIO";
 import { readBinary, writeBinary } from "./rawFile";
 
 const LOREBOOK_FILTERS = [{ name: "Lorebook (World Info)", extensions: ["json"] }];
@@ -23,9 +25,64 @@ export async function exportLorebook(book: Lorebook): Promise<void> {
 export async function importLorebook(): Promise<Lorebook | null> {
   const selected = await open({ multiple: false, filters: LOREBOOK_FILTERS });
   if (!selected || Array.isArray(selected)) return null;
-  const bytes = await readBinary(selected);
+  return readLorebookAtPath(selected);
+}
+
+/** Reads and validates a lorebook JSON file (V2 or SillyTavern World Info). Throws with a
+ * readable message if it isn't one. */
+export async function readLorebookAtPath(path: string): Promise<Lorebook> {
+  const bytes = await readBinary(path);
   const json = JSON.parse(new TextDecoder().decode(bytes));
-  return lorebookSchema.parse(normalizeWorldInfo(json));
+  const result = lorebookSchema.safeParse(normalizeWorldInfo(json));
+  if (!result.success) {
+    const fileName = path.split(/[\\/]/).pop();
+    throw new Error(`"${fileName}" is not a lorebook (World Info) file.`);
+  }
+  return result.data;
+}
+
+/** Lorebooks workspace "Open…": one or more files, each as its own tab. Returns the names of
+ * files that couldn't be loaded, so the caller can report them without aborting the rest. */
+export async function openLorebookFiles(): Promise<string[]> {
+  const selected = await open({ multiple: true, filters: LOREBOOK_FILTERS });
+  if (!selected) return [];
+  const paths = Array.isArray(selected) ? selected : [selected];
+  return openLorebookPaths(paths);
+}
+
+export async function openLorebookPaths(paths: string[]): Promise<string[]> {
+  const failed: string[] = [];
+  for (const path of paths) {
+    try {
+      useLorebookStore.getState().loadLorebook(await readLorebookAtPath(path), path);
+    } catch (err) {
+      failed.push(err instanceof Error ? err.message : String(err));
+    }
+  }
+  return failed;
+}
+
+/** Lorebooks workspace "Save"/"Save As…" for the active tab — always SillyTavern's World Info
+ * format (see `toWorldInfo`), with the same `backups/` safety copy as card saves. With no file
+ * yet, "Save" behaves like "Save As…". */
+export async function saveActiveLorebook(mode: "save" | "saveAs"): Promise<void> {
+  const state = useLorebookStore.getState();
+  const slot = state.lorebooks.find((l) => l.id === state.activeId);
+  if (!slot) return;
+
+  let path = slot.currentFilePath;
+  if (mode === "saveAs" || !path) {
+    const chosen = await save({
+      filters: LOREBOOK_FILTERS,
+      defaultPath: path ?? (slot.book.name ? `${slot.book.name}.json` : "lorebook.json"),
+    });
+    if (!chosen) return;
+    path = chosen;
+  }
+
+  await backupExistingFile(path);
+  await writeBinary(path, new TextEncoder().encode(JSON.stringify(toWorldInfo(slot.book), null, 2)));
+  state.markSaved(slot.id, path);
 }
 
 /** Appends AI-proposed entries to an existing lorebook (creating one if the card doesn't have one

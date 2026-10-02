@@ -1,6 +1,8 @@
 import { type AiFieldKey, aiFieldLabel, type AiFieldPatch } from "./aiAssist";
 import { type AiImageArtStyle, type AiImageModelStyle, imageArtStyleGuidance, imageModelStyleGuidance } from "./aiImagePrompt";
 import type { AiLorebookEntryDraft } from "./aiLorebookAssist";
+import type { AiLorebookEditEntry } from "./aiLorebookEdit";
+import type { Lorebook } from "./lorebook";
 import type { NormalizedCard } from "./normalize";
 
 export interface AiChatMessage {
@@ -57,29 +59,104 @@ export function buildUserTurn(instruction: string, draftValues: AiFieldPatch): A
   };
 }
 
+/** Shared writing guidance for every prompt that produces lorebook entry text — new entries as
+ * well as filled/revised ones. Lorebook entries are deliberately lighter than character cards:
+ * the user asked for foundations they can expand later ("a basic fantasy world: name, races,
+ * whether there's magic"), not fully fleshed-out profiles. */
+const LOREBOOK_ENTRY_GUIDANCE = [
+  "Write one entry per distinct person, place, faction, item, or concept — never bundle several into one entry.",
+  'For a broad request (e.g. "a family for this character" or "a basic fantasy world"), create the foundational entries the topic needs and keep each one brief: the essentials only (what or who it is, a few defining facts, how it relates to the rest), about 2–5 sentences. The user will expand details later.',
+  "keys are matched as plain text against recent chat messages, so use short words people would actually write: names, nicknames, and specific 1–2 word terms. Do not use long descriptive phrases, and do not use words that also match unrelated mentions — relationship words (mother, father, brother, sister, wife), or generic nouns (land, magic, town, king). Example for a mother named Elara Brightwood: good keys [\"Elara\", \"Elara Brightwood\"], bad keys [\"Mother\", \"Mira's mother\"].",
+  "comment: a short human-readable label for the entry (e.g. \"Mother Elara\").",
+  "Stay consistent with the existing lorebook entries, and write in the same language they use; if there are none, use the language of the user's instruction.",
+];
+
 /** Static instructions for a lorebook-entry-generation turn. Unlike the card-field prompt, the
- * model here proposes *new* entries to add to an existing lorebook, not values to overwrite. */
+ * model here proposes *new* entries to add to an existing lorebook, not values to overwrite.
+ * Used both for a card's embedded lorebook and for standalone World Info files. */
 export function buildLorebookSystemPrompt(): string {
   return [
-    "You help propose lorebook entries (World Info) for a SillyTavern character card.",
+    "You help propose lorebook entries (World Info) for SillyTavern.",
     'Respond only with a JSON object of the form { "entries": [...] }.',
     "Each entry has:",
     "- keys: a list of keywords that should trigger this entry in chat",
     "- content: the actual background text (e.g. a description of a person, place, or event)",
-    "- comment: optional, a short human-readable label for the entry (e.g. \"Mother Elara\")",
+    "- comment: a short human-readable label for the entry",
+    ...LOREBOOK_ENTRY_GUIDANCE,
     "Give no explanations, no prose outside the JSON, and no extra fields.",
-    "The current draft state (entries already proposed but not yet added) and the user's instruction follow in the next message.",
+    "The existing lorebook, the current draft state (entries already proposed but not yet added) and the user's instruction follow in the next message. Don't repeat entries the lorebook already has.",
   ].join("\n");
+}
+
+/** Overview of a lorebook for AI context — name, description, and each entry's label + keys, but
+ * not its content: a downloaded lorebook can have hundreds of entries, and the full text would
+ * blow past a local model's context window. Capped at `maxEntries` for the same reason. */
+export interface AiLorebookOverview {
+  name: string;
+  description: string;
+  entries: { index: number; comment: string; keys: string[] }[];
+  omittedEntries: number;
+}
+
+export function summarizeLorebookForAi(
+  book: Lorebook | undefined,
+  exclude: ReadonlySet<number> = new Set(),
+  maxEntries = 100,
+): AiLorebookOverview {
+  const listed = (book?.entries ?? [])
+    .map((entry, index) => ({ index, comment: entry.comment ?? "", keys: entry.keys }))
+    .filter((entry) => !exclude.has(entry.index));
+  return {
+    name: book?.name ?? "",
+    description: book?.description ?? "",
+    entries: listed.slice(0, maxEntries),
+    omittedEntries: Math.max(0, listed.length - maxEntries),
+  };
 }
 
 /** Same resend-full-state pattern as `buildUserTurn`: each turn gets the complete current list
  * of proposed (not-yet-added) entries plus the new instruction, and returns the complete updated
  * list — avoids ambiguity about whether a follow-up instruction means "add" or "replace". */
-export function buildLorebookUserTurn(instruction: string, draftEntries: AiLorebookEntryDraft[]): AiChatMessage {
+export function buildLorebookUserTurn(
+  instruction: string,
+  draftEntries: AiLorebookEntryDraft[],
+  overview?: AiLorebookOverview,
+): AiChatMessage {
   const draftJson = JSON.stringify(draftEntries, null, 2);
+  const context = overview ? `Existing lorebook:\n${JSON.stringify(overview, null, 2)}\n\n` : "";
   return {
     role: "user",
-    content: `Currently proposed entries:\n${draftJson}\n\nInstruction: ${instruction}`,
+    content: `${context}Currently proposed entries:\n${draftJson}\n\nInstruction: ${instruction}`,
+  };
+}
+
+/** Static instructions for filling in / revising *existing* entries in place. */
+export function buildLorebookEditSystemPrompt(count: number): string {
+  return [
+    `You fill in or revise ${count} existing lorebook entries (World Info) for SillyTavern.`,
+    "An entry with empty content needs its content written, based on its comment, its keys, and the rest of the lorebook. An entry that already has content should only change as far as the user's instruction asks; otherwise copy it through unchanged.",
+    ...LOREBOOK_ENTRY_GUIDANCE,
+    `Respond only with a JSON object of the form { "entries": [...] } with exactly ${count} entries.`,
+    "Each entry has: index (exactly as given, unchanged), keys, comment, content.",
+    "Give no explanations, no prose outside the JSON, and no extra fields.",
+  ].join("\n");
+}
+
+/** Fallback when the user just hits "Send" on a selection without typing anything. */
+export const DEFAULT_LOREBOOK_EDIT_INSTRUCTION = "Write the content for the entries that are still empty.";
+
+export function buildLorebookEditUserTurn(
+  overview: AiLorebookOverview,
+  entries: AiLorebookEditEntry[],
+  instruction: string,
+): AiChatMessage {
+  return {
+    role: "user",
+    content: [
+      `Rest of the lorebook (for context only, don't return these):\n${JSON.stringify(overview, null, 2)}`,
+      `Entries to fill in or revise:\n${JSON.stringify(entries, null, 2)}`,
+      `Instruction: ${instruction.trim() || DEFAULT_LOREBOOK_EDIT_INSTRUCTION}`,
+    ].join("\n\n"),
   };
 }
 
