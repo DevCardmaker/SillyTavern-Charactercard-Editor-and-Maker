@@ -51,6 +51,23 @@ export function AiAssistPanel({ card, onChange, onClose }: Props) {
     setSelectedFields(next);
   }
 
+  const allSelected = AI_FIELD_KEYS.every((key) => selectedFields.has(key));
+
+  /** Select all / none in one click. Newly selected fields get seeded into the draft from the card,
+   * same as ticking them one by one in `toggleField`. */
+  function toggleAllFields() {
+    if (allSelected) {
+      setSelectedFields(new Set());
+      return;
+    }
+    const seeded = { ...draft };
+    for (const key of AI_FIELD_KEYS) {
+      if (!(key in seeded)) Object.assign(seeded, { [key]: card[key] });
+    }
+    setDraft(seeded);
+    setSelectedFields(new Set(AI_FIELD_KEYS));
+  }
+
   const providerReady = !!activeProfile?.baseUrl && !!activeProfile.model;
   const canSend = providerReady && selectedFields.size > 0 && instruction.trim() !== "" && !isSending;
 
@@ -89,6 +106,9 @@ export function AiAssistPanel({ card, onChange, onClose }: Props) {
         <div>
           <p className="field-hint">Which fields may the AI change?</p>
           <div className="ai-assist-field-checkboxes">
+            <button type="button" className="secondary" onClick={toggleAllFields}>
+              {allSelected ? "Select none" : "Select all"}
+            </button>
             {AI_FIELD_KEYS.map((key) => (
               <label key={key} className="ai-assist-field-checkbox">
                 <input type="checkbox" checked={selectedFields.has(key)} onChange={() => toggleField(key)} />
