@@ -48,6 +48,33 @@ export function buildSystemPrompt(selected: readonly AiFieldKey[]): string {
   ].join("\n");
 }
 
+/** Fields the AI may fill for a persona — SillyTavern's "Convert to Persona" only carries over
+ * name and description (plus the avatar), so nothing else would arrive. */
+export const PERSONA_AI_FIELD_KEYS = ["name", "description"] as const satisfies readonly AiFieldKey[];
+
+const PERSONA_DESCRIPTION_GUIDANCE =
+  "Write it in third person, referring to the persona by name (never use {{user}} or {{char}} macros). Focus on what other characters can perceive or plausibly know: physical appearance (build, hair, eyes, distinguishing features), typical clothing, age, species/race if not human, occupation/role, demeanor and how they come across, plus a few defining personality traits and only as much background as matters in interactions. Keep it compact — roughly 100–250 words — because it is sent with every message. Never write actions, dialogue, thoughts in the moment, or decisions for the persona, and don't describe how other characters feel about them.";
+
+/** Persona counterpart of `buildSystemPrompt`: a persona is the character the *user* plays, and
+ * SillyTavern inserts its description so the AI characters know who they're talking to — a
+ * different job from a character card, hence its own guidance instead of the card checklists. */
+export function buildPersonaSystemPrompt(selected: readonly AiFieldKey[]): string {
+  const fieldList = selected
+    .map((key) => {
+      const line = `- ${key}: ${key === "name" ? "The persona's name" : aiFieldLabel(key)}`;
+      return key === "description" ? `${line}\n  ${PERSONA_DESCRIPTION_GUIDANCE}` : line;
+    })
+    .join("\n");
+  return [
+    "You help write a SillyTavern user persona: the character the user plays in roleplay, not a character the AI plays.",
+    "Respond only with a JSON object containing exactly the following fields:",
+    fieldList,
+    "Write in the language of the user's instruction, or of the existing draft if it already has text.",
+    "Give no explanations, no prose outside the JSON, and no extra fields.",
+    "The current draft state and the user's instruction follow in the next message.",
+  ].join("\n");
+}
+
 /** Serializes the current draft + the user's free-text instruction into one user message.
  * Each turn resends the full current draft rather than a growing chat transcript, so context
  * length depends on field count, not on how many refinement rounds have happened. */

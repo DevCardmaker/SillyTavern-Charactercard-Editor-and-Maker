@@ -4,7 +4,9 @@ import type { z } from "zod";
 import { embedCardJson, extractCardJson } from "../png/characterCard";
 import { denormalize, type NormalizedCard } from "../schema/normalize";
 import { CardParseError, parseCardJson, parseCardJsonLeniently } from "../schema/parse";
-import { type FileFormat, useCardStore } from "../state/cardStore";
+import { asPersona, isPersona } from "../schema/persona";
+import { type CardStore, type FileFormat, useCardStore } from "../state/cardStore";
+import { usePersonaStore } from "../state/personaStore";
 import { useRecentCardsStore } from "../state/recentCardsStore";
 import { confirmAction } from "./confirmDiscard";
 import { listDirFiles, readBinary, writeBinary } from "./rawFile";
@@ -74,6 +76,12 @@ async function defaultSavePath(name: string, ext: string, groupFolder: string | 
   return groupFolder ? join(groupFolder, fileName) : fileName;
 }
 
+/** Personas default to "Name (Persona)" — the same key SillyTavern stores a converted persona
+ * under, and it keeps a persona from overwriting a character card of the same name. */
+function fileBaseName(card: NormalizedCard): string {
+  return card.name && isPersona(card) ? `${card.name} (Persona)` : card.name;
+}
+
 function formatIssues(issues: z.ZodIssue[]): string {
   return issues.map((issue) => `• ${issue.path.join(".") || "(root)"}: ${issue.message}`).join("\n");
 }
@@ -94,7 +102,13 @@ async function confirmLoadNonConforming(issues: z.ZodIssue[]): Promise<boolean> 
  * selection or a dropped file) into the store. A card that fails strict validation gets one
  * recovery attempt (see parseCardJsonLeniently) with the user's explicit confirmation and a
  * backup of the original file first; anything that recovery can't handle still throws as before. */
-async function loadCardFromPath(path: string): Promise<void> {
+/** Recent-cards history is a Characters-mode feature (its list reopens into the character tabs),
+ * so only character saves/opens are recorded there. */
+async function recordIfCharacter(store: CardStore, path: string): Promise<void> {
+  if (store === useCardStore) await useRecentCardsStore.getState().recordOpened(path);
+}
+
+async function loadCardFromPath(path: string, store: CardStore = useCardStore): Promise<void> {
   const bytes = await readBinary(path);
   const format = detectFormat(path);
 
@@ -123,25 +137,27 @@ async function loadCardFromPath(path: string): Promise<void> {
     card = recovered;
   }
 
-  useCardStore.getState().loadCard(card, avatarPng, path, format);
-  await useRecentCardsStore.getState().recordOpened(path);
+  // Any card opened as a persona becomes one (e.g. turning an existing character into a persona).
+  if (store === usePersonaStore) card = asPersona(card);
+  store.getState().loadCard(card, avatarPng, path, format);
+  await recordIfCharacter(store, path);
 }
 
 /** Opens a PNG or JSON character card via a native file dialog and loads it into the store. */
-export async function openCardFile(): Promise<void> {
+export async function openCardFile(store: CardStore = useCardStore): Promise<void> {
   const selected = await open({ multiple: false, filters: CARD_FILTERS });
   if (!selected || Array.isArray(selected)) return;
-  await loadCardFromPath(selected);
+  await loadCardFromPath(selected, store);
 }
 
 /** Loads a card from an already-known path — used by drag & drop and by clicking an entry in
  * the recent-cards list. Same loading path as "Open…", just skipping the dialog — rejects
  * anything that isn't a .png/.json before touching the filesystem. */
-export async function openCardAtPath(path: string): Promise<void> {
+export async function openCardAtPath(path: string, store: CardStore = useCardStore): Promise<void> {
   if (!/\.(png|json)$/i.test(path)) {
     throw new Error("Only .png and .json files can be opened as a character card.");
   }
-  await loadCardFromPath(path);
+  await loadCardFromPath(path, store);
 }
 
 /** Opens every .png/.json card found directly inside a chosen folder (non-recursive), each as its
@@ -232,8 +248,8 @@ export async function saveGroupToFolder(folder: string): Promise<{ saved: number
 
 /** "Save" (overwrite the current file, same format) or "Save As..." (new path, format chosen via
  * the extension). With no file open yet, "Save" behaves like "Save As...". */
-export async function saveCard(mode: "save" | "saveAs"): Promise<void> {
-  const state = useCardStore.getState();
+export async function saveCard(mode: "save" | "saveAs", store: CardStore = useCardStore): Promise<void> {
+  const state = store.getState();
   if (!state.card) return;
 
   let path = state.currentFilePath;
@@ -248,7 +264,7 @@ export async function saveCard(mode: "save" | "saveAs"): Promise<void> {
     const defaultExt = format ?? "png";
     const chosen = await save({
       filters: CARD_FILTERS,
-      defaultPath: await defaultSavePath(state.card.name, defaultExt, path ? null : state.groupFolder),
+      defaultPath: await defaultSavePath(fileBaseName(state.card), defaultExt, path ? null : state.groupFolder),
     });
     if (!chosen) return;
     path = chosen;
@@ -260,20 +276,20 @@ export async function saveCard(mode: "save" | "saveAs"): Promise<void> {
   await writeBinary(path, buildCardBytes(state.card, format, state.avatarPng));
 
   state.markSaved(path, format);
-  await useRecentCardsStore.getState().recordOpened(path);
+  await recordIfCharacter(store, path);
 }
 
 /** "Save as Copy...": writes the current card to a newly chosen path without changing what
  * "Save" targets — currentFilePath/currentFileFormat and the dirty flag are left untouched, so
  * the copy is a side export, not a switch to a new working file. */
-export async function saveCardAsCopy(): Promise<void> {
-  const state = useCardStore.getState();
+export async function saveCardAsCopy(store: CardStore = useCardStore): Promise<void> {
+  const state = store.getState();
   if (!state.card) return;
 
   const defaultExt = state.avatarPng ? "png" : (state.currentFileFormat ?? "png");
   const chosen = await save({
     filters: CARD_FILTERS,
-    defaultPath: state.card.name ? `${state.card.name}.${defaultExt}` : undefined,
+    defaultPath: state.card.name ? `${fileBaseName(state.card)}.${defaultExt}` : undefined,
   });
   if (!chosen) return;
 

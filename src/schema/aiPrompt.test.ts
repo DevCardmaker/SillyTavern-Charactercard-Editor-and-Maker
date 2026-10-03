@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildPersonaSystemPrompt,
+  PERSONA_AI_FIELD_KEYS,
   buildGroupGenerateSystemPrompt,
   buildLorebookEditSystemPrompt,
   buildLorebookEditUserTurn,
@@ -149,5 +151,21 @@ describe("lorebook prompts", () => {
   it("falls back to filling empty entries when the edit instruction is blank", () => {
     const turn = buildLorebookEditUserTurn(summarizeLorebookForAi(book), [], "  ");
     expect(turn.content).toContain(DEFAULT_LOREBOOK_EDIT_INSTRUCTION);
+  });
+});
+
+describe("buildPersonaSystemPrompt", () => {
+  it("frames the persona as the user's character and only lists the selected fields", () => {
+    const prompt = buildPersonaSystemPrompt(["description"]);
+    expect(prompt).toContain("the character the user plays");
+    expect(prompt).toContain("- description:");
+    expect(prompt).not.toContain("- name:");
+    expect(prompt).toContain("never use {{user}} or {{char}}");
+  });
+
+  it("uses persona guidance instead of the character-card checklist", () => {
+    const prompt = buildPersonaSystemPrompt(PERSONA_AI_FIELD_KEYS);
+    expect(prompt).toContain("- name: The persona's name");
+    expect(prompt).not.toContain("formative experience");
   });
 });

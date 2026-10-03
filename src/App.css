@@ -924,3 +924,21 @@ button.secondary.active {
 .share-status-other {
   color: #e0a040;
 }
+
+/* Personas mode */
+
+.persona-howto {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  font-size: 0.9rem;
+}
+
+.persona-howto ol {
+  margin: 0.4rem 0;
+  padding-left: 1.2rem;
+}
+
+.persona-howto li {
+  margin-bottom: 0.25rem;
+}

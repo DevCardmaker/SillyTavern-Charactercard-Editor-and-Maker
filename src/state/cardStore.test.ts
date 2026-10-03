@@ -148,3 +148,15 @@ describe("cardStore — multiple simultaneously open characters", () => {
     expect(useCardStore.getState().card).toBeNull();
   });
 });
+
+describe("separate persona store", () => {
+  it("keeps personas apart from characters and starts them flagged", async () => {
+    const { usePersonaStore } = await import("./personaStore");
+    const { isPersona } = await import("../schema/persona");
+    const charactersBefore = useCardStore.getState().characters.length;
+    usePersonaStore.getState().newCard();
+    expect(useCardStore.getState().characters.length).toBe(charactersBefore);
+    const persona = usePersonaStore.getState().card;
+    expect(persona && isPersona(persona)).toBe(true);
+  });
+});

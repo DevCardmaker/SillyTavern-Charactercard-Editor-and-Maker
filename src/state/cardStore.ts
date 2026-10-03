@@ -1,4 +1,4 @@
-import { create } from "zustand";
+import { create, type StoreApi, type UseBoundStore } from "zustand";
 import { clearAutosave, writeAutosave } from "../io/autosave";
 import { createBlankCard, type NormalizedCard } from "../schema/normalize";
 
@@ -72,85 +72,94 @@ function autosaveOutgoing(characters: CharacterSlot[], outgoingId: string | null
   if (outgoing) void writeAutosave(outgoing.id, outgoing.card);
 }
 
-export const useCardStore = create<CardState>((set, get) => ({
-  characters: [],
-  activeId: null,
-  groupFolder: null,
-  card: null,
-  avatarPng: null,
-  currentFilePath: null,
-  currentFileFormat: null,
-  isDirty: false,
+/** Builds an independent store of open cards. The app has two: `useCardStore` for characters and
+ * `usePersonaStore` for personas (which are slim cards — see schema/persona.ts). `createBlank` is
+ * what "New" starts from. */
+export function createCardStore(createBlank: () => NormalizedCard = createBlankCard) {
+  return create<CardState>((set, get) => ({
+    characters: [],
+    activeId: null,
+    groupFolder: null,
+    card: null,
+    avatarPng: null,
+    currentFilePath: null,
+    currentFileFormat: null,
+    isDirty: false,
 
-  newCard: () => {
-    const { characters: previous, activeId: outgoingId } = get();
-    const id = crypto.randomUUID();
-    const characters = [
-      ...previous,
-      { id, card: createBlankCard(), avatarPng: null, currentFilePath: null, currentFileFormat: null, isDirty: false },
-    ];
-    set({ characters, activeId: id, ...mirrorOf(characters, id) });
-    autosaveOutgoing(previous, outgoingId);
-  },
+    newCard: () => {
+      const { characters: previous, activeId: outgoingId } = get();
+      const id = crypto.randomUUID();
+      const characters = [
+        ...previous,
+        { id, card: createBlank(), avatarPng: null, currentFilePath: null, currentFileFormat: null, isDirty: false },
+      ];
+      set({ characters, activeId: id, ...mirrorOf(characters, id) });
+      autosaveOutgoing(previous, outgoingId);
+    },
 
-  loadCard: (card, avatarPng, path, format) => {
-    const { characters: previous, activeId: outgoingId } = get();
-    const id = crypto.randomUUID();
-    const characters = [
-      ...previous,
-      { id, card, avatarPng, currentFilePath: path, currentFileFormat: format, isDirty: false },
-    ];
-    set({ characters, activeId: id, ...mirrorOf(characters, id) });
-    autosaveOutgoing(previous, outgoingId);
-  },
+    loadCard: (card, avatarPng, path, format) => {
+      const { characters: previous, activeId: outgoingId } = get();
+      const id = crypto.randomUUID();
+      const characters = [
+        ...previous,
+        { id, card, avatarPng, currentFilePath: path, currentFileFormat: format, isDirty: false },
+      ];
+      set({ characters, activeId: id, ...mirrorOf(characters, id) });
+      autosaveOutgoing(previous, outgoingId);
+    },
 
-  updateCard: (patch) => {
-    const { activeId } = get();
-    if (!activeId) return;
-    get().updateSlotCard(activeId, patch);
-  },
+    updateCard: (patch) => {
+      const { activeId } = get();
+      if (!activeId) return;
+      get().updateSlotCard(activeId, patch);
+    },
 
-  updateSlotCard: (id, patch) => {
-    const { characters, activeId } = get();
-    const next = characters.map((c) => (c.id === id ? { ...c, card: { ...c.card, ...patch }, isDirty: true } : c));
-    set({ characters: next, ...mirrorOf(next, activeId) });
-  },
+    updateSlotCard: (id, patch) => {
+      const { characters, activeId } = get();
+      const next = characters.map((c) => (c.id === id ? { ...c, card: { ...c.card, ...patch }, isDirty: true } : c));
+      set({ characters: next, ...mirrorOf(next, activeId) });
+    },
 
-  setAvatarPng: (bytes) => {
-    const { characters, activeId } = get();
-    if (!activeId) return;
-    const next = characters.map((c) => (c.id === activeId ? { ...c, avatarPng: bytes, isDirty: true } : c));
-    set({ characters: next, ...mirrorOf(next, activeId) });
-  },
+    setAvatarPng: (bytes) => {
+      const { characters, activeId } = get();
+      if (!activeId) return;
+      const next = characters.map((c) => (c.id === activeId ? { ...c, avatarPng: bytes, isDirty: true } : c));
+      set({ characters: next, ...mirrorOf(next, activeId) });
+    },
 
-  markSaved: (path, format) => {
-    const { activeId } = get();
-    if (!activeId) return;
-    get().markSlotSaved(activeId, path, format);
-  },
+    markSaved: (path, format) => {
+      const { activeId } = get();
+      if (!activeId) return;
+      get().markSlotSaved(activeId, path, format);
+    },
 
-  markSlotSaved: (id, path, format) => {
-    const { characters, activeId } = get();
-    const next = characters.map((c) =>
-      c.id === id ? { ...c, currentFilePath: path, currentFileFormat: format, isDirty: false } : c,
-    );
-    set({ characters: next, ...mirrorOf(next, activeId) });
-  },
+    markSlotSaved: (id, path, format) => {
+      const { characters, activeId } = get();
+      const next = characters.map((c) =>
+        c.id === id ? { ...c, currentFilePath: path, currentFileFormat: format, isDirty: false } : c,
+      );
+      set({ characters: next, ...mirrorOf(next, activeId) });
+    },
 
-  setActiveCharacter: (id) => {
-    const { characters, activeId: outgoingId } = get();
-    if (id === outgoingId) return;
-    set({ activeId: id, ...mirrorOf(characters, id) });
-    autosaveOutgoing(characters, outgoingId);
-  },
+    setActiveCharacter: (id) => {
+      const { characters, activeId: outgoingId } = get();
+      if (id === outgoingId) return;
+      set({ activeId: id, ...mirrorOf(characters, id) });
+      autosaveOutgoing(characters, outgoingId);
+    },
 
-  closeCharacter: (id) => {
-    const { characters, activeId } = get();
-    const next = characters.filter((c) => c.id !== id);
-    const nextActiveId = activeId === id ? (next[0]?.id ?? null) : activeId;
-    set({ characters: next, activeId: nextActiveId, ...mirrorOf(next, nextActiveId) });
-    void clearAutosave(id);
-  },
+    closeCharacter: (id) => {
+      const { characters, activeId } = get();
+      const next = characters.filter((c) => c.id !== id);
+      const nextActiveId = activeId === id ? (next[0]?.id ?? null) : activeId;
+      set({ characters: next, activeId: nextActiveId, ...mirrorOf(next, nextActiveId) });
+      void clearAutosave(id);
+    },
 
-  setGroupFolder: (path) => set({ groupFolder: path }),
-}));
+    setGroupFolder: (path) => set({ groupFolder: path }),
+  }));
+}
+
+export type CardStore = UseBoundStore<StoreApi<CardState>>;
+
+export const useCardStore: CardStore = createCardStore();

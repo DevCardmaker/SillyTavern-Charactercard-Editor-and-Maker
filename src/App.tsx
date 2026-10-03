@@ -13,11 +13,13 @@ import { Toolbar } from "./components/editor/Toolbar";
 import type { TabProps } from "./components/editor/types";
 import { RecentCardsList } from "./components/editor/RecentCardsList";
 import { LorebookWorkspace } from "./components/lorebook/LorebookWorkspace";
+import { PersonaWorkspace } from "./components/persona/PersonaWorkspace";
 import { confirmDiscardChanges } from "./io/confirmDiscard";
 import { openCardAtPath } from "./io/fileIO";
 import { openLorebookPaths } from "./io/lorebookIO";
 import { useCardStore } from "./state/cardStore";
 import { useLorebookStore } from "./state/lorebookStore";
+import { usePersonaStore } from "./state/personaStore";
 import "./App.css";
 
 const TABS: { id: string; label: string; Component: (props: TabProps) => React.JSX.Element }[] = [
@@ -40,23 +42,29 @@ function App() {
   // Characters vs. standalone Lorebooks. Both stores live on regardless, so switching never loses
   // open tabs or unsaved work on the other side. The ref is for the once-registered Tauri
   // listeners below, which would otherwise only ever see the initial mode.
-  const [mode, setMode] = useState<"characters" | "lorebooks">("characters");
+  const [mode, setMode] = useState<"characters" | "lorebooks" | "personas">("characters");
   const modeRef = useRef(mode);
   modeRef.current = mode;
   const activeLorebook = useLorebookStore((s) => s.lorebooks.find((l) => l.id === s.activeId) ?? null);
   const anyLorebookDirty = useLorebookStore((s) => s.lorebooks.some((l) => l.isDirty));
+  const anyPersonaDirty = usePersonaStore((s) => s.characters.some((c) => c.isDirty));
+  const personaPath = usePersonaStore((s) => s.currentFilePath);
+  const personaDirty = usePersonaStore((s) => s.isDirty);
 
   const ActiveTab = TABS.find((t) => t.id === activeTab)?.Component ?? BasicTab;
 
   // Mirrors the toolbar's filename/dirty display into the native window title, so the card in
   // progress is distinguishable from the taskbar or Alt+Tab without focusing the window first.
   useEffect(() => {
-    const inLorebooks = mode === "lorebooks";
-    const path = inLorebooks ? activeLorebook?.currentFilePath : currentFilePath;
-    const fileName = path ? path.split(/[\\/]/).pop() : inLorebooks ? "New lorebook" : "New card";
-    const dirtyMarker = (inLorebooks ? activeLorebook?.isDirty : isDirty) ? "● " : "";
-    getCurrentWindow().setTitle(`${dirtyMarker}${fileName} — SillyTavern Card Editor`);
-  }, [mode, activeLorebook, currentFilePath, isDirty]);
+    const [path, dirty, fallback] =
+      mode === "lorebooks"
+        ? [activeLorebook?.currentFilePath, activeLorebook?.isDirty, "New lorebook"]
+        : mode === "personas"
+          ? [personaPath, personaDirty, "New persona"]
+          : [currentFilePath, isDirty, "New card"];
+    const fileName = path ? path.split(/[\\/]/).pop() : fallback;
+    getCurrentWindow().setTitle(`${dirty ? "● " : ""}${fileName} — SillyTavern Card Editor`);
+  }, [mode, activeLorebook, currentFilePath, isDirty, personaPath, personaDirty]);
 
   // Warn before the window closes with unsaved changes, same confirmation as New/Open.
   // destroy() (rather than close()) bypasses onCloseRequested entirely, so confirming doesn't
@@ -69,7 +77,8 @@ function App() {
     const unlisten = win.onCloseRequested(async (event) => {
       const cardsDirty = useCardStore.getState().characters.some((c) => c.isDirty);
       const lorebooksDirty = useLorebookStore.getState().lorebooks.some((l) => l.isDirty);
-      if (!cardsDirty && !lorebooksDirty) return;
+      const personasDirty = usePersonaStore.getState().characters.some((c) => c.isDirty);
+      if (!cardsDirty && !lorebooksDirty && !personasDirty) return;
       event.preventDefault();
       try {
         if (await confirmDiscardChanges()) {
@@ -113,7 +122,7 @@ function App() {
       const [path] = payload.paths;
       if (!path) return;
       try {
-        await openCardAtPath(path);
+        await openCardAtPath(path, modeRef.current === "personas" ? usePersonaStore : undefined);
       } catch (err) {
         setError(err instanceof Error ? err.message : String(err));
       }
@@ -151,6 +160,14 @@ function App() {
           Lorebooks
           {anyLorebookDirty && <span className="dirty-indicator" title="Unsaved changes"> ●</span>}
         </button>
+        <button
+          type="button"
+          className={mode === "personas" ? "mode-button active" : "mode-button"}
+          onClick={() => setMode("personas")}
+        >
+          Personas
+          {anyPersonaDirty && <span className="dirty-indicator" title="Unsaved changes"> ●</span>}
+        </button>
       </nav>
 
       {mode === "characters" && (
@@ -175,6 +192,8 @@ function App() {
 
       {mode === "lorebooks" ? (
         <LorebookWorkspace onError={setError} />
+      ) : mode === "personas" ? (
+        <PersonaWorkspace onError={setError} />
       ) : !card ? (
         <div className="empty-state">
           <p>No card loaded. Create a new card or open an existing one.</p>

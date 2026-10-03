@@ -10,6 +10,12 @@ interface Props {
   card: NormalizedCard;
   onChange: (patch: Partial<NormalizedCard>) => void;
   onClose: () => void;
+  /** Which fields can be picked — all card fields by default; personas pass their own subset. */
+  fieldKeys?: readonly AiFieldKey[];
+  /** System prompt for the picked fields — the character-card prompt by default. */
+  buildSystem?: (fields: readonly AiFieldKey[]) => string;
+  title?: string;
+  placeholder?: string;
 }
 
 function displayValue(key: AiFieldKey, draft: AiFieldPatch): string {
@@ -23,7 +29,15 @@ function displayValue(key: AiFieldKey, draft: AiFieldPatch): string {
  * as the user wants, then commits it to the real card in one explicit step via `onChange`. Draft
  * state is intentionally component-local (see plan) — it's transient and has no other reader, so
  * closing this panel without "Apply to card" simply discards it. */
-export function AiAssistPanel({ card, onChange, onClose }: Props) {
+export function AiAssistPanel({
+  card,
+  onChange,
+  onClose,
+  fieldKeys = AI_FIELD_KEYS,
+  buildSystem = buildSystemPrompt,
+  title = "AI Assistant",
+  placeholder = "e.g. “A shy librarian with a secret” or “Make the personality more sarcastic”",
+}: Props) {
   const configFile = useAiProviderConfigStore((s) => s.file);
   const ensureConfigLoaded = useAiProviderConfigStore((s) => s.ensureLoaded);
 
@@ -51,7 +65,7 @@ export function AiAssistPanel({ card, onChange, onClose }: Props) {
     setSelectedFields(next);
   }
 
-  const allSelected = AI_FIELD_KEYS.every((key) => selectedFields.has(key));
+  const allSelected = fieldKeys.every((key) => selectedFields.has(key));
 
   /** Select all / none in one click. Newly selected fields get seeded into the draft from the card,
    * same as ticking them one by one in `toggleField`. */
@@ -61,11 +75,11 @@ export function AiAssistPanel({ card, onChange, onClose }: Props) {
       return;
     }
     const seeded = { ...draft };
-    for (const key of AI_FIELD_KEYS) {
+    for (const key of fieldKeys) {
       if (!(key in seeded)) Object.assign(seeded, { [key]: card[key] });
     }
     setDraft(seeded);
-    setSelectedFields(new Set(AI_FIELD_KEYS));
+    setSelectedFields(new Set(fieldKeys));
   }
 
   const providerReady = !!activeProfile?.baseUrl && !!activeProfile.model;
@@ -78,7 +92,7 @@ export function AiAssistPanel({ card, onChange, onClose }: Props) {
     try {
       const fields = [...selectedFields];
       const patch = await requestFieldPatch(activeProfile, fields, [
-        { role: "system", content: buildSystemPrompt(fields) },
+        { role: "system", content: buildSystem(fields) },
         buildUserTurn(instruction, draft),
       ]);
       setDraft((prev) => ({ ...prev, ...patch }));
@@ -99,7 +113,7 @@ export function AiAssistPanel({ card, onChange, onClose }: Props) {
   return (
     <div className="modal-overlay">
       <div className="modal ai-assist-modal">
-        <h3>AI Assistant</h3>
+        <h3>{title}</h3>
 
         <AiProviderSettings />
 
@@ -109,7 +123,7 @@ export function AiAssistPanel({ card, onChange, onClose }: Props) {
             <button type="button" className="secondary" onClick={toggleAllFields}>
               {allSelected ? "Select none" : "Select all"}
             </button>
-            {AI_FIELD_KEYS.map((key) => (
+            {fieldKeys.map((key) => (
               <label key={key} className="ai-assist-field-checkbox">
                 <input type="checkbox" checked={selectedFields.has(key)} onChange={() => toggleField(key)} />
                 {aiFieldLabel(key)}
@@ -149,7 +163,7 @@ export function AiAssistPanel({ card, onChange, onClose }: Props) {
             className="field-textarea"
             value={instruction}
             onChange={(e) => setInstruction(e.target.value)}
-            placeholder="e.g. “A shy librarian with a secret” or “Make the personality more sarcastic”"
+            placeholder={placeholder}
             rows={2}
           />
           <button type="button" onClick={handleSend} disabled={!canSend}>

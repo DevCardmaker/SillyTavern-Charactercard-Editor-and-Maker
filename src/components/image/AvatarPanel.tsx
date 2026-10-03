@@ -1,13 +1,14 @@
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
 import { useEffect, useMemo, useState } from "react";
-import { useCardStore } from "../../state/cardStore";
+import { useActiveCardStore } from "../../state/cardStoreContext";
 import { AiImagePromptPanel } from "./AiImagePromptPanel";
 import { CropDialog } from "./CropDialog";
 
 const IMAGE_FILTERS = [{ name: "Image", extensions: ["png", "jpg", "jpeg", "webp", "gif"] }];
 
 export function AvatarPanel() {
+  const useCardStore = useActiveCardStore();
   const card = useCardStore((s) => s.card);
   const avatarPng = useCardStore((s) => s.avatarPng);
   const setAvatarPng = useCardStore((s) => s.setAvatarPng);
