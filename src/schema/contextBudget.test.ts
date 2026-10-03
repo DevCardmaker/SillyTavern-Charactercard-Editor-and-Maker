@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { characterNoteText, contextBudget, DEFAULT_BUDGET_SETTINGS } from "./contextBudget";
+import { contextBudget, DEFAULT_BUDGET_SETTINGS } from "./contextBudget";
 import { createBlankCard, type NormalizedCard } from "./normalize";
 
 /** One token per word keeps the arithmetic readable. */
@@ -55,10 +55,5 @@ describe("contextBudget", () => {
     expect(budget.worldInfoCap).toBe(4096);
     expect(budget.triggeredLoreEntries).toBe(2);
     expect(budget.largestTriggeredLore).toBe(5);
-  });
-
-  it("reads the character's note only when it's a string", () => {
-    expect(characterNoteText(card({ extensions: { depth_prompt: { prompt: 5 } } }))).toBe("");
-    expect(characterNoteText(card({}))).toBe("");
   });
 });

@@ -1,3 +1,4 @@
+import { getCharacterNote } from "./characterNote";
 import type { NormalizedCard } from "./normalize";
 
 /** Prompt-size settings. Defaults are Patrick's SillyTavern (checked in its settings.json):
@@ -42,12 +43,6 @@ export interface ContextBudget {
   largestTriggeredLore: number;
 }
 
-/** The text of SillyTavern's per-character Author's Note (`extensions.depth_prompt.prompt`). */
-export function characterNoteText(card: NormalizedCard): string {
-  const note = card.extensions?.depth_prompt as { prompt?: unknown } | undefined;
-  return typeof note?.prompt === "string" ? note.prompt : "";
-}
-
 /** Breaks a card's prompt footprint down the way SillyTavern assembles it (with "prefer the
  * character's system prompt / post-history instructions" on, as in Patrick's ST). Ignores the
  * instruct template's own few dozen tokens. `count` is the token counter to use. */
@@ -69,7 +64,7 @@ export function contextBudget(
     line("Personality", card.personality, "personality"),
     line("Scenario", card.scenario, "scenario"),
     line("Post-history instructions", card.post_history_instructions, "post_history_instructions"),
-    line("Character's note", characterNoteText(card)),
+    line("Character's note", getCharacterNote(card).prompt),
     line("Persona", personaDescription),
     { label: "Always-active lorebook entries", tokens: constantLoreTokens },
   ].filter((l) => l.tokens > 0);
