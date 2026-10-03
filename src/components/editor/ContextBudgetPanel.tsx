@@ -19,7 +19,8 @@ export function ContextBudgetPanel({ card, filePath, onChange, onClose }: Props)
   const personas = usePersonaStore((s) => s.characters);
   const [personaId, setPersonaId] = useState<string>("");
   const [settings, setSettings] = useState(DEFAULT_BUDGET_SETTINGS);
-  const [condensing, setCondensing] = useState<BudgetField | null>(null);
+  /** Fields shown in the condense dialog: one ("Condense…") or all large ones ("Condense all…"). */
+  const [condensing, setCondensing] = useState<BudgetField[] | null>(null);
   const [lastBackup, setLastBackup] = useState<string | null>(null);
 
   if (!count) {
@@ -34,6 +35,10 @@ export function ContextBudgetPanel({ card, filePath, onChange, onClose }: Props)
 
   const persona = personas.find((p) => p.id === personaId)?.card.description ?? "";
   const budget = contextBudget(card, count, settings, persona);
+  // Same 100-token threshold as the per-line "Condense…" buttons.
+  const condensable = (lines: BudgetLine[]) => lines.filter((l) => l.field && l.tokens >= 100).map((l) => l.field!);
+  const permanentFields = condensable(budget.permanent);
+  const allFields = [...permanentFields, ...condensable(budget.early)];
   const usable = settings.contextSize - settings.responseLength;
   const pct = (tokens: number) => `${Math.min(100, (tokens / settings.contextSize) * 100)}%`;
 
@@ -43,7 +48,7 @@ export function ContextBudgetPanel({ card, filePath, onChange, onClose }: Props)
         <span>{line.label}</span>
         <span className="budget-tokens">{line.tokens}</span>
         {line.field && line.tokens >= 100 ? (
-          <button type="button" className="secondary" onClick={() => setCondensing(line.field!)}>
+          <button type="button" className="secondary" onClick={() => setCondensing([line.field!])}>
             Condense…
           </button>
         ) : (
@@ -90,6 +95,17 @@ export function ContextBudgetPanel({ card, filePath, onChange, onClose }: Props)
             Condensed. The card as it was before is backed up at {lastBackup} — reopen it from there if you change your
             mind.
           </p>
+        )}
+
+        {allFields.length > 1 && (
+          <div className="field-row">
+            <button type="button" className="secondary" onClick={() => setCondensing(allFields)}>
+              Condense all…
+            </button>
+            <span className="field-hint">
+              Condenses every large field in one go — fields sent with every message are preselected.
+            </span>
+          </div>
         )}
 
         <div className="budget-section">
@@ -147,7 +163,8 @@ export function ContextBudgetPanel({ card, filePath, onChange, onClose }: Props)
       {condensing && (
         <AiCondensePanel
           card={card}
-          field={condensing}
+          fields={condensing}
+          initiallySelected={condensing.length > 1 ? condensing.filter((f) => permanentFields.includes(f)) : undefined}
           filePath={filePath}
           onChange={onChange}
           onClose={() => setCondensing(null)}

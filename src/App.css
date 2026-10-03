@@ -1019,3 +1019,11 @@ button.secondary.active {
   grid-template-columns: 1fr 1fr;
   gap: 0.75rem;
 }
+
+.condense-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  border-top: 1px solid var(--border);
+  padding-top: 0.5rem;
+}
