@@ -965,3 +965,57 @@ button.secondary.active {
 .key-test-recursion {
   border-left-color: #e0a040;
 }
+
+/* Context budget + condense */
+
+.budget-bar {
+  display: flex;
+  height: 14px;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.budget-bar-permanent {
+  background: var(--accent);
+}
+
+.budget-bar-early {
+  background: #e0a040;
+}
+
+.budget-bar-free {
+  background: transparent;
+}
+
+.budget-bar-response {
+  background: var(--border);
+}
+
+.budget-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.budget-line {
+  display: grid;
+  grid-template-columns: 1fr 4rem 7rem;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.budget-tokens {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.condense-modal {
+  width: 900px;
+}
+
+.condense-compare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}

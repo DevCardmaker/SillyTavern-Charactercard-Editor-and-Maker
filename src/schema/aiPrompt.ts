@@ -75,6 +75,36 @@ export function buildPersonaSystemPrompt(selected: readonly AiFieldKey[]): strin
   ].join("\n");
 }
 
+/** Field-specific rules for condensing, where the field has a format of its own to preserve. */
+const CONDENSE_FIELD_RULES: Partial<Record<AiFieldKey, string>> = {
+  mes_example:
+    "This is example dialogue: keep the <START> separators and the {{user}}:/{{char}}: line format. Shorten the exchanges, and drop the least characteristic ones before touching those that best show the character's voice.",
+  first_mes:
+    "This is the opening message of the roleplay: keep it a scene in the same voice and keep its hook; tighten the narration.",
+};
+
+/** System prompt for "condense this field": save prompt tokens without changing who the character
+ * is. Reuses the field-patch response format (`{ "<field>": "..." }`). */
+export function buildCondenseSystemPrompt(field: AiFieldKey, currentTokens: number, targetTokens: number): string {
+  return [
+    "You condense one field of a SillyTavern character card to save prompt tokens WITHOUT changing the character.",
+    `Field: ${aiFieldLabel(field)}. It is currently about ${currentTokens} tokens. Aim for about ${targetTokens} tokens — that is a floor as much as a ceiling: do not cut much below it, because shorter than that means facts are being lost.`,
+    "Every distinct fact must survive: names, ages, numbers, appearance and clothing details, traits (including qualifiers like \"slightly\"), likes and dislikes, attitudes and beliefs, habits, quirks, speech patterns, relationships, goals, secrets, and the cause-and-effect links in the backstory.",
+    "Every item of an enumeration (likes, fetishes, kinks, skills, …) is a fact of its own: keep each one; you may merge near-duplicates into one word, but never drop items.",
+    "Remove only redundancy: statements made twice, filler, flowery or purple prose, generic adjectives that add nothing, meta commentary. Keep any section labels or structure the original uses if they help, but write the content densely.",
+    "Don't switch to keyword lists or W++/JSON-style notation unless the original already uses it.",
+    "Keep the same language, point of view and tone, and keep macros like {{char}} and {{user}} exactly as written.",
+    "Never use the straight double-quote character (\") inside the text: write inches as in (5 ft 11 in) and use ‘single’ or “curly” quotes for quotations.",
+    ...(CONDENSE_FIELD_RULES[field] ? [CONDENSE_FIELD_RULES[field]] : []),
+    "Never add anything that isn't in the original — no new facts, motives, or interpretations. Before answering, check your version against the original: every fact still there, nothing added.",
+    `Respond only with a JSON object of the form { "${field}": "..." } — no explanations, no extra fields.`,
+  ].join("\n");
+}
+
+export function buildCondenseUserTurn(text: string): AiChatMessage {
+  return { role: "user", content: `Original text:\n${text}` };
+}
+
 /** Serializes the current draft + the user's free-text instruction into one user message.
  * Each turn resends the full current draft rather than a growing chat transcript, so context
  * length depends on field count, not on how many refinement rounds have happened. */

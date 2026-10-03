@@ -27,6 +27,13 @@ function useTokenizerReady(): boolean {
   return ready;
 }
 
+/** The raw counter for callers that count many texts at once (e.g. the context budget), or null
+ * while the tokenizer is still loading. */
+export function useTokenCounter(): CountTokensFn | null {
+  const ready = useTokenizerReady();
+  return ready && impl ? impl : null;
+}
+
 /** Token count for a single field, or null while the tokenizer is still loading / not needed. */
 export function useTokenCount(text: string, enabled: boolean): number | null {
   const ready = useTokenizerReady();

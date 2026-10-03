@@ -3,6 +3,7 @@ import { useTotalTokenCount } from "../../hooks/useTokenCount";
 import { openCardFile, openFolderAsTabs, saveCard, saveCardAsCopy } from "../../io/fileIO";
 import { useCardStore } from "../../state/cardStore";
 import { AiGroupGeneratePanel } from "./AiGroupGeneratePanel";
+import { ContextBudgetPanel } from "./ContextBudgetPanel";
 
 interface Props {
   onError: (message: string) => void;
@@ -14,6 +15,8 @@ export function Toolbar({ onError, onOpenAiAssist }: Props) {
   const isDirty = useCardStore((s) => s.isDirty);
   const currentFilePath = useCardStore((s) => s.currentFilePath);
   const newCard = useCardStore((s) => s.newCard);
+  const updateCard = useCardStore((s) => s.updateCard);
+  const [isBudgetOpen, setIsBudgetOpen] = useState(false);
   const totalTokenCount = useTotalTokenCount(card);
   const [isGroupGenerateOpen, setIsGroupGenerateOpen] = useState(false);
 
@@ -140,13 +143,17 @@ export function Toolbar({ onError, onOpenAiAssist }: Props) {
         {fileName}
         {isDirty && <span className="dirty-indicator" title="Unsaved changes"> ●</span>}
         {card && totalTokenCount !== null && (
-          <span
-            className="total-token-count"
-            title="Sum of description, personality, scenario, first message, example dialogue"
+          <button
+            type="button"
+            className="total-token-count link-button"
+            title="Sum of description, personality, scenario, first message, example dialogue — click for the full context budget"
+            onClick={() => setIsBudgetOpen(true)}
           >
-            {" "}
             · {totalTokenCount} tokens total
-          </span>
+          </button>
+        )}
+        {isBudgetOpen && card && (
+          <ContextBudgetPanel card={card} filePath={currentFilePath} onChange={updateCard} onClose={() => setIsBudgetOpen(false)} />
         )}
       </div>
     </div>

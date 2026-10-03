@@ -1,4 +1,4 @@
-import { join } from "@tauri-apps/api/path";
+import { appConfigDir, join } from "@tauri-apps/api/path";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import type { z } from "zod";
 import { embedCardJson, extractCardJson } from "../png/characterCard";
@@ -45,6 +45,20 @@ export async function backupExistingFile(path: string): Promise<void> {
   const backupPath = `${dir}backups/${name}.${timestampForFilename(new Date())}${ext}`;
 
   await writeBinary(backupPath, existing);
+}
+
+/** Saves the card's current in-memory state as a reopenable JSON card before a risky bulk change
+ * (e.g. AI condensing), independent of whether the card has been saved yet: next to the card in
+ * its `backups/` folder, or in the app's config folder for a card that was never saved. Returns
+ * the backup's path. `reason` ends up in the filename. */
+export async function writeSnapshotBackup(card: NormalizedCard, currentFilePath: string | null, reason: string): Promise<string> {
+  const baseName = (card.name || "card").replace(/[\\/:*?"<>|]/g, "_");
+  const fileName = `${baseName}.${reason}.${timestampForFilename(new Date())}.json`;
+  const path = currentFilePath
+    ? `${splitDirAndFile(currentFilePath).dir}backups/${fileName}`
+    : await join(await appConfigDir(), "backups", fileName);
+  await writeBinary(path, buildCardBytes(card, "json", null));
+  return path;
 }
 
 /** Serializes `card` into the bytes for the given target format, embedding `avatarPng` for a
