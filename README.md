@@ -12,6 +12,7 @@ A desktop editor for [SillyTavern](https://github.com/SillyTavern/SillyTavern) c
 - Lorebook (World Info) editor, with import/export as a standalone file
 - A separate **Lorebooks** mode for standalone World Info files, independent of any card: several open as tabs, saved in SillyTavern's World Info format (importable straight into ST), and SillyTavern exports / Chub downloads open directly
 - **Shared lorebooks**: embed one lorebook into several cards and link them to it, with an up-to-date / out-of-date overview per card
+- **Merge lorebooks**: add the entries of another lorebook file or of a card's lorebook to the open one, skipping exact duplicates
 - A **key tester** that shows which lorebook entries SillyTavern would insert for a piece of chat text, and why — plus search across entries and a warning for keys shared between entries
 - A **Personas** mode for SillyTavern user personas (name, description, avatar), saved as cards for SillyTavern's "Convert to Persona"
 - A **context budget** view: what a card sends with every message, what only at the start of a chat, and how much room is left for the chat history

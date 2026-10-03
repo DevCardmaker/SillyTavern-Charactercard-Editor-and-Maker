@@ -91,8 +91,21 @@ export function createBlankCard(): NormalizedCard {
  * sourced card to V2 intentionally drops the V3-only fields (group_only_greetings, assets, ...)
  * — there's no V2 slot to put them in, so exporting as V2 is a deliberate compatibility choice,
  * not a bug. */
+/** SillyTavern files embedded lorebook entries under `id ?? position` (`convertCharacterBook`), so
+ * two entries ending up with the same id — easy after merging lorebooks or appending AI entries —
+ * silently overwrite each other on import. Only in that case are all entries renumbered 0, 1, 2, …;
+ * a card without collisions is saved exactly as it was loaded. */
+export function withUniqueEntryIds<T extends { id?: number }>(entries: T[]): T[] {
+  const effective = entries.map((e, index) => e.id ?? index);
+  if (new Set(effective).size === effective.length) return entries;
+  return entries.map((e, id) => ({ ...e, id }));
+}
+
 export function denormalize(card: NormalizedCard, targetSpec: "v2" | "v3"): CardV2 | CardV3 {
-  const { sourceSpec: _sourceSpec, ...data } = card;
+  const { sourceSpec: _sourceSpec, ...rest } = card;
+  const data = rest.character_book
+    ? { ...rest, character_book: { ...rest.character_book, entries: withUniqueEntryIds(rest.character_book.entries) } }
+    : rest;
 
   if (targetSpec === "v2") {
     const v2Data = { ...data };

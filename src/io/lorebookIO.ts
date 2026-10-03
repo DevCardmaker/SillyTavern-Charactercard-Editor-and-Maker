@@ -2,6 +2,8 @@ import { open, save } from "@tauri-apps/plugin-dialog";
 import type { AiLorebookEntryDraft } from "../schema/aiLorebookAssist";
 import { lorebookSchema, normalizeWorldInfo, toWorldInfo, type Lorebook, type LorebookEntry } from "../schema/lorebook";
 import { useLorebookStore } from "../state/lorebookStore";
+import { extractCardJson } from "../png/characterCard";
+import { parseCardJson } from "../schema/parse";
 import { backupExistingFile } from "./fileIO";
 import { readBinary, writeBinary } from "./rawFile";
 
@@ -39,6 +41,38 @@ export async function readLorebookAtPath(path: string): Promise<Lorebook> {
     throw new Error(`"${fileName}" is not a lorebook (World Info) file.`);
   }
   return result.data;
+}
+
+/** Lorebook files and character cards — both can be the source for merging entries. */
+const MERGE_SOURCE_FILTERS = [{ name: "Lorebook or character card", extensions: ["json", "png"] }];
+
+/** Picks a file to merge entries from and returns its lorebook: a lorebook file (V2 or SillyTavern
+ * World Info) or a character card's embedded lorebook. `null` if the dialog was cancelled; throws
+ * with a readable message if the file holds no lorebook. */
+export async function pickMergeSource(): Promise<{ book: Lorebook; fileName: string } | null> {
+  const selected = await open({ multiple: false, filters: MERGE_SOURCE_FILTERS });
+  if (!selected || Array.isArray(selected)) return null;
+  const fileName = selected.split(/[\\/]/).pop() ?? selected;
+  const bytes = await readBinary(selected);
+
+  let cardJson: string | null;
+  if (/\.png$/i.test(selected)) {
+    cardJson = extractCardJson(bytes);
+  } else {
+    const text = new TextDecoder().decode(bytes);
+    const asLorebook = lorebookSchema.safeParse(normalizeWorldInfo(JSON.parse(text)));
+    if (asLorebook.success) return { book: asLorebook.data, fileName };
+    cardJson = text;
+  }
+
+  let book: Lorebook | undefined;
+  try {
+    book = cardJson ? (parseCardJson(cardJson).character_book ?? undefined) : undefined;
+  } catch {
+    book = undefined;
+  }
+  if (!book || book.entries.length === 0) throw new Error(`"${fileName}" contains no lorebook entries.`);
+  return { book, fileName };
 }
 
 /** Lorebooks workspace "Open…": one or more files, each as its own tab. Returns the names of

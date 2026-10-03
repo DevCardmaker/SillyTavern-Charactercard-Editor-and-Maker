@@ -1,6 +1,8 @@
 import { type ReactNode, useMemo, useState } from "react";
 import type { Lorebook, LorebookEntry } from "../../schema/lorebook";
+import { pickMergeSource } from "../../io/lorebookIO";
 import { duplicateKeys } from "../../schema/lorebookKeyTest";
+import { mergeLorebook } from "../../schema/mergeLorebook";
 import { entryMatches } from "../../schema/sharedLorebook";
 import { AiLorebookAssistPanel } from "./AiLorebookAssistPanel";
 import { AiLorebookEditPanel } from "./AiLorebookEditPanel";
@@ -31,6 +33,7 @@ export function LorebookBody({ book, onChange, actions, notice }: Props) {
   const [isAiAssistOpen, setIsAiAssistOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [isKeyTestOpen, setIsKeyTestOpen] = useState(false);
+  const [mergeMessage, setMergeMessage] = useState<{ text: string; isError: boolean } | null>(null);
   const dupes = useMemo(() => duplicateKeys(book), [book]);
   const [isAiEditOpen, setIsAiEditOpen] = useState(false);
 
@@ -55,6 +58,22 @@ export function LorebookBody({ book, onChange, actions, notice }: Props) {
   const visible = book.entries.map((entry, index) => ({ entry, index })).filter(({ entry }) => entryMatches(entry, query));
   const isFiltering = query.trim() !== "";
   const expandAll = visible.length <= EXPAND_ALL_UP_TO;
+
+  /** Appends another lorebook's entries (a lorebook file or a card's embedded one), skipping exact
+   * duplicates. This lorebook's name, description and settings stay as they are. */
+  async function handleMerge() {
+    setMergeMessage(null);
+    try {
+      const source = await pickMergeSource();
+      if (!source) return;
+      const { book: merged, added, skipped } = mergeLorebook(book, source.book);
+      if (added > 0) onChange(merged);
+      const dupes = skipped > 0 ? ` (${skipped} already here, skipped)` : "";
+      setMergeMessage({ text: `Added ${added} entries from “${source.fileName}”${dupes}.`, isError: false });
+    } catch (err) {
+      setMergeMessage({ text: err instanceof Error ? err.message : String(err), isError: true });
+    }
+  }
 
   return (
     <div className="tab-panel">
@@ -97,6 +116,14 @@ export function LorebookBody({ book, onChange, actions, notice }: Props) {
         <button
           type="button"
           className="secondary"
+          onClick={handleMerge}
+          title="Add the entries of another lorebook file or of a character card's lorebook to this one"
+        >
+          Merge lorebook…
+        </button>
+        <button
+          type="button"
+          className="secondary"
           disabled={book.entries.length === 0}
           onClick={() => setIsKeyTestOpen(true)}
           title="Paste chat text and see which entries SillyTavern would insert"
@@ -107,6 +134,8 @@ export function LorebookBody({ book, onChange, actions, notice }: Props) {
           {isFiltering ? `${visible.length} of ${book.entries.length} entries` : `${book.entries.length} entries`}
         </span>
       </div>
+
+      {mergeMessage && <p className={mergeMessage.isError ? "field-error" : "field-hint"}>{mergeMessage.text}</p>}
 
       {book.entries.length > 0 && (
         <input

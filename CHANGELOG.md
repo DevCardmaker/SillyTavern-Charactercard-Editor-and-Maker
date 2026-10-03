@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented here. The project follows [Semantic Versioning](https://semver.org/): new features raise the minor version, fixes the patch version.
 
+## [1.1.0] – 2026-10-03
+
+### Added
+- **Merge lorebook…**: add the entries of another lorebook to the open one — from a lorebook file (V2 or SillyTavern World Info, e.g. a Chub download) or from a character card's embedded lorebook. Exact duplicates are skipped, so merging the same file twice changes nothing. Available in the Lorebooks mode and in every card's Lorebook tab.
+
+### Fixed
+- Lorebook entries could silently overwrite each other when a card was imported into SillyTavern: ST files embedded entries under their id, and appended entries (merged, AI-suggested, Group lorebook) could end up with an id already in use. Cards are now saved with unique entry ids whenever a collision would occur; cards without collisions are saved exactly as loaded.
+
 ## [1.0.0] – 2026-10-03
 
 First versioned release. Everything below was added after the initial public release (0.1.0).
@@ -39,4 +47,5 @@ First versioned release. Everything below was added after the initial public rel
 
 Initial public release: PNG/JSON character cards (spec V2 and V3), avatar cropping, lorebook editor, several characters as tabs, prompt presets, token counter, inline warnings, auto-backup, recent files, and the optional AI assistant (field refinement, lorebook suggestions, image prompts, consistency check, group generation).
 
+[1.1.0]: https://github.com/DevCardmaker/SillyTavern-Charactercard-Editor-and-Maker/releases/tag/v1.1.0
 [1.0.0]: https://github.com/DevCardmaker/SillyTavern-Charactercard-Editor-and-Maker/releases/tag/v1.0.0

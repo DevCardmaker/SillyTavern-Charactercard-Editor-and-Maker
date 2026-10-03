@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { CardV2 } from "./cardV2";
 import type { CardV3 } from "./cardV3";
-import { denormalize } from "./normalize";
+import { denormalize, withUniqueEntryIds } from "./normalize";
 import { CardParseError, parseCardJson, parseCardJsonLeniently } from "./parse";
 
 const V2_CARD = {
@@ -164,5 +164,20 @@ describe("parse -> denormalize round-trip", () => {
     const rebuilt = denormalize(normalized, "v3") as CardV3;
     expect(rebuilt.spec).toBe("chara_card_v3");
     expect(rebuilt.data.group_only_greetings).toEqual([]);
+  });
+});
+
+describe("withUniqueEntryIds", () => {
+  const e = (id?: number) => ({ id, keys: [] });
+  it("leaves entries alone when SillyTavern's ids wouldn't collide", () => {
+    const clean = [e(), e(), e()];
+    expect(withUniqueEntryIds(clean)).toBe(clean);
+    const numbered = [e(5), e(9)];
+    expect(withUniqueEntryIds(numbered)).toBe(numbered);
+  });
+
+  it("renumbers everything on duplicate ids, or when a missing id's position collides", () => {
+    expect(withUniqueEntryIds([e(0), e(1), e(0), e(1)]).map((x) => x.id)).toEqual([0, 1, 2, 3]);
+    expect(withUniqueEntryIds([e(1), e()]).map((x) => x.id)).toEqual([0, 1]);
   });
 });
