@@ -1,6 +1,6 @@
 [package]
 name = "st-card-editor"
-version = "1.1.0"
+version = "1.1.1"
 description = "A desktop editor for SillyTavern character cards"
 authors = ["Anonymous"]
 license = "MIT"

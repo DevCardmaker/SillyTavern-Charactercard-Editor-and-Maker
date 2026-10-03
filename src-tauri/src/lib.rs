@@ -185,6 +185,18 @@ async fn ai_chat_completion(req: ChatCompletionRequest) -> Result<ChatCompletion
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // WebKitGTK (2.52 with Mesa 26.2) can abort while the window closes: a Skia painting thread
+    // tears down its GPU context (eglDestroyContext) at the same moment Mesa's atexit handler
+    // shuts down its own threads, and glibc aborts on the resulting heap corruption. It only hits
+    // after real use (painting threads exist once a card with avatar/long text was drawn) and only
+    // at exit, but it leaves a crash report each time. CPU rasterization for Skia means those
+    // threads never own a GL context; a form-based app like this loses no noticeable speed.
+    // An explicitly set value (e.g. for testing) is left alone.
+    #[cfg(target_os = "linux")]
+    if std::env::var_os("WEBKIT_SKIA_ENABLE_CPU_RENDERING").is_none() {
+        std::env::set_var("WEBKIT_SKIA_ENABLE_CPU_RENDERING", "1");
+    }
+
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())

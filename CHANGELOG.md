@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented here. The project follows [Semantic Versioning](https://semver.org/): new features raise the minor version, fixes the patch version.
 
+## [1.1.1] – 2026-10-03
+
+### Fixed
+- Crash report when closing the editor on Linux after working with a card (WebKitWebProcess aborting with `free(): corrupted unsorted chunks`). A shutdown race between WebKitGTK's GPU painting threads and Mesa; the editor now has WebKit's Skia rasterize on the CPU, so those threads hold no GPU context. Nothing was lost in these crashes — they happened after the window had closed. Override with `WEBKIT_SKIA_ENABLE_CPU_RENDERING=0` if needed.
+
 ## [1.1.0] – 2026-10-03
 
 ### Added
@@ -47,5 +52,6 @@ First versioned release. Everything below was added after the initial public rel
 
 Initial public release: PNG/JSON character cards (spec V2 and V3), avatar cropping, lorebook editor, several characters as tabs, prompt presets, token counter, inline warnings, auto-backup, recent files, and the optional AI assistant (field refinement, lorebook suggestions, image prompts, consistency check, group generation).
 
+[1.1.1]: https://github.com/DevCardmaker/SillyTavern-Charactercard-Editor-and-Maker/releases/tag/v1.1.1
 [1.1.0]: https://github.com/DevCardmaker/SillyTavern-Charactercard-Editor-and-Maker/releases/tag/v1.1.0
 [1.0.0]: https://github.com/DevCardmaker/SillyTavern-Charactercard-Editor-and-Maker/releases/tag/v1.0.0
