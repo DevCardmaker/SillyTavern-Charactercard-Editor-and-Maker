@@ -11,6 +11,11 @@ A desktop editor for [SillyTavern](https://github.com/SillyTavern/SillyTavern) c
 - Avatar image handling with cropping
 - Lorebook (World Info) editor, with import/export as a standalone file
 - A separate **Lorebooks** mode for standalone World Info files, independent of any card: several open as tabs, saved in SillyTavern's World Info format (importable straight into ST), and SillyTavern exports / Chub downloads open directly
+- **Shared lorebooks**: embed one lorebook into several cards and link them to it, with an up-to-date / out-of-date overview per card
+- A **key tester** that shows which lorebook entries SillyTavern would insert for a piece of chat text, and why — plus search across entries and a warning for keys shared between entries
+- A **Personas** mode for SillyTavern user personas (name, description, avatar), saved as cards for SillyTavern's "Convert to Persona"
+- A **context budget** view: what a card sends with every message, what only at the start of a chat, and how much room is left for the chat history
+- The **Character's Note** (per-character Author's Note) with depth and role
 - Reusable prompt presets for System Prompt / Post-History Instructions
 - Live token counter for the main text fields
 - Inline warnings for common authoring mistakes (unbalanced `{{macro}}` braces, empty name, empty first message, a lorebook entry with no keys)
@@ -22,6 +27,7 @@ A desktop editor for [SillyTavern](https://github.com/SillyTavern/SillyTavern) c
 - Multiple character tabs open simultaneously — build a whole group (a family, a class, an NPC roster) in one sitting
 - A shared "group folder" for saving a session's cards together, plus one-click bulk save/open for a whole folder
 - A per-tab autosave snapshot as a safety net while switching between many open characters
+- **Group lorebook**: one click gives every open character lorebook entries describing the *other* members — SillyTavern group chats only send the replying character's own card
 
 **AI assistant (optional, bring your own endpoint)**
 Point the app at any OpenAI-compatible `/v1/chat/completions` endpoint — a local server (llama.cpp, LM Studio, text-generation-webui, ...) or a cloud provider you supply your own API key for. Every AI feature is opt-in; the editor works fully without configuring one.
@@ -32,6 +38,11 @@ Point the app at any OpenAI-compatible `/v1/chat/completions` endpoint — a loc
 - Generate an avatar image-generation prompt, tuned to different image models (Stable Diffusion, Pony Diffusion, Qwen-Image, Z-Image, Krea 2/FLUX) and art styles
 - Check every currently open character together for contradictions (ages, relationships, names, timeline)
 - Generate a whole group of new, mutually consistent characters from a single prompt
+- Edit a whole group at once, e.g. move every open character to a new setting while keeping who they are
+- Condense long fields section by section to save prompt tokens without changing the character (one field or all at once, compared side by side, with a backup first)
+- Write personas, optionally fitted to an open character's world
+- Optional per-profile temperature, max tokens, and parallel requests for faster bulk operations with cloud providers
+- AI-written text uses metric units
 
 ## Getting started
 
@@ -56,6 +67,10 @@ For other platforms, adjust the `bundle.targets` in `src-tauri/tauri.conf.json` 
 ### Using the AI assistant
 
 Open "AI Assistant…" (or any other AI-powered button) and set up a provider under its settings: a base URL, an optional API key, and a model name. This works with a local model server just as well as a cloud API — nothing is sent anywhere unless you configure a provider yourself.
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md).
 
 ## Disclaimer
 
