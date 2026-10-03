@@ -21,7 +21,7 @@ export function ContextBudgetPanel({ card, filePath, onChange, onClose }: Props)
   const [settings, setSettings] = useState(DEFAULT_BUDGET_SETTINGS);
   /** Fields shown in the condense dialog: one ("Condense…") or all large ones ("Condense all…"). */
   const [condensing, setCondensing] = useState<BudgetField[] | null>(null);
-  const [lastBackup, setLastBackup] = useState<string | null>(null);
+  const [lastCondense, setLastCondense] = useState<{ backupPath: string; saved: number } | null>(null);
 
   if (!count) {
     return (
@@ -90,10 +90,10 @@ export function ContextBudgetPanel({ card, filePath, onChange, onClose }: Props)
           <strong>{budget.chatSpace}</strong> tokens are left for the chat history.
         </p>
 
-        {lastBackup && (
+        {lastCondense && (
           <p className="field-hint">
-            Condensed. The card as it was before is backed up at {lastBackup} — reopen it from there if you change your
-            mind.
+            Condensed — <strong>{lastCondense.saved} tokens saved</strong>. The card as it was before is backed up at{" "}
+            {lastCondense.backupPath} — reopen it from there if you change your mind.
           </p>
         )}
 
@@ -168,7 +168,7 @@ export function ContextBudgetPanel({ card, filePath, onChange, onClose }: Props)
           filePath={filePath}
           onChange={onChange}
           onClose={() => setCondensing(null)}
-          onApplied={setLastBackup}
+          onApplied={(backupPath, saved) => setLastCondense({ backupPath, saved })}
         />
       )}
     </div>

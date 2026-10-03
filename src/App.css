@@ -1027,3 +1027,17 @@ button.secondary.active {
   border-top: 1px solid var(--border);
   padding-top: 0.5rem;
 }
+
+.condense-totals {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+}
+
+.condense-saved {
+  color: var(--accent);
+  font-weight: 600;
+}

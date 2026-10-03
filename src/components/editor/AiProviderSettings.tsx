@@ -153,6 +153,16 @@ export function AiProviderSettings() {
               />
             </label>
 
+            <label className="ai-assist-field-checkbox">
+              <input
+                type="checkbox"
+                checked={activeProfile.parallel ?? false}
+                onChange={(e) => updateProfile(activeProfile.id, { parallel: e.target.checked })}
+              />
+              Parallel requests — faster bulk operations (Condense all, Group lorebook) with cloud providers. Leave off
+              for a local KoboldCpp, which handles one request at a time.
+            </label>
+
             <div className="ai-assist-test-row">
               <button
                 type="button"

@@ -14,6 +14,8 @@ export interface AiProviderConfig {
   model: string;
   temperature?: number;
   maxTokens?: number;
+  /** Send several requests at once in bulk operations (see io/concurrency.ts) — for cloud APIs. */
+  parallel?: boolean;
 }
 
 function truncate(text: string, max = 300): string {

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { requestLorebookEntries } from "../../io/aiClient";
+import { concurrencyFor, mapConcurrent } from "../../io/concurrency";
 import { buildMemberEntrySystemPrompt, buildMemberEntryUserTurn } from "../../schema/aiPrompt";
 import { groupLorebookFor, memberKeys, type MemberProfile, resolveCharMacro, verbatimProfile } from "../../schema/memberEntries";
 import { useAiProviderConfigStore } from "../../state/aiProviderConfigStore";
@@ -50,15 +51,15 @@ export function GroupLorebookPanel({ onClose }: Props) {
     const names = members.map((m) => m.name);
 
     try {
-      const profiles: MemberProfile[] = [];
-      for (const [i, member] of members.entries()) {
+      let written = 0;
+      const toWrite = members.filter((m) => !verbatimProfile(m)).length;
+      const profiles: MemberProfile[] = await mapConcurrent(members, concurrencyFor(profile), async (member) => {
         const verbatim = verbatimProfile(member);
         if (verbatim) {
           copied.add(member.name);
-          profiles.push({ name: member.name, keys: memberKeys(member.name, []), content: verbatim });
-          continue;
+          return { name: member.name, keys: memberKeys(member.name, []), content: verbatim };
         }
-        setProgress(`Writing profile ${i + 1} of ${members.length}: ${member.name}…`);
+        setProgress(`Writing profiles: ${written} of ${toWrite} done…`);
         const [entry] = await requestLorebookEntries(profile, [
           { role: "system", content: buildMemberEntrySystemPrompt() },
           buildMemberEntryUserTurn(
@@ -67,13 +68,14 @@ export function GroupLorebookPanel({ onClose }: Props) {
           ),
         ]);
         if (!entry?.content.trim()) throw new Error(`The AI returned no profile for ${member.name}.`);
-        profiles.push({
+        written++;
+        setProgress(`Writing profiles: ${written} of ${toWrite} done…`);
+        return {
           name: member.name,
           keys: memberKeys(member.name, entry.keys),
           content: resolveCharMacro(entry.content.trim(), member.name),
-        });
-      }
-
+        };
+      });
       setVerbatimNames(copied);
       setProfiles(profiles);
     } catch (err) {

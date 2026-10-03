@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTokenCounter } from "../../hooks/useTokenCount";
 import { requestFieldPatch } from "../../io/aiClient";
+import { concurrencyFor, mapConcurrent } from "../../io/concurrency";
 import { writeSnapshotBackup } from "../../io/fileIO";
 import { aiFieldLabel } from "../../schema/aiAssist";
 import { buildCondenseSystemPrompt, buildCondenseUserTurn } from "../../schema/aiPrompt";
@@ -20,8 +21,8 @@ interface Props {
   filePath: string | null;
   onChange: (patch: Partial<NormalizedCard>) => void;
   onClose: () => void;
-  /** Called after applying, with the path of the backup taken right before. */
-  onApplied?: (backupPath: string) => void;
+  /** Called after applying, with the path of the backup taken right before and the tokens saved. */
+  onApplied?: (backupPath: string, savedTokens: number) => void;
 }
 
 /** Share of the original length to aim for. */
@@ -71,38 +72,41 @@ export function AiCondensePanel({ card, fields, initiallySelected, filePath, onC
     setResults({});
     setKept({});
     try {
-      for (const [fieldIndex, field] of chosen.entries()) {
-        const pieces = splitForCondense(card[field], field, count);
-        const total = pieces.filter((p) => p.condense).length;
-        let done = 0;
-        let keptHere = 0;
-        const out: string[] = [];
-        for (const piece of pieces) {
-          if (!piece.condense) {
-            out.push(piece.text);
-            continue;
-          }
-          done++;
-          const prefix = isSingle ? "" : `${aiFieldLabel(field)} (field ${fieldIndex + 1} of ${chosen.length}): `;
-          setProgress(`${prefix}section ${done} of ${total}…`);
-          const pieceTokens = count(piece.text);
-          const patch = await requestFieldPatch(activeProfile, [field], [
-            { role: "system", content: buildCondenseSystemPrompt(field, pieceTokens, Math.round(pieceTokens * target)) },
-            buildCondenseUserTurn(piece.text),
-          ]);
-          const condensed = String(patch[field] ?? "");
-          if (looksCutOff(piece.text, condensed)) {
-            keptHere++;
-            out.push(piece.text);
-          } else {
-            out.push(condensed.trim());
-          }
-        }
-        // Results appear field by field, so a long "Condense all" run can be reviewed while it continues.
-        setResults((prev) => ({ ...prev, [field]: out.join("") }));
+      // Every section of every chosen field is one task. With "Parallel requests" several run at
+      // once (in any order); a field's result appears as soon as all of its sections are done, so
+      // a long run can be reviewed while it continues.
+      const fieldPieces = chosen.map((field) => ({ field, pieces: splitForCondense(card[field], field, count) }));
+      const outputs = fieldPieces.map(({ pieces }) => pieces.map((p) => p.text));
+      const pending = fieldPieces.map(({ pieces }) => pieces.filter((p) => p.condense).length);
+      const keptPerField = fieldPieces.map(() => 0);
+      const tasks = fieldPieces.flatMap(({ pieces }, f) =>
+        pieces.flatMap((piece, i) => (piece.condense ? [{ f, i, text: piece.text }] : [])),
+      );
+      let finished = 0;
+      const publish = (f: number) => {
+        const field = fieldPieces[f].field;
+        setResults((prev) => ({ ...prev, [field]: outputs[f].join("") }));
         setAccepted((prev) => new Set(prev).add(field));
-        setKept((prev) => ({ ...prev, [field]: keptHere }));
-      }
+        setKept((prev) => ({ ...prev, [field]: keptPerField[f] }));
+      };
+      // Fields with nothing worth condensing are "done" right away (unchanged).
+      pending.forEach((n, f) => n === 0 && publish(f));
+      setProgress(`Condensing ${tasks.length} section(s)…`);
+
+      await mapConcurrent(tasks, concurrencyFor(activeProfile), async ({ f, i, text }) => {
+        const field = fieldPieces[f].field;
+        const pieceTokens = count(text);
+        const patch = await requestFieldPatch(activeProfile, [field], [
+          { role: "system", content: buildCondenseSystemPrompt(field, pieceTokens, Math.round(pieceTokens * target)) },
+          buildCondenseUserTurn(text),
+        ]);
+        const condensed = String(patch[field] ?? "");
+        if (looksCutOff(text, condensed)) keptPerField[f]++;
+        else outputs[f][i] = condensed.trim();
+        finished++;
+        setProgress(`${finished} of ${tasks.length} section(s) done…`);
+        if (--pending[f] === 0) publish(f);
+      });
     } catch (err) {
       setSendError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -121,7 +125,7 @@ export function AiCondensePanel({ card, fields, initiallySelected, filePath, onC
     try {
       const backupPath = await writeSnapshotBackup(card, filePath, "before-condense");
       onChange(patch);
-      onApplied?.(backupPath);
+      onApplied?.(backupPath, totals.before - totals.after);
       onClose();
     } catch (err) {
       setSendError(`Backup failed, nothing was changed: ${err instanceof Error ? err.message : String(err)}`);
@@ -129,6 +133,16 @@ export function AiCondensePanel({ card, fields, initiallySelected, filePath, onC
   }
 
   const acceptedCount = fields.filter((f) => accepted.has(f) && results[f] !== undefined).length;
+  /** Before/after over the chosen fields, counting only results that would actually be applied. */
+  const totals = chosen.reduce(
+    (sum, f) => {
+      const result = results[f];
+      const before = tokens(card[f]);
+      const after = result !== undefined && accepted.has(f) ? tokens(result) : before;
+      return { before: sum.before + before, after: sum.after + after };
+    },
+    { before: 0, after: 0 },
+  );
   const keptTotal = Object.values(kept).reduce((sum, n) => sum + (n ?? 0), 0);
 
   return (
@@ -140,6 +154,18 @@ export function AiCondensePanel({ card, fields, initiallySelected, filePath, onC
           repetition and filler. Compare both versions before applying — the original stays untouched until then, and
           applying first saves a backup of the whole card.
         </p>
+
+        {hasResults && (
+          <div className="condense-totals">
+            <span>
+              Total: <strong>{totals.before}</strong> → <strong>{totals.after}</strong> tokens
+            </span>
+            <span className="condense-saved">
+              {totals.before - totals.after} saved ({Math.round((1 - totals.after / Math.max(1, totals.before)) * 100)}%)
+            </span>
+            {isSending && <span className="field-hint">— still running</span>}
+          </div>
+        )}
 
         <AiProviderSettings />
 
