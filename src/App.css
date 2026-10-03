@@ -942,3 +942,26 @@ button.secondary.active {
 .persona-howto li {
   margin-bottom: 0.25rem;
 }
+
+/* Lorebook key tester */
+
+.key-test-results {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.key-test-hit {
+  display: flex;
+  flex-direction: column;
+  border-left: 3px solid var(--accent);
+  padding-left: 0.6rem;
+}
+
+.key-test-constant {
+  border-left-color: var(--border);
+}
+
+.key-test-recursion {
+  border-left-color: #e0a040;
+}

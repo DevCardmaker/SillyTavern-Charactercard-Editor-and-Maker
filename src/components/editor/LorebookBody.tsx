@@ -1,9 +1,11 @@
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useMemo, useState } from "react";
 import type { Lorebook, LorebookEntry } from "../../schema/lorebook";
+import { duplicateKeys } from "../../schema/lorebookKeyTest";
 import { entryMatches } from "../../schema/sharedLorebook";
 import { AiLorebookAssistPanel } from "./AiLorebookAssistPanel";
 import { AiLorebookEditPanel } from "./AiLorebookEditPanel";
 import { LorebookEntryEditor } from "./LorebookEntryEditor";
+import { LorebookKeyTestPanel } from "./LorebookKeyTestPanel";
 
 interface Props {
   book: Lorebook;
@@ -28,6 +30,8 @@ function blankEntry(): LorebookEntry {
 export function LorebookBody({ book, onChange, actions, notice }: Props) {
   const [isAiAssistOpen, setIsAiAssistOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [isKeyTestOpen, setIsKeyTestOpen] = useState(false);
+  const dupes = useMemo(() => duplicateKeys(book), [book]);
   const [isAiEditOpen, setIsAiEditOpen] = useState(false);
 
   function updateEntry(index: number, patch: Partial<LorebookEntry>) {
@@ -90,6 +94,15 @@ export function LorebookBody({ book, onChange, actions, notice }: Props) {
         >
           Fill / revise entries with AI…
         </button>
+        <button
+          type="button"
+          className="secondary"
+          disabled={book.entries.length === 0}
+          onClick={() => setIsKeyTestOpen(true)}
+          title="Paste chat text and see which entries SillyTavern would insert"
+        >
+          Test keys…
+        </button>
         <span className="field-hint">
           {isFiltering ? `${visible.length} of ${book.entries.length} entries` : `${book.entries.length} entries`}
         </span>
@@ -112,6 +125,7 @@ export function LorebookBody({ book, onChange, actions, notice }: Props) {
           key={index}
           entry={entry}
           defaultOpen={expandAll || entry.content.trim() === ""}
+          sharedKeys={dupes.get(index)}
           onChange={(patch) => updateEntry(index, patch)}
           onRemove={() => removeEntry(index)}
         />
@@ -124,6 +138,7 @@ export function LorebookBody({ book, onChange, actions, notice }: Props) {
       {isAiAssistOpen && (
         <AiLorebookAssistPanel book={book} onChange={onChange} onClose={() => setIsAiAssistOpen(false)} />
       )}
+      {isKeyTestOpen && <LorebookKeyTestPanel book={book} onClose={() => setIsKeyTestOpen(false)} />}
       {isAiEditOpen && <AiLorebookEditPanel book={book} onChange={onChange} onClose={() => setIsAiEditOpen(false)} />}
     </div>
   );

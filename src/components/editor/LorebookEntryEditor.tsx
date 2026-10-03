@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { LorebookEntry } from "../../schema/lorebook";
-import { lorebookEntryMissingKeysWarning, unbalancedMacroWarning } from "../../schema/warnings";
+import { combineWarnings, lorebookEntryMissingKeysWarning, unbalancedMacroWarning } from "../../schema/warnings";
 import { ListEditor } from "../common/ListEditor";
 import { TextAreaField } from "../common/FormField";
 
@@ -10,10 +10,15 @@ interface Props {
   defaultOpen?: boolean;
   onChange: (patch: Partial<LorebookEntry>) => void;
   onRemove: () => void;
+  /** Keys this entry shares with other entries (lowercased), if any. */
+  sharedKeys?: string[];
 }
 
-export function LorebookEntryEditor({ entry, defaultOpen = true, onChange, onRemove }: Props) {
-  const keysWarning = lorebookEntryMissingKeysWarning(entry);
+export function LorebookEntryEditor({ entry, defaultOpen = true, onChange, onRemove, sharedKeys }: Props) {
+  const keysWarning = combineWarnings(
+    lorebookEntryMissingKeysWarning(entry),
+    sharedKeys && `Also a key of another entry: ${sharedKeys.map((k) => `“${k}”`).join(", ")}`,
+  );
   // Uncontrolled on purpose: a controlled `open` would snap back on every keystroke re-render.
   const [initiallyOpen] = useState(defaultOpen);
 
@@ -21,6 +26,11 @@ export function LorebookEntryEditor({ entry, defaultOpen = true, onChange, onRem
     <details className="lorebook-entry" open={initiallyOpen}>
       <summary>
         {entry.comment || entry.keys.join(", ") || "(new entry)"}
+        {sharedKeys && (
+          <span className="field-warning" title={`Shared keys: ${sharedKeys.join(", ")}`}>
+            {" "}⚠
+          </span>
+        )}
         <button type="button" className="danger" onClick={onRemove} title="Remove entry">
           ✕
         </button>
