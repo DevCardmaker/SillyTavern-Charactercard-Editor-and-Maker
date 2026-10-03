@@ -5,6 +5,7 @@ import { saveGroupToFolder } from "../../io/fileIO";
 import { useCardStore } from "../../state/cardStore";
 import { AiConsistencyCheckPanel } from "./AiConsistencyCheckPanel";
 import { AiRelocatePanel } from "./AiRelocatePanel";
+import { GroupLorebookPanel } from "./GroupLorebookPanel";
 
 interface Props {
   onError: (message: string) => void;
@@ -24,6 +25,7 @@ export function CharacterTabBar({ onError }: Props) {
   const newCard = useCardStore((s) => s.newCard);
   const [isConsistencyCheckOpen, setIsConsistencyCheckOpen] = useState(false);
   const [isRelocateOpen, setIsRelocateOpen] = useState(false);
+  const [isGroupLorebookOpen, setIsGroupLorebookOpen] = useState(false);
   const [isSavingGroup, setIsSavingGroup] = useState(false);
 
   if (characters.length === 0) return null;
@@ -121,6 +123,18 @@ export function CharacterTabBar({ onError }: Props) {
         </button>
       )}
 
+      {characters.length >= 2 && (
+        <button
+          type="button"
+          className="character-tab-group-folder"
+          title="Give every open character lorebook entries describing the other members (and open personas), not themselves"
+          onClick={() => setIsGroupLorebookOpen(true)}
+        >
+          Group lorebook
+        </button>
+      )}
+
+      {isGroupLorebookOpen && <GroupLorebookPanel onClose={() => setIsGroupLorebookOpen(false)} />}
       {isConsistencyCheckOpen && <AiConsistencyCheckPanel onClose={() => setIsConsistencyCheckOpen(false)} />}
       {isRelocateOpen && <AiRelocatePanel onClose={() => setIsRelocateOpen(false)} />}
     </div>

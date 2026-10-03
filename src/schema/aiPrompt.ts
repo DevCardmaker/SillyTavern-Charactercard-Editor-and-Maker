@@ -204,6 +204,36 @@ export function buildLorebookUserTurn(
   };
 }
 
+/** Profile of one group member for the *other* members' lorebooks (SillyTavern group chats only
+ * send the replying character's own card). One call per member: like condensing, a local model
+ * summarizes one card far more faithfully than several at once. */
+export function buildMemberEntrySystemPrompt(): string {
+  return [
+    "You write one lorebook entry (World Info) for a SillyTavern group chat: a short profile of one group member, inserted into the other members' prompts whenever this member is mentioned, so they know who they are dealing with.",
+    'Respond only with a JSON object of the form { "entries": [ { "keys": [...], "content": "...", "comment": "..." } ] } containing exactly one entry.',
+    "content: 2–4 sentences, at most 90 words, third person by name: who they are and their role, the most recognizable appearance details, their relationships to the other group members named in the message, and two or three defining traits or habits others would notice. Pick the essentials — this is a quick reference, not a summary of the whole card.",
+    "Other members read this, so it must contain only what they could know: leave out secrets (affairs, hidden feelings, lies, things the member hides), backstory events others didn't witness, inner thoughts, fears and kinks.",
+    "Use only facts the card states — never invent appearance, habits, traits or feelings, and don't embellish. The profile must not be longer than the card's own text: if the card is one short line, the profile is one short sentence.",
+    "Relationships: the card's {{user}} and any unnamed relative (e.g. \"her little brother\") mean the human player, who is NOT a group member — write them as \"{{user}}\" (e.g. \"protective of her little brother {{user}}\"). Only connect this member to another group member if the card names that member and states the relationship; if unsure, leave the relationship out rather than guess (e.g. don't turn \"Father Greg\" into \"father of Mary\" — Mary might be his wife).",
+    "keys: nicknames or alternative names the card uses for this member (the full and first name are added automatically). No relationship words like mother or sister, no generic nouns. An empty list is fine.",
+    "comment: the member's name.",
+    METRIC_UNITS,
+    "Write in the language of the card. Never use the straight double-quote character inside the text; use ‘single’ or “curly” quotes instead.",
+    "Give no explanations, no prose outside the JSON, and no extra fields.",
+  ].join("\n");
+}
+
+/** Only the lasting facts: scenario and first message describe a particular scene (who just came
+ * home, who's being greeted), which the model otherwise turns into "relationships". */
+export function buildMemberEntryUserTurn(member: NormalizedCard, otherMembers: string[]): AiChatMessage {
+  const others = otherMembers.length ? otherMembers.join(", ") : "(none)";
+  const card = { name: member.name, description: member.description, personality: member.personality };
+  return {
+    role: "user",
+    content: `Other group members: ${others}\n\nMember card:\n${JSON.stringify(card, null, 2)}`,
+  };
+}
+
 /** Static instructions for filling in / revising *existing* entries in place. */
 export function buildLorebookEditSystemPrompt(count: number): string {
   return [
