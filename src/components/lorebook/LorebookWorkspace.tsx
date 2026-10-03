@@ -1,8 +1,11 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { confirmDiscardChanges } from "../../io/confirmDiscard";
 import { openLorebookFiles, saveActiveLorebook } from "../../io/lorebookIO";
+import { shareStatus } from "../../schema/sharedLorebook";
+import { useCardStore } from "../../state/cardStore";
 import { useLorebookStore } from "../../state/lorebookStore";
 import { LorebookBody } from "../editor/LorebookBody";
+import { ShareLorebookPanel } from "./ShareLorebookPanel";
 
 interface Props {
   onError: (message: string) => void;
@@ -25,6 +28,12 @@ export function LorebookWorkspace({ onError }: Props) {
   const close = useLorebookStore((s) => s.close);
 
   const active = lorebooks.find((l) => l.id === activeId) ?? null;
+  const characters = useCardStore((s) => s.characters);
+  const [isShareOpen, setIsShareOpen] = useState(false);
+  const hasName = !!active?.book.name?.trim();
+  const statuses = active ? characters.map((c) => ({ c, status: shareStatus(c.card, active.book) })) : [];
+  const linked = statuses.filter(({ status }) => status === "synced" || status === "outdated").map(({ c }) => c);
+  const outdated = statuses.filter(({ status }) => status === "outdated").length;
 
   async function handleOpen() {
     try {
@@ -91,6 +100,24 @@ export function LorebookWorkspace({ onError }: Props) {
         <button type="button" className="secondary" onClick={() => handleSave("saveAs")} disabled={!active}>
           Save As…
         </button>
+        <button
+          type="button"
+          className="secondary"
+          onClick={() => setIsShareOpen(true)}
+          disabled={!active || !hasName}
+          title={
+            hasName
+              ? "Embed this lorebook into open character cards and link them to it, so they stay in sync"
+              : "Give the lorebook a name first — cards are linked to it by name"
+          }
+        >
+          Sync to characters…
+        </button>
+        {linked.length > 0 && (
+          <span className="field-hint" title={linked.map((c) => c.card.name || "New card").join(", ")}>
+            Shared with {linked.length} open card(s){outdated > 0 && `, ${outdated} out of date`}
+          </span>
+        )}
         {active && (
           <div className="toolbar-title">
             {fileName}
@@ -135,6 +162,8 @@ export function LorebookWorkspace({ onError }: Props) {
           <LorebookBody key={active.id} book={active.book} onChange={updateActive} />
         </div>
       )}
+
+      {isShareOpen && active && <ShareLorebookPanel book={active.book} onClose={() => setIsShareOpen(false)} />}
     </>
   );
 }

@@ -19,6 +19,9 @@ interface LorebookState {
   newLorebook: () => void;
   /** Opens a loaded lorebook as a new tab and activates it — never replaces an existing tab. */
   loadLorebook: (book: Lorebook, path: string) => void;
+  /** Opens an in-memory lorebook (e.g. taken over from a card) as a new unsaved tab. Starts out
+   * dirty, since nothing on disk holds it yet — closing it should ask first. */
+  addUnsaved: (book: Lorebook) => void;
   /** Replaces the active lorebook wholesale; marks it dirty. */
   updateActive: (book: Lorebook) => void;
   /** By id rather than "the active one": the save dialog is async, the user may switch tabs. */
@@ -47,6 +50,11 @@ export const useLorebookStore = create<LorebookState>((set) => ({
 
   loadLorebook: (book, path) => {
     const slot: LorebookSlot = { id: newId(), book, currentFilePath: path, isDirty: false };
+    set((s) => ({ lorebooks: [...s.lorebooks, slot], activeId: slot.id }));
+  },
+
+  addUnsaved: (book) => {
+    const slot: LorebookSlot = { id: newId(), book, currentFilePath: null, isDirty: true };
     set((s) => ({ lorebooks: [...s.lorebooks, slot], activeId: slot.id }));
   },
 

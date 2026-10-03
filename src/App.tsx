@@ -196,7 +196,12 @@ function App() {
                 </button>
               ))}
             </nav>
-            <ActiveTab card={card} onChange={updateCard} onError={setError} />
+            <ActiveTab
+              card={card}
+              onChange={updateCard}
+              onError={setError}
+              onShowLorebooks={() => setMode("lorebooks")}
+            />
           </div>
         </div>
       )}

@@ -1,5 +1,6 @@
 import { type ReactNode, useState } from "react";
 import type { Lorebook, LorebookEntry } from "../../schema/lorebook";
+import { entryMatches } from "../../schema/sharedLorebook";
 import { AiLorebookAssistPanel } from "./AiLorebookAssistPanel";
 import { AiLorebookEditPanel } from "./AiLorebookEditPanel";
 import { LorebookEntryEditor } from "./LorebookEntryEditor";
@@ -9,6 +10,8 @@ interface Props {
   onChange: (book: Lorebook) => void;
   /** Context-specific buttons (Export/Import/Remove for a card's lorebook) next to the AI ones. */
   actions?: ReactNode;
+  /** Shown above everything else, e.g. the "linked to a shared lorebook" hint on a card. */
+  notice?: ReactNode;
 }
 
 /** Above this many entries, entries start collapsed — downloaded lorebooks can have hundreds,
@@ -22,8 +25,9 @@ function blankEntry(): LorebookEntry {
 /** The lorebook editor itself (name, description, entries, AI helpers) — shared by a card's
  * Lorebook tab and the standalone Lorebooks workspace, which differ only in where the book lives
  * and which file actions surround it. */
-export function LorebookBody({ book, onChange, actions }: Props) {
+export function LorebookBody({ book, onChange, actions, notice }: Props) {
   const [isAiAssistOpen, setIsAiAssistOpen] = useState(false);
+  const [query, setQuery] = useState("");
   const [isAiEditOpen, setIsAiEditOpen] = useState(false);
 
   function updateEntry(index: number, patch: Partial<LorebookEntry>) {
@@ -37,13 +41,20 @@ export function LorebookBody({ book, onChange, actions }: Props) {
   }
 
   function addEntry() {
+    // A blank entry would never match the filter — clear it so the new entry is actually visible.
+    setQuery("");
     onChange({ ...book, entries: [...book.entries, blankEntry()] });
   }
 
-  const expandAll = book.entries.length <= EXPAND_ALL_UP_TO;
+  // Filters the display only: every entry keeps its real index, which updateEntry/removeEntry
+  // (and the AI panels' write-back) rely on.
+  const visible = book.entries.map((entry, index) => ({ entry, index })).filter(({ entry }) => entryMatches(entry, query));
+  const isFiltering = query.trim() !== "";
+  const expandAll = visible.length <= EXPAND_ALL_UP_TO;
 
   return (
     <div className="tab-panel">
+      {notice}
       <div className="field-row">
         <label className="field">
           <span className="field-label">Lorebook name</span>
@@ -79,11 +90,24 @@ export function LorebookBody({ book, onChange, actions }: Props) {
         >
           Fill / revise entries with AI…
         </button>
-        <span className="field-hint">{book.entries.length} entries</span>
+        <span className="field-hint">
+          {isFiltering ? `${visible.length} of ${book.entries.length} entries` : `${book.entries.length} entries`}
+        </span>
       </div>
 
+      {book.entries.length > 0 && (
+        <input
+          className="field-input lorebook-search"
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search label, keys and content…"
+        />
+      )}
+
       {book.entries.length === 0 && <p>No entries yet.</p>}
-      {book.entries.map((entry, index) => (
+      {isFiltering && visible.length === 0 && <p>No entries match “{query.trim()}”.</p>}
+      {visible.map(({ entry, index }) => (
         <LorebookEntryEditor
           key={index}
           entry={entry}

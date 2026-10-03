@@ -886,3 +886,41 @@ button.secondary.active {
   text-decoration: line-through;
   color: var(--text-dim);
 }
+
+/* Lorebook search + sharing */
+
+.lorebook-search {
+  width: 100%;
+}
+
+.lorebook-link-notice {
+  border-left: 3px solid var(--accent);
+  padding-left: 0.6rem;
+}
+
+.share-lorebook-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.share-lorebook-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.share-status {
+  margin-left: auto;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+
+.share-status-synced {
+  color: var(--accent);
+}
+
+.share-status-outdated,
+.share-status-other {
+  color: #e0a040;
+}
