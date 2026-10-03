@@ -10,6 +10,10 @@ export interface AiChatMessage {
   content: string;
 }
 
+/** Patrick's group uses metric: every prompt that writes card text asks for it. */
+const METRIC_UNITS =
+  "Use metric units for all measurements: height in cm or m (e.g. 180 cm), weight in kg, distances in m or km, temperatures in °C — never feet, inches, pounds, miles or °F.";
+
 /** Content checklists for fields where the model tends to drift toward only part of what the
  * field conventionally holds (e.g. "description" turning into pure backstory, appearance
  * forgotten) — same idea as `imageModelStyleGuidance` in aiImagePrompt.ts: hardcoded guidance the
@@ -43,6 +47,7 @@ export function buildSystemPrompt(selected: readonly AiFieldKey[]): string {
     "You help fill in or revise a SillyTavern character card.",
     "Respond only with a JSON object containing exactly the following fields:",
     fieldList,
+    METRIC_UNITS,
     "Give no explanations, no prose outside the JSON, and no extra fields.",
     "The current draft state and the user's instruction follow in the next message.",
   ].join("\n");
@@ -69,7 +74,8 @@ export function buildPersonaSystemPrompt(selected: readonly AiFieldKey[]): strin
     "You help write a SillyTavern user persona: the character the user plays in roleplay, not a character the AI plays.",
     "Respond only with a JSON object containing exactly the following fields:",
     fieldList,
-    "Write in the language of the user's instruction, or of the existing draft if it already has text.",
+    "Write in the language of the user's instruction (or of the existing draft if it already has text) — not in the language of any character card given as context.",
+    METRIC_UNITS,
     "Give no explanations, no prose outside the JSON, and no extra fields.",
     "The current draft state and the user's instruction follow in the next message.",
   ].join("\n");
@@ -97,6 +103,7 @@ export function buildCondenseSystemPrompt(field: AiFieldKey, currentTokens: numb
     "Never use the straight double-quote character (\") inside the text: write inches as in (5 ft 11 in) and use ‘single’ or “curly” quotes for quotations.",
     ...(CONDENSE_FIELD_RULES[field] ? [CONDENSE_FIELD_RULES[field]] : []),
     "Never add anything that isn't in the original — no new facts, motives, or interpretations. Before answering, check your version against the original: every fact still there, nothing added.",
+    `${METRIC_UNITS} Convert any imperial measurements in the original (feet/inches, pounds, miles, °F) to metric — this is the one change of content allowed.`,
     `Respond only with a JSON object of the form { "${field}": "..." } — no explanations, no extra fields.`,
   ].join("\n");
 }
@@ -108,12 +115,21 @@ export function buildCondenseUserTurn(text: string): AiChatMessage {
 /** Serializes the current draft + the user's free-text instruction into one user message.
  * Each turn resends the full current draft rather than a growing chat transcript, so context
  * length depends on field count, not on how many refinement rounds have happened. */
-export function buildUserTurn(instruction: string, draftValues: AiFieldPatch): AiChatMessage {
+export function buildUserTurn(instruction: string, draftValues: AiFieldPatch, context?: string): AiChatMessage {
   const draftJson = JSON.stringify(draftValues, null, 2);
   return {
     role: "user",
-    content: `Current draft:\n${draftJson}\n\nInstruction: ${instruction}`,
+    content: `${context ? `${context}\n\n` : ""}Current draft:\n${draftJson}\n\nInstruction: ${instruction}`,
   };
+}
+
+/** Context block for writing a persona that fits a specific character: the persona should have a
+ * plausible place in that character's world and scenario — without describing the character. */
+export function buildPersonaFitContext(card: NormalizedCard): string {
+  return [
+    "The persona will be played opposite this character. Make the persona fit the character's setting and scenario — a plausible role in their world and a natural reason to interact with them — but don't describe the character, don't copy their traits, and don't decide how they feel about the persona.",
+    `Character:\n${JSON.stringify(summarizeCardForAi(card), null, 2)}`,
+  ].join("\n");
 }
 
 /** Shared writing guidance for every prompt that produces lorebook entry text — new entries as
@@ -140,6 +156,7 @@ export function buildLorebookSystemPrompt(): string {
     "- content: the actual background text (e.g. a description of a person, place, or event)",
     "- comment: a short human-readable label for the entry",
     ...LOREBOOK_ENTRY_GUIDANCE,
+    METRIC_UNITS,
     "Give no explanations, no prose outside the JSON, and no extra fields.",
     "The existing lorebook, the current draft state (entries already proposed but not yet added) and the user's instruction follow in the next message. Don't repeat entries the lorebook already has.",
   ].join("\n");
@@ -195,6 +212,7 @@ export function buildLorebookEditSystemPrompt(count: number): string {
     ...LOREBOOK_ENTRY_GUIDANCE,
     `Respond only with a JSON object of the form { "entries": [...] } with exactly ${count} entries.`,
     "Each entry has: index (exactly as given, unchanged), keys, comment, content.",
+    METRIC_UNITS,
     "Give no explanations, no prose outside the JSON, and no extra fields.",
   ].join("\n");
 }
@@ -300,6 +318,7 @@ export function buildGroupGenerateSystemPrompt(count: number): string {
     "Each entry has: name, description, personality, scenario, first_mes.",
     `For description: ${DESCRIPTION_CHECKLIST}`,
     `For personality: ${PERSONALITY_CHECKLIST}`,
+    METRIC_UNITS,
     "Give no explanations, no prose outside the JSON, and no extra fields.",
   ].join("\n");
 }
@@ -334,6 +353,7 @@ export function buildRelocateSystemPrompt(count: number): string {
     "Each entry has:",
     "- name: exactly as given for that character, unchanged",
     "- description, personality, scenario, first_mes, mes_example: the same character, each adapted to the new setting only where relevant — copy through unchanged whatever isn't location-tied",
+    METRIC_UNITS,
     "Give no explanations, no prose outside the JSON, and no extra fields.",
   ].join("\n");
 }

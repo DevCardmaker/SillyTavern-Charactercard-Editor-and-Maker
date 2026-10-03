@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildPersonaFitContext,
   buildPersonaSystemPrompt,
+  buildUserTurn,
   PERSONA_AI_FIELD_KEYS,
   buildGroupGenerateSystemPrompt,
   buildLorebookEditSystemPrompt,
@@ -13,6 +15,7 @@ import {
   DEFAULT_LOREBOOK_EDIT_INSTRUCTION,
   summarizeLorebookForAi,
 } from "./aiPrompt";
+import { createBlankCard } from "./normalize";
 
 describe("buildSystemPrompt", () => {
   it("lists every selected field", () => {
@@ -167,5 +170,30 @@ describe("buildPersonaSystemPrompt", () => {
     const prompt = buildPersonaSystemPrompt(PERSONA_AI_FIELD_KEYS);
     expect(prompt).toContain("- name: The persona's name");
     expect(prompt).not.toContain("formative experience");
+  });
+});
+
+describe("persona fit context", () => {
+  it("puts the character summary ahead of the draft", () => {
+    const card = { ...createBlankCard(), name: "Mara", scenario: "A harbor town" };
+    const turn = buildUserTurn("a sailor", { name: "" }, buildPersonaFitContext(card));
+    expect(turn.content.indexOf("A harbor town")).toBeLessThan(turn.content.indexOf("Current draft"));
+    expect(turn.content).toContain("don't describe the character");
+    expect(buildUserTurn("x", {}).content.startsWith("Current draft")).toBe(true);
+  });
+});
+
+describe("metric units", () => {
+  it("asks for metric units in every prompt that writes card text", () => {
+    for (const prompt of [
+      buildSystemPrompt(["description"]),
+      buildPersonaSystemPrompt(PERSONA_AI_FIELD_KEYS),
+      buildLorebookSystemPrompt(),
+      buildLorebookEditSystemPrompt(2),
+      buildGroupGenerateSystemPrompt(3),
+      buildRelocateSystemPrompt(2),
+    ]) {
+      expect(prompt).toContain("Use metric units");
+    }
   });
 });

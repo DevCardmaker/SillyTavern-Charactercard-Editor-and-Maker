@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { confirmDiscardChanges } from "../../io/confirmDiscard";
 import { openCardFile, saveCard, saveCardAsCopy } from "../../io/fileIO";
-import { buildPersonaSystemPrompt, PERSONA_AI_FIELD_KEYS } from "../../schema/aiPrompt";
+import { buildPersonaFitContext, buildPersonaSystemPrompt, PERSONA_AI_FIELD_KEYS } from "../../schema/aiPrompt";
 import { personaMacroWarning } from "../../schema/persona";
 import { combineWarnings, emptyNameWarning, unbalancedMacroWarning } from "../../schema/warnings";
+import { useCardStore } from "../../state/cardStore";
 import { CardStoreContext } from "../../state/cardStoreContext";
 import { usePersonaStore } from "../../state/personaStore";
 import { TextAreaField, TextField } from "../common/FormField";
@@ -33,6 +34,7 @@ export function PersonaWorkspace({ onError }: Props) {
   const setActive = usePersonaStore((s) => s.setActiveCharacter);
   const close = usePersonaStore((s) => s.closeCharacter);
   const [isAiAssistOpen, setIsAiAssistOpen] = useState(false);
+  const openCharacters = useCardStore((s) => s.characters);
 
   async function run(action: () => Promise<void>) {
     try {
@@ -150,6 +152,10 @@ export function PersonaWorkspace({ onError }: Props) {
           buildSystem={buildPersonaSystemPrompt}
           title="AI Assistant — Persona"
           placeholder="e.g. “A retired mercenary turned tavern keeper” or “Make her look older”"
+          contextLabel="Fit to character (open in the Characters mode)"
+          contextChoices={openCharacters
+            .filter((c) => c.card.name.trim())
+            .map((c) => ({ label: c.card.name, text: buildPersonaFitContext(c.card) }))}
         />
       )}
 

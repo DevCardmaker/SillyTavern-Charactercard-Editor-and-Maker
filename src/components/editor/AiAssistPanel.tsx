@@ -16,6 +16,10 @@ interface Props {
   buildSystem?: (fields: readonly AiFieldKey[]) => string;
   title?: string;
   placeholder?: string;
+  /** Optional context the user can pick (e.g. "fit this persona to character X"); its text is sent
+   * ahead of the draft with every message. */
+  contextChoices?: { label: string; text: string }[];
+  contextLabel?: string;
 }
 
 function displayValue(key: AiFieldKey, draft: AiFieldPatch): string {
@@ -37,7 +41,10 @@ export function AiAssistPanel({
   buildSystem = buildSystemPrompt,
   title = "AI Assistant",
   placeholder = "e.g. “A shy librarian with a secret” or “Make the personality more sarcastic”",
+  contextChoices,
+  contextLabel = "Context",
 }: Props) {
+  const [contextIndex, setContextIndex] = useState(-1);
   const configFile = useAiProviderConfigStore((s) => s.file);
   const ensureConfigLoaded = useAiProviderConfigStore((s) => s.ensureLoaded);
 
@@ -93,7 +100,7 @@ export function AiAssistPanel({
       const fields = [...selectedFields];
       const patch = await requestFieldPatch(activeProfile, fields, [
         { role: "system", content: buildSystem(fields) },
-        buildUserTurn(instruction, draft),
+        buildUserTurn(instruction, draft, contextChoices?.[contextIndex]?.text),
       ]);
       setDraft((prev) => ({ ...prev, ...patch }));
       setTranscript((prev) => [...prev, instruction]);
@@ -131,6 +138,20 @@ export function AiAssistPanel({
             ))}
           </div>
         </div>
+
+        {contextChoices && contextChoices.length > 0 && (
+          <label className="field">
+            <span className="field-label">{contextLabel}</span>
+            <select className="field-input" value={contextIndex} onChange={(e) => setContextIndex(Number(e.target.value))}>
+              <option value={-1}>None</option>
+              {contextChoices.map((choice, i) => (
+                <option key={i} value={i}>
+                  {choice.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
 
         {selectedFields.size > 0 && (
           <div className="ai-assist-draft">
