@@ -85,6 +85,7 @@ This is an independent, unofficial tool and is **not affiliated with, endorsed b
 
 This software is provided "as is", without warranty of any kind — see [LICENSE](LICENSE). The author accepts no responsibility or liability for:
 - how you use this software,
+- any damage, data loss, or corruption of files it may cause, including to your character cards or your system (keep your own backups of anything you care about),
 - the content of any character cards, lorebook entries, images, or other content you create, edit, or generate with it, or
 - any consequences of sharing or distributing that content.
 
