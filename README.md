@@ -45,6 +45,13 @@ Point the app at any OpenAI-compatible `/v1/chat/completions` endpoint — a loc
 - Optional per-profile temperature, max tokens, and parallel requests for faster bulk operations with cloud providers
 - AI-written text uses metric units
 
+## Download
+
+Ready-made builds are on the [Releases page](https://github.com/DevCardmaker/SillyTavern-Charactercard-Editor-and-Maker/releases/latest):
+
+- **Windows 10/11:** `…_x64-setup.exe`, installs for the current user, no administrator rights needed. The installer is not code-signed, so Windows SmartScreen asks for confirmation the first time ("More info" → "Run anyway").
+- **Linux:** `.AppImage` (runs on most distributions, make it executable first) or `.rpm` (Fedora, openSUSE and similar).
+
 ## Getting started
 
 Requires [Node.js](https://nodejs.org/) and the [Rust toolchain](https://www.rust-lang.org/tools/install) (see the [Tauri prerequisites](https://tauri.app/start/prerequisites/) for your platform).
@@ -58,12 +65,11 @@ npm test              # run the test suite
 To build a distributable bundle:
 
 ```sh
-npm run build:linux   # AppImage + rpm (the only bundle targets currently configured)
+npm run build:linux   # on Linux: AppImage + rpm
+npm run tauri build   # on Windows: NSIS installer (configured in src-tauri/tauri.windows.conf.json)
 ```
 
-For other platforms, adjust the `bundle.targets` in `src-tauri/tauri.conf.json` and run `npm run tauri build`.
-
-**Platform support:** currently built and tested on Linux only. No native Windows build yet (tracked as future work) — Windows users can run it today under [WSL](https://learn.microsoft.com/windows/wsl/install).
+Release builds for both platforms are made by the GitHub Actions workflow in `.github/workflows/build.yml`: pushing a `vX.Y.Z` tag creates a draft release with the matching CHANGELOG section and all bundles attached.
 
 ### Using the AI assistant
 
