@@ -1,6 +1,6 @@
 # SillyTavern Card Editor
 
-A desktop editor for [SillyTavern](https://github.com/SillyTavern/SillyTavern) character cards (spec V2 and V3), built with Tauri, React, and Rust. Edit cards embedded in PNG avatars or as standalone JSON, work on several characters at once, and optionally use an AI assistant to help write and check them.
+A desktop editor for [SillyTavern](https://github.com/SillyTavern/SillyTavern) character cards (spec V2 and V3), built with Tauri, React, and Rust. Edit cards embedded in PNG avatars or as standalone JSON, work on several characters at once, optionally use an AI assistant to help write and check them, and try them out in a test chat before taking them to SillyTavern.
 
 > **Unofficial project.** Not affiliated with, endorsed by, or sponsored by SillyTavern or its developers. "SillyTavern" is used here only to describe compatibility with its character card format. See [Disclaimer](#disclaimer) below.
 
@@ -74,7 +74,19 @@ Release builds for both platforms are made by the GitHub Actions workflow in `.g
 
 ### Using the AI assistant
 
-Open "AI Assistant…" (or any other AI-powered button) and set up a provider under its settings: a base URL, an optional API key, and a model name. This works with a local model server just as well as a cloud API — nothing is sent anywhere unless you configure a provider yourself.
+Open "AI Assistant…" (or any other AI-powered button) and set up a provider under its settings: a base URL, an optional API key, and a model name. This works with a local model server just as well as a cloud API — nothing is sent anywhere unless you configure a provider yourself. All AI features use the provider profile that is currently selected there.
+
+AI suggestions are never written into a card unseen: field edits, lorebook entries, group profiles and consistency fixes are all shown for review first, and most of them can be edited before you apply them.
+
+### Trying out characters
+
+"Test Chat" in the toolbar opens a chat next to the editor. With one card open, you chat with that character; with several cards open, tick who takes part and it becomes a group chat — press Enter to let them take turns, or click a name to pick who replies. Replies always use the cards as they are at that moment, unsaved edits included, so you can change a field and hit "Regenerate" to see the difference. Pick an open persona to play as yourself. The chat is never saved; closing the sidebar ends it.
+
+The prompt follows SillyTavern's structure closely (system prompt, lorebook, description, personality, scenario, persona, example dialogue, Character's Note, post-history instructions; in a group only the replying character's card), but it can't reproduce every SillyTavern setting — treat it as a quick check, not an exact preview.
+
+### Fixing contradictions in a group
+
+"Consistency Check…" (with two or more cards open) lists contradictions between the open characters. Under each finding, "Suggest fix" asks the AI for small text edits — optionally with a hint which version is right ("Mother is 45"). Each edit quotes the passage it replaces; the editor checks that passage really is in the card and shows old and new side by side. After applying, run the check again: a fix can bring up a follow-up contradiction.
 
 ## Changelog
 
