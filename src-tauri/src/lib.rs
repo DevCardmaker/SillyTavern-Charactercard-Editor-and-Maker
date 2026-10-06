@@ -65,11 +65,16 @@ struct ChatCompletionRequest {
     api_key: Option<String>,
     model: String,
     messages: Vec<serde_json::Value>,
-    json_schema: serde_json::Value,
+    /// None = free-text reply (the test chat): no `response_format` at all.
+    #[serde(default)]
+    json_schema: Option<serde_json::Value>,
     #[serde(default)]
     temperature: Option<f64>,
     #[serde(default)]
     max_tokens: Option<u32>,
+    /// Stop sequences, e.g. "\nUser:" so a chat reply doesn't run on into the user's lines.
+    #[serde(default)]
+    stop: Option<Vec<String>>,
 }
 
 #[derive(serde::Serialize)]
@@ -81,13 +86,18 @@ async fn post_chat_completion(
     client: &reqwest::Client,
     url: &str,
     req: &ChatCompletionRequest,
-    response_format: serde_json::Value,
+    response_format: Option<serde_json::Value>,
 ) -> Result<(reqwest::StatusCode, String), String> {
     let mut body = serde_json::json!({
         "model": req.model,
         "messages": req.messages,
-        "response_format": response_format,
     });
+    if let Some(format) = response_format {
+        body["response_format"] = format;
+    }
+    if let Some(stop) = req.stop.as_ref().filter(|s| !s.is_empty()) {
+        body["stop"] = serde_json::json!(stop);
+    }
     if let Some(t) = req.temperature {
         body["temperature"] = serde_json::json!(t);
     }
@@ -164,15 +174,22 @@ async fn ai_chat_completion(req: ChatCompletionRequest) -> Result<ChatCompletion
 
     let url = format!("{}/v1/chat/completions", req.base_url.trim_end_matches('/'));
 
+    let Some(schema) = req.json_schema.clone() else {
+        let (status, text) = post_chat_completion(&client, &url, &req, None).await?;
+        return Ok(ChatCompletionResult {
+            content: extract_content(status, &text)?,
+        });
+    };
+
     let schema_format = serde_json::json!({
         "type": "json_schema",
-        "json_schema": req.json_schema,
+        "json_schema": schema,
     });
-    let (status, text) = post_chat_completion(&client, &url, &req, schema_format).await?;
+    let (status, text) = post_chat_completion(&client, &url, &req, Some(schema_format)).await?;
 
     if !status.is_success() && text.to_lowercase().contains("response_format") {
         let (status, text) =
-            post_chat_completion(&client, &url, &req, serde_json::json!({ "type": "json_object" })).await?;
+            post_chat_completion(&client, &url, &req, Some(serde_json::json!({ "type": "json_object" }))).await?;
         return Ok(ChatCompletionResult {
             content: extract_content(status, &text)?,
         });

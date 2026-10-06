@@ -8,9 +8,11 @@ import { ContextBudgetPanel } from "./ContextBudgetPanel";
 interface Props {
   onError: (message: string) => void;
   onOpenAiAssist: () => void;
+  isTestChatOpen: boolean;
+  onToggleTestChat: () => void;
 }
 
-export function Toolbar({ onError, onOpenAiAssist }: Props) {
+export function Toolbar({ onError, onOpenAiAssist, isTestChatOpen, onToggleTestChat }: Props) {
   const card = useCardStore((s) => s.card);
   const isDirty = useCardStore((s) => s.isDirty);
   const currentFilePath = useCardStore((s) => s.currentFilePath);
@@ -137,6 +139,15 @@ export function Toolbar({ onError, onOpenAiAssist }: Props) {
       </button>
       <button type="button" className="secondary" onClick={() => setIsGroupGenerateOpen(true)}>
         Create Group…
+      </button>
+      <button
+        type="button"
+        className={isTestChatOpen ? "secondary active" : "secondary"}
+        onClick={onToggleTestChat}
+        disabled={!card}
+        title="Try out the open character(s) in a chat next to the editor — nothing is saved"
+      >
+        Test Chat
       </button>
       {isGroupGenerateOpen && <AiGroupGeneratePanel onClose={() => setIsGroupGenerateOpen(false)} />}
       <div className="toolbar-title">

@@ -1041,3 +1041,90 @@ button.secondary.active {
   color: var(--accent);
   font-weight: 600;
 }
+
+/* Test chat — sidebar to the right of the editor, a throwaway chat with the open character(s). */
+
+.test-chat-panel {
+  width: 400px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border-left: 1px solid var(--border);
+  background: var(--bg-panel);
+  min-height: 0;
+}
+
+.test-chat-header {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.test-chat-header strong {
+  margin-right: auto;
+}
+
+.test-chat-note {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  margin: 0;
+}
+
+.test-chat-members,
+.test-chat-options,
+.test-chat-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.75rem;
+}
+
+.test-chat-options select {
+  width: auto;
+}
+
+.test-chat-messages {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.25rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+}
+
+.test-chat-message {
+  padding: 0.5rem 0.6rem;
+  border-radius: 6px;
+  background: var(--bg-input);
+}
+
+.test-chat-message.user {
+  background: transparent;
+  border: 1px solid var(--border);
+}
+
+.test-chat-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 0.2rem;
+}
+
+.test-chat-message.user .test-chat-name {
+  color: var(--text-dim);
+}
+
+.test-chat-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.test-chat-actions button {
+  padding: 0.35rem 0.7rem;
+}

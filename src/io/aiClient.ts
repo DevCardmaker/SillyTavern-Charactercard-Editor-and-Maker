@@ -25,7 +25,8 @@ function truncate(text: string, max = 300): string {
 async function callChatCompletion(
   config: AiProviderConfig,
   messages: AiChatMessage[],
-  jsonSchema: { name: string; strict: boolean; schema: Record<string, unknown> },
+  jsonSchema: { name: string; strict: boolean; schema: Record<string, unknown> } | null,
+  options: { maxTokens?: number; stop?: string[] } = {},
 ): Promise<string> {
   const result = await invoke<{ content: string }>("ai_chat_completion", {
     req: {
@@ -35,7 +36,8 @@ async function callChatCompletion(
       messages,
       json_schema: jsonSchema,
       temperature: config.temperature ?? null,
-      max_tokens: config.maxTokens ?? null,
+      max_tokens: options.maxTokens ?? config.maxTokens ?? null,
+      stop: options.stop ?? null,
     },
   });
   return result.content;
@@ -232,6 +234,16 @@ export async function requestRelocate(
   }
 
   return parsed.data;
+}
+
+/** One free-text chat reply (the test chat) — no JSON schema. `maxTokens` overrides the profile's
+ * value, which is sized for writing whole cards rather than a single roleplay reply. */
+export async function requestChatReply(
+  config: AiProviderConfig,
+  messages: AiChatMessage[],
+  options: { maxTokens: number; stop: string[] },
+): Promise<string> {
+  return callChatCompletion(config, messages, null, options);
 }
 
 /** Minimal connectivity/auth smoke test: asks for a tiny schema-constrained reply and returns

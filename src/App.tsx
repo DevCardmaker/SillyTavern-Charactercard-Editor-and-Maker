@@ -9,6 +9,7 @@ import { GreetingsTab } from "./components/editor/GreetingsTab";
 import { LorebookTab } from "./components/editor/LorebookTab";
 import { MetadataTab } from "./components/editor/MetadataTab";
 import { PromptsTab } from "./components/editor/PromptsTab";
+import { TestChatPanel } from "./components/editor/TestChatPanel";
 import { Toolbar } from "./components/editor/Toolbar";
 import type { TabProps } from "./components/editor/types";
 import { RecentCardsList } from "./components/editor/RecentCardsList";
@@ -39,6 +40,7 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [isAiAssistOpen, setIsAiAssistOpen] = useState(false);
+  const [isTestChatOpen, setIsTestChatOpen] = useState(false);
   // Characters vs. standalone Lorebooks. Both stores live on regardless, so switching never loses
   // open tabs or unsaved work on the other side. The ref is for the once-registered Tauri
   // listeners below, which would otherwise only ever see the initial mode.
@@ -172,7 +174,12 @@ function App() {
 
       {mode === "characters" && (
         <>
-          <Toolbar onError={setError} onOpenAiAssist={() => setIsAiAssistOpen(true)} />
+          <Toolbar
+            onError={setError}
+            onOpenAiAssist={() => setIsAiAssistOpen(true)}
+            isTestChatOpen={isTestChatOpen}
+            onToggleTestChat={() => setIsTestChatOpen((open) => !open)}
+          />
           <CharacterTabBar onError={setError} />
         </>
       )}
@@ -222,6 +229,7 @@ function App() {
               onShowLorebooks={() => setMode("lorebooks")}
             />
           </div>
+          {isTestChatOpen && <TestChatPanel onClose={() => setIsTestChatOpen(false)} />}
         </div>
       )}
     </div>
