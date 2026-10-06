@@ -22,6 +22,24 @@ interface Props {
   onClose: () => void;
 }
 
+const WIDTH_KEY = "test-chat-width";
+const MIN_WIDTH = 280;
+const DEFAULT_WIDTH = 400;
+
+/** Never wider than leaves ~400px for the editor next to it. */
+function clampWidth(width: number): number {
+  return Math.round(Math.max(MIN_WIDTH, Math.min(width, window.innerWidth - 400)));
+}
+
+function loadWidth(): number {
+  try {
+    const stored = Number(localStorage.getItem(WIDTH_KEY));
+    return stored > 0 ? clampWidth(stored) : DEFAULT_WIDTH;
+  } catch {
+    return DEFAULT_WIDTH;
+  }
+}
+
 /** A throwaway chat next to the editor to try out how a character (or several, as a group) behaves.
  * Every reply is built from the cards' *current* state, unsaved edits included — change a field,
  * hit "Regenerate", see the difference. Nothing is stored: closing the sidebar ends the chat. */
@@ -46,6 +64,8 @@ export function TestChatPanel({ onClose }: Props) {
   /** Bumped on restart/unmount, so a reply that arrives for an old chat is dropped. */
   const generation = useRef(0);
   const listRef = useRef<HTMLDivElement>(null);
+  const [width, setWidth] = useState(loadWidth);
+  const drag = useRef<{ startX: number; startWidth: number } | null>(null);
 
   const members: TestChatMember[] = participantIds
     .map((id) => characters.find((c) => c.id === id))
@@ -168,8 +188,38 @@ export function TestChatPanel({ onClose }: Props) {
 
   const last = messages[messages.length - 1];
 
+  // Dragging the left edge: pointer capture keeps the drag going even when the pointer leaves the
+  // thin handle. Moving left makes the sidebar wider.
+  function onResizeStart(e: React.PointerEvent<HTMLDivElement>) {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    drag.current = { startX: e.clientX, startWidth: width };
+  }
+
+  function onResizeMove(e: React.PointerEvent<HTMLDivElement>) {
+    if (!drag.current) return;
+    setWidth(clampWidth(drag.current.startWidth + drag.current.startX - e.clientX));
+  }
+
+  function onResizeEnd() {
+    if (!drag.current) return;
+    drag.current = null;
+    try {
+      localStorage.setItem(WIDTH_KEY, String(width));
+    } catch {
+      // Only a convenience — the default width is fine.
+    }
+  }
+
   return (
-    <aside className="test-chat-panel">
+    <aside className="test-chat-panel" style={{ width }}>
+      <div
+        className="test-chat-resizer"
+        title="Drag to resize"
+        onPointerDown={onResizeStart}
+        onPointerMove={onResizeMove}
+        onPointerUp={onResizeEnd}
+        onPointerCancel={onResizeEnd}
+      />
       <div className="test-chat-header">
         <strong>Test chat</strong>
         <button type="button" className="secondary" title="Start over" onClick={restart}>

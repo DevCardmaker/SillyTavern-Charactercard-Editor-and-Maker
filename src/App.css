@@ -1045,7 +1045,7 @@ button.secondary.active {
 /* Test chat — sidebar to the right of the editor, a throwaway chat with the open character(s). */
 
 .test-chat-panel {
-  width: 400px;
+  position: relative;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -1054,6 +1054,24 @@ button.secondary.active {
   border-left: 1px solid var(--border);
   background: var(--bg-panel);
   min-height: 0;
+}
+
+/* Grab strip over the left border for resizing the sidebar. */
+.test-chat-resizer {
+  position: absolute;
+  left: -3px;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  cursor: col-resize;
+  touch-action: none;
+  z-index: 1;
+}
+
+.test-chat-resizer:hover,
+.test-chat-resizer:active {
+  background: var(--accent);
+  opacity: 0.5;
 }
 
 .test-chat-header {
