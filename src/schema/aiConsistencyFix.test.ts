@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { aiConsistencyFixToJsonSchema, applySnippet, locateSnippet, parseAiConsistencyFix, resolveFixChanges } from "./aiConsistencyFix";
+import { aiConsistencyFixToJsonSchema, applySnippet, fitSentenceEnd, locateSnippet, parseAiConsistencyFix, resolveFixChanges } from "./aiConsistencyFix";
 import { createBlankCard, type NormalizedCard } from "./normalize";
 
 function slot(id: string, patch: Partial<NormalizedCard>) {
@@ -23,6 +23,19 @@ describe("locateSnippet / applySnippet", () => {
 
   it("treats regex characters in the quote literally", () => {
     expect(applySnippet("Age (approx.) 40", "(approx.) 40", "(approx.) 45")).toBe("Age (approx.) 45");
+  });
+});
+
+describe("fitSentenceEnd", () => {
+  it("gives a dangling replacement the sentence ending the quoted passage had", () => {
+    expect(fitSentenceEnd("grew up in Seattle and moved last year.", "grew up in Portland, ")).toBe("grew up in Portland.");
+    expect(fitSentenceEnd("Is she 16?", "Is she 22")).toBe("Is she 22?");
+  });
+
+  it("leaves replacements alone that already end properly, or where the quote ended mid-sentence", () => {
+    expect(fitSentenceEnd("is 16.", "is 22.")).toBe("is 22.");
+    expect(fitSentenceEnd("she said \"hi.\"", "she said \"hello\"")).toBe("she said \"hello\"");
+    expect(fitSentenceEnd("16 years", "22 years,")).toBe("22 years,");
   });
 });
 

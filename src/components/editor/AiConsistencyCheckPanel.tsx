@@ -289,7 +289,8 @@ export function AiConsistencyCheckPanel({ onClose }: Props) {
         )}
         {Object.values(fixes).some((f) => f.status === "applied") && (
           <p className="field-hint">
-            Fixed cards are marked as unsaved. If you used “Group lorebook”, run it again so the profiles match.
+            Fixed cards are marked as unsaved. Run “Check again” afterwards — a fix can bring up a follow-up contradiction
+            (e.g. a changed age that no longer fits a wedding year). If you used “Group lorebook”, run it again too.
           </p>
         )}
 

@@ -60,6 +60,16 @@ export function locateSnippet(text: string, find: string): { start: number; end:
   return match ? { start: match.index, end: match.index + match[0].length } : null;
 }
 
+/** The local model sometimes leaves a replacement dangling ("She grew up in Portland,") where the
+ * quoted passage ended a sentence. Gives it the same sentence ending back. */
+export function fitSentenceEnd(find: string, replace: string): string {
+  const original = find.trim();
+  const updated = replace.trim();
+  const ending = original.match(/[.!?…]$/)?.[0];
+  if (!ending || !updated || /[.!?…"'*)\]]$/.test(updated)) return updated;
+  return updated.replace(/[\s,;:–-]+$/, "") + ending;
+}
+
 /** `text` with `find` replaced, or null if `find` isn't in it (any more). */
 export function applySnippet(text: string, find: string, replace: string): string | null {
   const at = locateSnippet(text, find);
@@ -82,6 +92,7 @@ export function resolveFixChanges(
   characters: { id: string; card: NormalizedCard }[],
 ): ResolvedFixChange[] {
   return changes
+    .map((c) => ({ ...c, replace: fitSentenceEnd(c.find, c.replace) }))
     .filter((c) => c.find.trim() !== c.replace.trim())
     .map((change) => {
       const slot = characters.find((c) => c.card.name.trim().toLowerCase() === change.character.trim().toLowerCase());

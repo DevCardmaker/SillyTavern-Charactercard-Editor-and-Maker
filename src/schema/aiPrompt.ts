@@ -347,7 +347,7 @@ export function buildConsistencyFixSystemPrompt(): string {
     "- explanation: one short sentence saying how the contradiction is resolved (which version is kept and what changes).",
     "- changes: each has character (the name exactly as given), field (description, personality, scenario or first_mes), find and replace.",
     "- find: a passage copied word for word from that character's field — short (a sentence or part of one) but long enough to be unique.",
-    "- replace: that passage, corrected.",
+    "- replace: that passage, corrected — complete sentences that read naturally in place of the old passage, ending the same way it did.",
     "Change as little as possible: usually one or two passages in the card where the fix is smallest. Keep everything else, including the card's language, style and point of view.",
     "Fix only this contradiction, and make sure your fix doesn't create a new one with the other cards.",
     "If the user says which version is correct, follow that.",
