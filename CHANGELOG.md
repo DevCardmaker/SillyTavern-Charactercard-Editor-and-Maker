@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented here. The project follows [Semantic Versioning](https://semver.org/): new features raise the minor version, fixes the patch version.
 
+## [1.3.0] – 2026-10-06
+
+### Added
+- **Test chat**: a sidebar next to the editor to try out how a character behaves — or how several fit together as a group chat. Replies use the cards as they are right now, unsaved edits included, so you can change a field and regenerate. Lorebook entries (shown after each reply), a persona, the Character's Note and post-history instructions are applied roughly the way SillyTavern does; in a group, only the replying character's card is sent (SillyTavern's "swap" mode). Pick who replies next or let them take turns. The sidebar can be resized by dragging its left edge. Nothing is saved.
+- **Consistency Check fixes**: each finding can get a suggested fix — small text edits across the affected cards, optionally guided by a hint which version is right ("Mother is 45"). Every quoted passage is checked against the card, and you review, edit or untick each change before it's applied. "Suggest fixes for all" handles every finding at once.
+
 ## [1.2.0] – 2026-10-05
 
 ### Added

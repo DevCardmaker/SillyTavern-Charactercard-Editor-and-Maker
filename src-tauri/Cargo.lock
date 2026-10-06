@@ -3552,7 +3552,7 @@ dependencies = [
 
 [[package]]
 name = "st-card-editor"
-version = "1.2.0"
+version = "1.3.0"
 dependencies = [
  "reqwest 0.12.28",
  "serde",
