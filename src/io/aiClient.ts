@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { type AiFieldKey, type AiFieldPatch, aiFieldsToJsonSchema, parseAiPatch } from "../schema/aiAssist";
 import { type AiConsistencyFinding, aiConsistencyCheckToJsonSchema, parseAiConsistencyCheck } from "../schema/aiConsistencyCheck";
+import { type AiConsistencyFix, aiConsistencyFixToJsonSchema, parseAiConsistencyFix } from "../schema/aiConsistencyFix";
 import { type AiGroupMemberDraft, aiGroupToJsonSchema, parseAiGroup } from "../schema/aiGroupGenerate";
 import { aiImagePromptToJsonSchema, parseAiImagePrompt } from "../schema/aiImagePrompt";
 import { type AiRelocateMember, aiRelocateToJsonSchema, parseAiRelocate } from "../schema/aiRelocate";
@@ -173,6 +174,30 @@ export async function requestConsistencyCheck(
   }
 
   const parsed = parseAiConsistencyCheck(raw);
+  if (!parsed.success) {
+    throw new Error(`Model response did not match the expected format: ${parsed.error}`);
+  }
+
+  return parsed.data;
+}
+
+/** Asks for a fix of one consistency finding as find/replace edits. Same validate-or-throw contract
+ * as `requestFieldPatch`; whether the quoted passages exist is checked by the caller. */
+export async function requestConsistencyFix(config: AiProviderConfig, messages: AiChatMessage[]): Promise<AiConsistencyFix> {
+  const content = await callChatCompletion(config, messages, {
+    name: "consistency_fix",
+    strict: true,
+    schema: aiConsistencyFixToJsonSchema(),
+  });
+
+  let raw: unknown;
+  try {
+    raw = JSON.parse(content);
+  } catch {
+    throw new Error(`Model response was not valid JSON: ${truncate(content)}`);
+  }
+
+  const parsed = parseAiConsistencyFix(raw);
   if (!parsed.success) {
     throw new Error(`Model response did not match the expected format: ${parsed.error}`);
   }

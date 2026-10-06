@@ -337,6 +337,38 @@ export function buildConsistencyCheckUserTurn(characters: AiCharacterSummary[], 
   };
 }
 
+/** Static instructions for resolving one finding of the consistency check with minimal edits.
+ * Find/replace instead of rewritten fields, so nothing unrelated to the contradiction changes —
+ * the code then checks every quoted passage really exists (see `resolveFixChanges`). */
+export function buildConsistencyFixSystemPrompt(): string {
+  return [
+    "You fix one contradiction between SillyTavern character cards that belong to the same group, with the smallest possible text edits.",
+    'Respond only with a JSON object of the form { "explanation": "...", "changes": [...] }.',
+    "- explanation: one short sentence saying how the contradiction is resolved (which version is kept and what changes).",
+    "- changes: each has character (the name exactly as given), field (description, personality, scenario or first_mes), find and replace.",
+    "- find: a passage copied word for word from that character's field — short (a sentence or part of one) but long enough to be unique.",
+    "- replace: that passage, corrected.",
+    "Change as little as possible: usually one or two passages in the card where the fix is smallest. Keep everything else, including the card's language, style and point of view.",
+    "Fix only this contradiction, and make sure your fix doesn't create a new one with the other cards.",
+    "If the user says which version is correct, follow that.",
+    METRIC_UNITS,
+    "Give no explanations, no prose outside the JSON, and no extra fields.",
+  ].join("\n");
+}
+
+export function buildConsistencyFixUserTurn(characters: AiCharacterSummary[], issue: string, hint: string): AiChatMessage {
+  const payload = JSON.stringify(
+    characters.map(({ name, description, personality, scenario, first_mes }) => ({ name, description, personality, scenario, first_mes })),
+    null,
+    2,
+  );
+  const trimmed = hint.trim();
+  return {
+    role: "user",
+    content: `Characters:\n${payload}\n\nContradiction: ${issue}${trimmed ? `\n\nThe user decided: ${trimmed}` : ""}`,
+  };
+}
+
 /** Static instructions for generating an entire group of new characters at once. Explicitly told
  * to keep the members consistent with each other — the whole point of generating them together
  * instead of one at a time via `AiAssistPanel`. */

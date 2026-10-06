@@ -1146,3 +1146,42 @@ button.secondary.active {
 .test-chat-actions button {
   padding: 0.35rem 0.7rem;
 }
+
+/* Consistency check fixes — proposed find/replace edits under each finding. */
+
+.consistency-fix {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 0.4rem;
+}
+
+.consistency-fix-row {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.consistency-fix-row .field-input {
+  flex: 1;
+}
+
+.consistency-change {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.consistency-change.unusable {
+  opacity: 0.6;
+}
+
+.consistency-change-before {
+  white-space: pre-wrap;
+  color: var(--text-dim);
+  text-decoration: line-through;
+  font-size: 0.9rem;
+}
