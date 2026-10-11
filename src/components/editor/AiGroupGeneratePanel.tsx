@@ -1,13 +1,21 @@
 import { useEffect, useState } from "react";
 import { requestGroupGenerate } from "../../io/aiClient";
 import type { AiGroupMemberDraft } from "../../schema/aiGroupGenerate";
-import { buildGroupGenerateSystemPrompt, buildGroupGenerateUserTurn } from "../../schema/aiPrompt";
+import {
+  buildGroupGenerateSystemPrompt,
+  buildGroupGenerateUserTurn,
+  findDuplicateReferenceNames,
+  summarizeCardForAi,
+} from "../../schema/aiPrompt";
 import { useAiProviderConfigStore } from "../../state/aiProviderConfigStore";
 import { useCardStore } from "../../state/cardStore";
 import { AiProviderSettings } from "./AiProviderSettings";
 
 interface Props {
   onClose: () => void;
+  /** Called after adding cards that were based on reference cards — the caller offers the
+   * consistency check then, since new and existing cards should be checked together. */
+  onAddedWithReferences?: () => void;
 }
 
 const MAX_COUNT = 30;
@@ -17,7 +25,8 @@ const MAX_COUNT = 30;
  * instead of relying on AiConsistencyCheckPanel to catch mismatches afterwards. Each re-send is a
  * fresh, independent batch (no draft-plus-instruction refinement like AiAssistPanel) — simpler,
  * and matches how buildGroupGenerateUserTurn is built (no prior draft echoed back). */
-export function AiGroupGeneratePanel({ onClose }: Props) {
+export function AiGroupGeneratePanel({ onClose, onAddedWithReferences }: Props) {
+  const characters = useCardStore((s) => s.characters);
   const newCard = useCardStore((s) => s.newCard);
   const updateCard = useCardStore((s) => s.updateCard);
   const configFile = useAiProviderConfigStore((s) => s.file);
@@ -29,12 +38,31 @@ export function AiGroupGeneratePanel({ onClose }: Props) {
   const [instruction, setInstruction] = useState("");
   const [draft, setDraft] = useState<AiGroupMemberDraft[]>([]);
   const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [referenceIds, setReferenceIds] = useState<Set<string>>(new Set());
+  /** Draft members that re-create a reference character — unticked and marked, see handleSend. */
+  const [duplicates, setDuplicates] = useState<Set<number>>(new Set());
+  /** Whether the current draft was generated with references (not whether some are ticked now). */
+  const [draftUsedReferences, setDraftUsedReferences] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
 
   useEffect(() => {
     ensureConfigLoaded();
   }, [ensureConfigLoaded]);
+
+  const referenceChoices = characters.filter((c) => c.card.name.trim());
+  const allReferencesSelected = referenceChoices.length > 0 && referenceChoices.every((c) => referenceIds.has(c.id));
+
+  function toggleReference(id: string) {
+    const next = new Set(referenceIds);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setReferenceIds(next);
+  }
+
+  function toggleAllReferences() {
+    setReferenceIds(allReferencesSelected ? new Set() : new Set(referenceChoices.map((c) => c.id)));
+  }
 
   const providerReady = !!activeProfile?.baseUrl && !!activeProfile.model;
   const countValid = Number.isInteger(count) && count >= 1 && count <= MAX_COUNT;
@@ -53,12 +81,18 @@ export function AiGroupGeneratePanel({ onClose }: Props) {
     setIsSending(true);
     setSendError(null);
     try {
+      // Current state of the ticked tabs (unsaved edits included), in tab order.
+      const references = referenceChoices.filter((c) => referenceIds.has(c.id)).map((c) => summarizeCardForAi(c.card));
       const members = await requestGroupGenerate(activeProfile, count, [
-        { role: "system", content: buildGroupGenerateSystemPrompt(count) },
-        buildGroupGenerateUserTurn(instruction),
+        { role: "system", content: buildGroupGenerateSystemPrompt(count, references.length > 0) },
+        buildGroupGenerateUserTurn(instruction, references),
       ]);
+      const dupes = findDuplicateReferenceNames(members, references);
       setDraft(members);
-      setSelected(new Set(members.map((_, i) => i))); // fresh batch: everything checked by default
+      setDuplicates(dupes);
+      setDraftUsedReferences(references.length > 0);
+      // Fresh batch: everything checked by default — except re-created reference characters.
+      setSelected(new Set(members.map((_, i) => i).filter((i) => !dupes.has(i))));
     } catch (err) {
       setSendError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -73,6 +107,7 @@ export function AiGroupGeneratePanel({ onClose }: Props) {
       updateCard(member);
     }
     onClose();
+    if (draftUsedReferences) onAddedWithReferences?.();
   }
 
   return (
@@ -82,6 +117,26 @@ export function AiGroupGeneratePanel({ onClose }: Props) {
         <p className="field-hint">
           Generates several new, mutually consistent characters from one prompt — each is added as its own tab.
         </p>
+
+        {referenceChoices.length > 0 && (
+          <div>
+            <p className="field-hint">
+              Reference cards (optional) — new characters fit into these and use what they already say, e.g. “brother
+              and mother of this character” or people mentioned in the cards. References stay unchanged.
+            </p>
+            <div className="ai-assist-field-checkboxes">
+              <button type="button" className="secondary" onClick={toggleAllReferences}>
+                {allReferencesSelected ? "Select none" : "Select all"}
+              </button>
+              {referenceChoices.map((c) => (
+                <label key={c.id} className="ai-assist-field-checkbox">
+                  <input type="checkbox" checked={referenceIds.has(c.id)} onChange={() => toggleReference(c.id)} />
+                  {c.card.name}
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
 
         <AiProviderSettings />
 
@@ -102,7 +157,10 @@ export function AiGroupGeneratePanel({ onClose }: Props) {
               <label key={i} className="ai-lorebook-draft-entry">
                 <input type="checkbox" checked={selected.has(i)} onChange={() => toggleSelected(i)} />
                 <div>
-                  <span className="ai-assist-draft-label">{member.name || "Character"}</span>
+                  <span className="ai-assist-draft-label">
+                    {member.name || "Character"}
+                    {duplicates.has(i) && " — already exists as a reference card, not added by default"}
+                  </span>
                   <p className="ai-assist-draft-value">{member.description}</p>
                 </div>
               </label>
@@ -121,7 +179,11 @@ export function AiGroupGeneratePanel({ onClose }: Props) {
             className="field-textarea"
             value={instruction}
             onChange={(e) => setInstruction(e.target.value)}
-            placeholder="e.g. “Family of four: father a craftsman, mother a doctor, two teenage kids”"
+            placeholder={
+              referenceIds.size > 0
+                ? "e.g. “Her brother, mother and private tutor”"
+                : "e.g. “Family of four: father a craftsman, mother a doctor, two teenage kids”"
+            }
             rows={2}
           />
           <button type="button" onClick={handleSend} disabled={!canSend}>

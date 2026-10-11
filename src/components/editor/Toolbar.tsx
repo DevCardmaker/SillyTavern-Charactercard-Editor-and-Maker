@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useTotalTokenCount } from "../../hooks/useTokenCount";
 import { openCardFile, openFolderAsTabs, saveCard, saveCardAsCopy } from "../../io/fileIO";
 import { useCardStore } from "../../state/cardStore";
+import { AiConsistencyCheckPanel } from "./AiConsistencyCheckPanel";
 import { AiGroupGeneratePanel } from "./AiGroupGeneratePanel";
 import { ContextBudgetPanel } from "./ContextBudgetPanel";
 
@@ -21,6 +22,7 @@ export function Toolbar({ onError, onOpenAiAssist, isTestChatOpen, onToggleTestC
   const [isBudgetOpen, setIsBudgetOpen] = useState(false);
   const totalTokenCount = useTotalTokenCount(card);
   const [isGroupGenerateOpen, setIsGroupGenerateOpen] = useState(false);
+  const [isConsistencyCheckOpen, setIsConsistencyCheckOpen] = useState(false);
 
   function handleOpenAiAssist() {
     if (!card) newCard();
@@ -149,7 +151,13 @@ export function Toolbar({ onError, onOpenAiAssist, isTestChatOpen, onToggleTestC
       >
         Test Chat
       </button>
-      {isGroupGenerateOpen && <AiGroupGeneratePanel onClose={() => setIsGroupGenerateOpen(false)} />}
+      {isGroupGenerateOpen && (
+        <AiGroupGeneratePanel
+          onClose={() => setIsGroupGenerateOpen(false)}
+          onAddedWithReferences={() => setIsConsistencyCheckOpen(true)}
+        />
+      )}
+      {isConsistencyCheckOpen && <AiConsistencyCheckPanel onClose={() => setIsConsistencyCheckOpen(false)} />}
       <div className="toolbar-title">
         {fileName}
         {isDirty && <span className="dirty-indicator" title="Unsaved changes"> ●</span>}

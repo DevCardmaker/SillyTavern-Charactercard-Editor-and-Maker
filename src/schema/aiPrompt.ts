@@ -379,10 +379,11 @@ export function buildConsistencyFixUserTurn(characters: AiCharacterSummary[], is
 /** Static instructions for generating an entire group of new characters at once. Explicitly told
  * to keep the members consistent with each other — the whole point of generating them together
  * instead of one at a time via `AiAssistPanel`. */
-export function buildGroupGenerateSystemPrompt(count: number): string {
+export function buildGroupGenerateSystemPrompt(count: number, withReferences = false): string {
   return [
     `You create ${count} new, related SillyTavern characters at once (e.g. a family or class).`,
     "Keep the characters consistent with each other: plausible age gaps, consistent surnames/family or relationship claims, no contradictions between members.",
+    ...(withReferences ? GROUP_REFERENCE_RULES : []),
     `Respond only with a JSON object of the form { "characters": [...] } with exactly ${count} entries.`,
     "Each entry has: name, description, personality, scenario, first_mes.",
     `For description: ${DESCRIPTION_CHECKLIST}`,
@@ -392,8 +393,34 @@ export function buildGroupGenerateSystemPrompt(count: number): string {
   ].join("\n");
 }
 
-export function buildGroupGenerateUserTurn(instruction: string): AiChatMessage {
-  return { role: "user", content: `Instruction: ${instruction}` };
+/** Extra rules when the new characters join existing ones (e.g. "the brother and mother of this
+ * sister", or the missing members of an incomplete set). The reference cards are read-only facts:
+ * anything they already say about a requested person — often a name, age or job mentioned in
+ * passing — must be picked up, never contradicted or reinvented. */
+const GROUP_REFERENCE_RULES = [
+  "The user also gives existing reference characters. Create only the new characters the instruction asks for — never re-create, rewrite or include a reference character.",
+  "Everything the reference characters say is fact. If they mention one of the requested people (by name or by role), use those details — name, age, job, events, relationships — and build on them; never contradict them.",
+  "Fit the new characters into the references' world: the same setting, era and shared history, and state each new character's relationship to the reference characters in their description.",
+  "Write in the same language as the reference characters.",
+];
+
+export function buildGroupGenerateUserTurn(instruction: string, references: AiCharacterSummary[] = []): AiChatMessage {
+  if (references.length === 0) return { role: "user", content: `Instruction: ${instruction}` };
+  return {
+    role: "user",
+    content: `Reference characters (existing — do not re-create or change them):\n${JSON.stringify(references, null, 2)}\n\nInstruction: ${instruction}`,
+  };
+}
+
+/** New members whose name matches a reference character — the model re-created someone who
+ * already exists instead of a new person. Checked in code rather than trusted to the prompt rule. */
+export function findDuplicateReferenceNames(members: { name: string }[], references: { name: string }[]): Set<number> {
+  const taken = new Set(references.map((r) => r.name.trim().toLowerCase()).filter(Boolean));
+  const duplicates = new Set<number>();
+  members.forEach((m, i) => {
+    if (taken.has(m.name.trim().toLowerCase())) duplicates.add(i);
+  });
+  return duplicates;
 }
 
 /** `summarizeCardForAi` leaves out `mes_example` (not "biographically relevant" for the consistency

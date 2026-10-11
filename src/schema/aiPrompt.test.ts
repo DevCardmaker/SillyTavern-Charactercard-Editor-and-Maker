@@ -5,6 +5,8 @@ import {
   buildUserTurn,
   PERSONA_AI_FIELD_KEYS,
   buildGroupGenerateSystemPrompt,
+  buildGroupGenerateUserTurn,
+  findDuplicateReferenceNames,
   buildLorebookEditSystemPrompt,
   buildLorebookEditUserTurn,
   buildLorebookSystemPrompt,
@@ -207,5 +209,29 @@ describe("metric units", () => {
     ]) {
       expect(prompt).toContain("Use metric units");
     }
+  });
+});
+
+describe("group generate with reference cards", () => {
+  const sister = { name: "Lena", description: "Lena, 19. Her brother Tom is a firefighter.", personality: "", scenario: "", first_mes: "" };
+
+  it("adds the reference rules only when references are given", () => {
+    expect(buildGroupGenerateSystemPrompt(3)).not.toContain("reference characters");
+    const prompt = buildGroupGenerateSystemPrompt(3, true);
+    expect(prompt).toContain("never re-create, rewrite or include a reference character");
+    expect(prompt).toContain("never contradict them");
+    expect(prompt).toContain("exactly 3 entries");
+  });
+
+  it("sends the references ahead of the instruction", () => {
+    const turn = buildGroupGenerateUserTurn("her brother and mother", [sister]);
+    expect(turn.content).toContain("Tom is a firefighter");
+    expect(turn.content.indexOf("Reference characters")).toBeLessThan(turn.content.indexOf("Instruction:"));
+    expect(buildGroupGenerateUserTurn("a family").content).toBe("Instruction: a family");
+  });
+
+  it("flags new members that re-create a reference character", () => {
+    const dupes = findDuplicateReferenceNames([{ name: "Tom" }, { name: " lena " }, { name: "" }], [sister, { name: "" }]);
+    expect([...dupes]).toEqual([1]);
   });
 });
