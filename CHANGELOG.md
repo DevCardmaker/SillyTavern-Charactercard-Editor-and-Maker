@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented here. The project follows [Semantic Versioning](https://semver.org/): new features raise the minor version, fixes the patch version.
 
+## [1.4.0] – 2026-10-11
+
+### Added
+- **Translate…**: translate a card into any language the model knows — type the language yourself (Deutsch, 日本語, Norsk, …). Every text field, the alternate greetings, the Character's Note and optionally the lorebook are translated part by part, and every part is checked: macros like `{{char}}`/`{{user}}`, tags like `<START>`, all numbers and the length must survive, and a part that comes back unchanged counts as not translated. A part that fails is retried once, then keeps its original text and is listed. Names aren't translated but written in the new language's script where it differs (Дарья → Darja, 林小雨 → Lin Xiaoyu), with the same spelling everywhere — name field, text and lorebook keys. Lorebook keys are translated, except names. The result opens as a copy in a new tab.
+- **Split Card…**: turn a group card — one card describing several characters — into one card per person. First the people are found in the card *and* its lorebook; you pick who to extract (or add a name), then each person is extracted on their own and can be redone on their own. Cards that come out much shorter than expected, or longer than the whole group card, are flagged. The group card stays unchanged; its lorebook and image can be copied to the new cards.
+- **Merge into one card…**: combine several open characters into one group card that portrays all of them. Each person's text is copied into its own section (with `{{char}}` replaced by their name), optionally shortened to 75/60/50 % with the section-by-section condensing. Scenario and first message can be taken from one of the cards or written new for the group; lorebooks are merged and an image can be picked. The original cards stay unchanged.
+- **Create Group… with reference cards**: tick open cards as references to build new characters on them — the family of a single character, the missing members of a set, or people the cards only mention. Facts from the references are kept, never contradicted. Optionally pick a persona the new characters can relate to (written as `{{user}}`), and optionally have the reference cards updated so they know the new characters: short additions only, shown for review, with a backup of each changed card first.
+- **Editable prompts**: the instructions the AI gets come from a text file you can edit (`prompts.txt` in the app's settings folder) — "Create/Edit prompts file" and "Reload prompts" under "Provider & prompt settings" in every AI window. Each section can be changed or switched off; deleted sections fall back to the built-in text, so improvements in updates still arrive. "Show last prompt" shows what was actually sent.
+- **Persona "Fit to characters"** now takes several characters at once, for a persona meant for a group chat, with a "Select all" button.
+
 ## [1.3.0] – 2026-10-06
 
 ### Added

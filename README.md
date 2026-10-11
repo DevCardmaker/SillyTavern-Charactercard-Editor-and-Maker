@@ -39,12 +39,15 @@ Point the app at any OpenAI-compatible `/v1/chat/completions` endpoint — a loc
 - Generate an avatar image-generation prompt, tuned to different image models (Stable Diffusion, Pony Diffusion, Qwen-Image, Z-Image, Krea 2/FLUX) and art styles
 - **Test chat**: try out a character — or several as a group chat — in a sidebar next to the editor, using the cards as they are right now (unsaved edits included). Lorebook entries, persona and Character's Note are applied roughly the way SillyTavern does; nothing is saved
 - Check every currently open character together for contradictions (ages, relationships, names, timeline) — and fix them right there: the AI suggests small text edits across the affected cards, checked against the cards and shown for review before anything is applied
-- Generate a whole group of new, mutually consistent characters from a single prompt
+- Generate a whole group of new, mutually consistent characters from a single prompt — or build them on existing cards: the family of one character, the missing members of a set, or people a card only mentions, optionally relating to your persona
+- **Split** a group card (one card describing several characters) into one card per person, including people only found in its lorebook — or **merge** several cards into one group card, optionally shortened to save tokens
+- **Translate** a card into any language, part by part with checks — names are written in the new language's script, lorebook keys are translated too
 - Edit a whole group at once, e.g. move every open character to a new setting while keeping who they are
 - Condense long fields section by section to save prompt tokens without changing the character (one field or all at once, compared side by side, with a backup first)
-- Write personas, optionally fitted to an open character's world
+- Write personas, optionally fitted to the world of one or several open characters
 - Optional per-profile temperature, max tokens, and parallel requests for faster bulk operations with cloud providers
 - AI-written text uses metric units
+- **Editable prompts**: every instruction the AI gets can be changed in a plain text file, section by section — and you can see exactly what was sent
 
 ## Download
 
@@ -87,6 +90,16 @@ The prompt follows SillyTavern's structure closely (system prompt, lorebook, des
 ### Fixing contradictions in a group
 
 "Consistency Check…" (with two or more cards open) lists contradictions between the open characters. Under each finding, "Suggest fix" asks the AI for small text edits — optionally with a hint which version is right ("Mother is 45"). Each edit quotes the passage it replaces; the editor checks that passage really is in the card and shows old and new side by side. After applying, run the check again: a fix can bring up a follow-up contradiction.
+
+### Splitting, merging and translating cards
+
+"Split Card…" first lists the people in the open card and its lorebook; tick who should get a card of their own, then each one is extracted separately — redo any single one if it came out too short. "Merge into one card…" (with two or more cards open) copies each character into a section of one group card; choose whether to shorten them, and whether scenario and first message come from one of the cards or are written new. "Translate…" takes any language name you type. Both split/merge and translate create new tabs — the original cards are never changed.
+
+Local models work best with these step-by-step features: each request is a small task, and the editor checks every result (lost macros, missing numbers, untranslated or shortened text) before using it.
+
+### Changing the prompts
+
+Under "Provider & prompt settings" in any AI window, "Create prompts file" writes all built-in instructions into `prompts.txt` and opens it in your text editor. Change a section, save, and click "Reload prompts". Sections you delete fall back to the built-in text; `(none)` switches one off; `{metric_units}` and similar placeholders insert another section, so a shared rule is changed in one place. The reply format (JSON fields) is fixed in the app so a typo can't break a feature. "Show last prompt" shows exactly what the last AI request sent.
 
 ## Changelog
 
