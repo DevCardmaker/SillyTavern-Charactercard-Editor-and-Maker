@@ -2,13 +2,7 @@ import { useEffect, useState } from "react";
 import { requestConsistencyCheck, requestConsistencyFix } from "../../io/aiClient";
 import { concurrencyFor, mapConcurrent } from "../../io/concurrency";
 import type { AiConsistencyFinding } from "../../schema/aiConsistencyCheck";
-import {
-  applySnippet,
-  CONSISTENCY_FIX_FIELD_LABELS,
-  type ResolvedFixChange,
-  resolveFixChanges,
-} from "../../schema/aiConsistencyFix";
-import type { NormalizedCard } from "../../schema/normalize";
+import { type ResolvedFixChange, resolveFixChanges } from "../../schema/aiConsistencyFix";
 import {
   buildConsistencyCheckSystemPrompt,
   buildConsistencyCheckUserTurn,
@@ -19,6 +13,7 @@ import {
 import { useAiProviderConfigStore } from "../../state/aiProviderConfigStore";
 import { useCardStore } from "../../state/cardStore";
 import { AiProviderSettings } from "./AiProviderSettings";
+import { applyReviewedChanges, FixChangeList } from "./FixChangeList";
 
 interface Props {
   onClose: () => void;
@@ -135,25 +130,7 @@ export function AiConsistencyCheckPanel({ onClose }: Props) {
   function applyFix(index: number) {
     const fix = fixes[index];
     if (!fix?.changes) return;
-    const { characters: slots, updateSlotCard } = useCardStore.getState();
-    const patches = new Map<string, Partial<NormalizedCard>>();
-    let skipped = 0;
-    for (const change of fix.changes) {
-      if (!change.enabled || change.problem || !change.slotId) continue;
-      const slot = slots.find((s) => s.id === change.slotId);
-      if (!slot) {
-        skipped++;
-        continue;
-      }
-      const patch = patches.get(slot.id) ?? {};
-      const next = applySnippet(patch[change.field] ?? slot.card[change.field], change.find, change.replace);
-      if (next === null) {
-        skipped++;
-        continue;
-      }
-      patches.set(slot.id, { ...patch, [change.field]: next });
-    }
-    for (const [id, patch] of patches) updateSlotCard(id, patch);
+    const skipped = applyReviewedChanges(fix.changes);
     patchFix(index, { status: "applied", skipped });
   }
 
@@ -197,28 +174,7 @@ export function AiConsistencyCheckPanel({ onClose }: Props) {
         {fix.status === "ready" && fix.changes && (
           <>
             {fix.explanation && <p className="field-hint">{fix.explanation}</p>}
-            {fix.changes.map((change, ci) => (
-              <div key={ci} className={change.problem ? "consistency-change unusable" : "consistency-change"}>
-                <label className="field-inline">
-                  <input
-                    type="checkbox"
-                    checked={change.enabled}
-                    disabled={!!change.problem}
-                    onChange={(e) => editChange(index, ci, { enabled: e.target.checked })}
-                  />
-                  <strong>{change.character}</strong> · {CONSISTENCY_FIX_FIELD_LABELS[change.field]}
-                </label>
-                {change.problem && <p className="field-error">{change.problem}</p>}
-                <div className="consistency-change-before">{change.find}</div>
-                <textarea
-                  className="field-textarea"
-                  rows={2}
-                  value={change.replace}
-                  disabled={!!change.problem}
-                  onChange={(e) => editChange(index, ci, { replace: e.target.value })}
-                />
-              </div>
-            ))}
+            <FixChangeList changes={fix.changes} onEdit={(ci, patch) => editChange(index, ci, patch)} />
             <div className="consistency-fix-row">
               <button type="button" className="secondary" onClick={() => patchFix(index, { status: "idle", changes: undefined })}>
                 Discard

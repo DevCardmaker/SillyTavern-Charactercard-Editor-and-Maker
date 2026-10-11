@@ -6,6 +6,8 @@ import {
   PERSONA_AI_FIELD_KEYS,
   buildGroupGenerateSystemPrompt,
   buildGroupGenerateUserTurn,
+  buildIntegrateMembersSystemPrompt,
+  buildIntegrateMembersUserTurn,
   findDuplicateReferenceNames,
   buildLorebookEditSystemPrompt,
   buildLorebookEditUserTurn,
@@ -217,7 +219,7 @@ describe("group generate with reference cards", () => {
 
   it("adds the reference rules only when references are given", () => {
     expect(buildGroupGenerateSystemPrompt(3)).not.toContain("reference characters");
-    const prompt = buildGroupGenerateSystemPrompt(3, true);
+    const prompt = buildGroupGenerateSystemPrompt(3, { references: true });
     expect(prompt).toContain("never re-create, rewrite or include a reference character");
     expect(prompt).toContain("never contradict them");
     expect(prompt).toContain("exactly 3 entries");
@@ -233,5 +235,32 @@ describe("group generate with reference cards", () => {
   it("flags new members that re-create a reference character", () => {
     const dupes = findDuplicateReferenceNames([{ name: "Tom" }, { name: " lena " }, { name: "" }], [sister, { name: "" }]);
     expect([...dupes]).toEqual([1]);
+  });
+});
+
+describe("group generate with a persona", () => {
+  it("adds the persona rules and sends the persona as {{user}}", () => {
+    expect(buildGroupGenerateSystemPrompt(2)).not.toContain("{{user}}");
+    expect(buildGroupGenerateSystemPrompt(2, { persona: true })).toContain("always write the persona as {{user}}, never by name");
+    const turn = buildGroupGenerateUserTurn("her neighbours", [], { name: "Alex", description: "A new teacher in the village." });
+    expect(turn.content).toContain("A new teacher in the village.");
+    expect(turn.content).not.toContain("Reference characters");
+    expect(turn.content.indexOf("persona")).toBeLessThan(turn.content.indexOf("Instruction:"));
+  });
+});
+
+describe("integrating new members into reference cards", () => {
+  it("asks for additions to the existing cards only", () => {
+    const prompt = buildIntegrateMembersSystemPrompt();
+    expect(prompt).toContain("never a new one");
+    expect(prompt).toContain('"additions"');
+    expect(prompt).toContain("Use metric units");
+  });
+
+  it("separates the cards to edit from the new ones", () => {
+    const card = { name: "", description: "", personality: "", scenario: "", first_mes: "" };
+    const turn = buildIntegrateMembersUserTurn([{ ...card, name: "Lena" }], [{ ...card, name: "Petra" }]);
+    expect(turn.content.indexOf("Lena")).toBeLessThan(turn.content.indexOf("New characters"));
+    expect(turn.content.indexOf("Petra")).toBeGreaterThan(turn.content.indexOf("New characters"));
   });
 });

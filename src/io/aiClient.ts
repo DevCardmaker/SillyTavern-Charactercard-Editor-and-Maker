@@ -3,6 +3,7 @@ import { type AiFieldKey, type AiFieldPatch, aiFieldsToJsonSchema, parseAiPatch 
 import { type AiConsistencyFinding, aiConsistencyCheckToJsonSchema, parseAiConsistencyCheck } from "../schema/aiConsistencyCheck";
 import { type AiConsistencyFix, aiConsistencyFixToJsonSchema, parseAiConsistencyFix } from "../schema/aiConsistencyFix";
 import { type AiGroupMemberDraft, aiGroupToJsonSchema, parseAiGroup } from "../schema/aiGroupGenerate";
+import { type AiIntegration, aiIntegrateToJsonSchema, parseAiIntegration } from "../schema/aiIntegrateMembers";
 import { aiImagePromptToJsonSchema, parseAiImagePrompt } from "../schema/aiImagePrompt";
 import { type AiRelocateMember, aiRelocateToJsonSchema, parseAiRelocate } from "../schema/aiRelocate";
 import { type AiLorebookEntryDraft, aiLorebookEntriesToJsonSchema, parseAiLorebookEntries } from "../schema/aiLorebookAssist";
@@ -198,6 +199,30 @@ export async function requestConsistencyFix(config: AiProviderConfig, messages: 
   }
 
   const parsed = parseAiConsistencyFix(raw);
+  if (!parsed.success) {
+    throw new Error(`Model response did not match the expected format: ${parsed.error}`);
+  }
+
+  return parsed.data;
+}
+
+/** Asks for additions that work newly generated characters into the reference cards. Same
+ * validate-or-throw contract as `requestFieldPatch`; positions are resolved by the caller. */
+export async function requestIntegration(config: AiProviderConfig, messages: AiChatMessage[]): Promise<AiIntegration> {
+  const content = await callChatCompletion(config, messages, {
+    name: "integrate_members",
+    strict: true,
+    schema: aiIntegrateToJsonSchema(),
+  });
+
+  let raw: unknown;
+  try {
+    raw = JSON.parse(content);
+  } catch {
+    throw new Error(`Model response was not valid JSON: ${truncate(content)}`);
+  }
+
+  const parsed = parseAiIntegration(raw);
   if (!parsed.success) {
     throw new Error(`Model response did not match the expected format: ${parsed.error}`);
   }

@@ -379,11 +379,15 @@ export function buildConsistencyFixUserTurn(characters: AiCharacterSummary[], is
 /** Static instructions for generating an entire group of new characters at once. Explicitly told
  * to keep the members consistent with each other — the whole point of generating them together
  * instead of one at a time via `AiAssistPanel`. */
-export function buildGroupGenerateSystemPrompt(count: number, withReferences = false): string {
+export function buildGroupGenerateSystemPrompt(
+  count: number,
+  { references = false, persona = false }: { references?: boolean; persona?: boolean } = {},
+): string {
   return [
     `You create ${count} new, related SillyTavern characters at once (e.g. a family or class).`,
     "Keep the characters consistent with each other: plausible age gaps, consistent surnames/family or relationship claims, no contradictions between members.",
-    ...(withReferences ? GROUP_REFERENCE_RULES : []),
+    ...(references ? GROUP_REFERENCE_RULES : []),
+    ...(persona ? GROUP_PERSONA_RULES : []),
     `Respond only with a JSON object of the form { "characters": [...] } with exactly ${count} entries.`,
     "Each entry has: name, description, personality, scenario, first_mes.",
     `For description: ${DESCRIPTION_CHECKLIST}`,
@@ -404,11 +408,54 @@ const GROUP_REFERENCE_RULES = [
   "Write in the same language as the reference characters.",
 ];
 
-export function buildGroupGenerateUserTurn(instruction: string, references: AiCharacterSummary[] = []): AiChatMessage {
-  if (references.length === 0) return { role: "user", content: `Instruction: ${instruction}` };
+/** The persona is the human player — in SillyTavern that's {{user}}, so the new cards name it by
+ * macro and stay usable with any persona; the persona only shapes how they relate to the player. */
+const GROUP_PERSONA_RULES = [
+  "The user also gives their persona — the character the user plays in chats. Where the instruction or the setting suggests it, give the new characters a plausible relationship with the persona (e.g. neighbour, colleague, employer) that fits the persona's description.",
+  "In the new cards, always write the persona as {{user}}, never by name. Don't describe the persona's looks or personality, and don't decide how the persona feels.",
+];
+
+export interface AiPersonaSummary {
+  name: string;
+  description: string;
+}
+
+export function buildGroupGenerateUserTurn(
+  instruction: string,
+  references: AiCharacterSummary[] = [],
+  persona?: AiPersonaSummary,
+): AiChatMessage {
+  const parts: string[] = [];
+  if (references.length > 0) {
+    parts.push(`Reference characters (existing — do not re-create or change them):\n${JSON.stringify(references, null, 2)}`);
+  }
+  if (persona) parts.push(`The user's persona (write as {{user}}):\n${JSON.stringify(persona, null, 2)}`);
+  parts.push(`Instruction: ${instruction}`);
+  return { role: "user", content: parts.join("\n\n") };
+}
+
+/** Second step after generating characters for existing reference cards: the references don't know
+ * the new people yet. Additions only (see aiIntegrateMembers.ts) — the model can't remove or
+ * reword anything, and a misquoted position just means "append at the end". */
+export function buildIntegrateMembersSystemPrompt(): string {
+  return [
+    "New characters have just been added to a group of existing SillyTavern characters. Add short mentions of them to the existing characters' cards, so the existing characters know about them.",
+    'Respond only with a JSON object of the form { "explanation": "...", "additions": [...] }.',
+    "- explanation: one short sentence saying what is added where.",
+    "- additions: each has character (the name of an EXISTING character exactly as given — never a new one), field (description, personality or scenario), after and add.",
+    "- add: one or two new sentences about the new character(s): what this existing character would plausibly know — name, how they're related, maybe one key fact. Not a full profile.",
+    '- after: the sentence in that field the new text belongs after, copied word for word — or "" to add it at the end of the field.',
+    "Mostly add to the description; usually one addition per existing character is enough, mentioning every new character they know. Don't repeat what the card already says.",
+    "Write each addition in that card's language, style and point of view, and use macros like {{char}} and {{user}} the way the card does.",
+    METRIC_UNITS,
+    "Give no explanations, no prose outside the JSON, and no extra fields.",
+  ].join("\n");
+}
+
+export function buildIntegrateMembersUserTurn(existing: AiCharacterSummary[], added: AiCharacterSummary[]): AiChatMessage {
   return {
     role: "user",
-    content: `Reference characters (existing — do not re-create or change them):\n${JSON.stringify(references, null, 2)}\n\nInstruction: ${instruction}`,
+    content: `Existing characters (edit these):\n${JSON.stringify(existing, null, 2)}\n\nNew characters (do not edit):\n${JSON.stringify(added, null, 2)}`,
   };
 }
 

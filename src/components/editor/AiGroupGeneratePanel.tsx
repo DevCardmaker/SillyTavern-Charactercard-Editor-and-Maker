@@ -1,15 +1,29 @@
 import { useEffect, useState } from "react";
-import { requestGroupGenerate } from "../../io/aiClient";
+import { requestGroupGenerate, requestIntegration } from "../../io/aiClient";
 import type { AiGroupMemberDraft } from "../../schema/aiGroupGenerate";
+import { additionsToChanges } from "../../schema/aiIntegrateMembers";
 import {
   buildGroupGenerateSystemPrompt,
   buildGroupGenerateUserTurn,
+  buildIntegrateMembersSystemPrompt,
+  buildIntegrateMembersUserTurn,
   findDuplicateReferenceNames,
   summarizeCardForAi,
 } from "../../schema/aiPrompt";
+import type { NormalizedCard } from "../../schema/normalize";
 import { useAiProviderConfigStore } from "../../state/aiProviderConfigStore";
 import { useCardStore } from "../../state/cardStore";
+import { usePersonaStore } from "../../state/personaStore";
 import { AiProviderSettings } from "./AiProviderSettings";
+import { applyReviewedChanges, FixChangeList, type ReviewableChange } from "./FixChangeList";
+
+/** The optional second step: edits that work the new characters into the reference cards. */
+interface IntegrationState {
+  status: "loading" | "ready" | "error";
+  explanation?: string;
+  changes?: ReviewableChange[];
+  error?: string;
+}
 
 interface Props {
   onClose: () => void;
@@ -27,6 +41,7 @@ const MAX_COUNT = 30;
  * and matches how buildGroupGenerateUserTurn is built (no prior draft echoed back). */
 export function AiGroupGeneratePanel({ onClose, onAddedWithReferences }: Props) {
   const characters = useCardStore((s) => s.characters);
+  const personas = usePersonaStore((s) => s.characters);
   const newCard = useCardStore((s) => s.newCard);
   const updateCard = useCardStore((s) => s.updateCard);
   const configFile = useAiProviderConfigStore((s) => s.file);
@@ -43,6 +58,12 @@ export function AiGroupGeneratePanel({ onClose, onAddedWithReferences }: Props) 
   const [duplicates, setDuplicates] = useState<Set<number>>(new Set());
   /** Whether the current draft was generated with references (not whether some are ticked now). */
   const [draftUsedReferences, setDraftUsedReferences] = useState(false);
+  const [personaId, setPersonaId] = useState("");
+  /** Also work the new characters into the reference cards (second AI step, reviewed edits). */
+  const [integrate, setIntegrate] = useState(true);
+  /** Reference tabs the current draft was generated against — what the integration step edits. */
+  const [draftReferences, setDraftReferences] = useState<{ id: string; card: NormalizedCard }[]>([]);
+  const [integration, setIntegration] = useState<IntegrationState | null>(null);
   const [isSending, setIsSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
 
@@ -51,6 +72,7 @@ export function AiGroupGeneratePanel({ onClose, onAddedWithReferences }: Props) 
   }, [ensureConfigLoaded]);
 
   const referenceChoices = characters.filter((c) => c.card.name.trim());
+  const personaChoices = personas.filter((p) => p.card.name.trim());
   const allReferencesSelected = referenceChoices.length > 0 && referenceChoices.every((c) => referenceIds.has(c.id));
 
   function toggleReference(id: string) {
@@ -67,7 +89,7 @@ export function AiGroupGeneratePanel({ onClose, onAddedWithReferences }: Props) 
   const providerReady = !!activeProfile?.baseUrl && !!activeProfile.model;
   const countValid = Number.isInteger(count) && count >= 1 && count <= MAX_COUNT;
   const canSend = providerReady && countValid && instruction.trim() !== "" && !isSending;
-  const canApply = [...selected].length > 0;
+  const canApply = [...selected].length > 0 && integration?.status !== "loading";
 
   function toggleSelected(index: number) {
     const next = new Set(selected);
@@ -82,17 +104,35 @@ export function AiGroupGeneratePanel({ onClose, onAddedWithReferences }: Props) 
     setSendError(null);
     try {
       // Current state of the ticked tabs (unsaved edits included), in tab order.
-      const references = referenceChoices.filter((c) => referenceIds.has(c.id)).map((c) => summarizeCardForAi(c.card));
+      const refSlots = referenceChoices.filter((c) => referenceIds.has(c.id)).map(({ id, card }) => ({ id, card }));
+      const references = refSlots.map((c) => summarizeCardForAi(c.card));
+      const persona = personaChoices.find((p) => p.id === personaId)?.card;
+      setIntegration(null);
       const members = await requestGroupGenerate(activeProfile, count, [
-        { role: "system", content: buildGroupGenerateSystemPrompt(count, references.length > 0) },
-        buildGroupGenerateUserTurn(instruction, references),
+        {
+          role: "system",
+          content: buildGroupGenerateSystemPrompt(count, { references: references.length > 0, persona: !!persona }),
+        },
+        buildGroupGenerateUserTurn(
+          instruction,
+          references,
+          persona ? { name: persona.name, description: persona.description } : undefined,
+        ),
       ]);
       const dupes = findDuplicateReferenceNames(members, references);
+      const keep = new Set(members.map((_, i) => i).filter((i) => !dupes.has(i)));
       setDraft(members);
       setDuplicates(dupes);
       setDraftUsedReferences(references.length > 0);
+      setDraftReferences(refSlots);
       // Fresh batch: everything checked by default — except re-created reference characters.
-      setSelected(new Set(members.map((_, i) => i).filter((i) => !dupes.has(i))));
+      setSelected(keep);
+      if (integrate && refSlots.length > 0) {
+        void suggestIntegration(
+          members.filter((_, i) => keep.has(i)),
+          refSlots,
+        );
+      }
     } catch (err) {
       setSendError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -100,7 +140,43 @@ export function AiGroupGeneratePanel({ onClose, onAddedWithReferences }: Props) 
     }
   }
 
+  /** Asks for edits that make the reference cards know the new characters. Run right after
+   * generating, and again on demand (e.g. after unticking some new characters). */
+  async function suggestIntegration(members: AiGroupMemberDraft[], refSlots: { id: string; card: NormalizedCard }[]) {
+    if (!activeProfile || members.length === 0 || refSlots.length === 0) return;
+    setIntegration({ status: "loading" });
+    try {
+      // The cards as they are now — the user may have edited a reference tab meanwhile.
+      const current = useCardStore.getState().characters;
+      const slots = refSlots.map((r) => current.find((c) => c.id === r.id) ?? r);
+      const result = await requestIntegration(activeProfile, [
+        { role: "system", content: buildIntegrateMembersSystemPrompt() },
+        buildIntegrateMembersUserTurn(
+          slots.map((c) => summarizeCardForAi(c.card)),
+          members,
+        ),
+      ]);
+      // Additions aimed at a new character are dropped — those cards are written by the first step.
+      const newNames = new Set(members.map((m) => m.name.trim().toLowerCase()));
+      const changes = additionsToChanges(
+        result.additions.filter((a) => !newNames.has(a.character.trim().toLowerCase())),
+        slots,
+      ).map((c) => ({ ...c, enabled: !c.problem }));
+      setIntegration({ status: "ready", explanation: result.explanation, changes });
+    } catch (err) {
+      setIntegration({ status: "error", error: err instanceof Error ? err.message : String(err) });
+    }
+  }
+
+  function editIntegrationChange(index: number, patch: Partial<ReviewableChange>) {
+    setIntegration((prev) =>
+      prev?.changes ? { ...prev, changes: prev.changes.map((c, i) => (i === index ? { ...c, ...patch } : c)) } : prev,
+    );
+  }
+
   function handleApply() {
+    // Edits to the existing tabs first — adding the new tabs below switches the active card.
+    if (integration?.status === "ready" && integration.changes) applyReviewedChanges(integration.changes);
     for (const [i, member] of draft.entries()) {
       if (!selected.has(i)) continue;
       newCard();
@@ -135,7 +211,30 @@ export function AiGroupGeneratePanel({ onClose, onAddedWithReferences }: Props) 
                 </label>
               ))}
             </div>
+            {referenceIds.size > 0 && (
+              <label className="field-inline">
+                <input type="checkbox" checked={integrate} onChange={(e) => setIntegrate(e.target.checked)} />
+                Also update the reference cards so they know the new characters (you review the edits)
+              </label>
+            )}
           </div>
+        )}
+
+        {personaChoices.length > 0 && (
+          <label className="field">
+            <span className="field-label">Persona (optional, open in the Personas mode)</span>
+            <select className="field-input" value={personaId} onChange={(e) => setPersonaId(e.target.value)}>
+              <option value="">None</option>
+              {personaChoices.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.card.name}
+                </option>
+              ))}
+            </select>
+            <span className="field-hint">
+              New characters can relate to your persona — they write it as {"{{user}}"}. The persona stays unchanged.
+            </span>
+          </label>
         )}
 
         <AiProviderSettings />
@@ -165,6 +264,39 @@ export function AiGroupGeneratePanel({ onClose, onAddedWithReferences }: Props) 
                 </div>
               </label>
             ))}
+          </div>
+        )}
+
+        {draft.length > 0 && draftUsedReferences && (
+          <div className="consistency-fix">
+            <span className="ai-assist-draft-label">Changes to the reference cards</span>
+            {integration?.status === "loading" && (
+              <p className="field-hint">Working the new characters into the reference cards…</p>
+            )}
+            {integration?.status === "error" && <p className="field-error">{integration.error}</p>}
+            {integration?.status === "ready" && (
+              <>
+                {integration.explanation && <p className="field-hint">{integration.explanation}</p>}
+                {integration.changes && integration.changes.length > 0 ? (
+                  <FixChangeList changes={integration.changes} onEdit={editIntegrationChange} />
+                ) : (
+                  <p className="field-hint">No changes needed.</p>
+                )}
+              </>
+            )}
+            {integration?.status !== "loading" && (
+              <div className="consistency-fix-row">
+                <button
+                  type="button"
+                  className="secondary"
+                  disabled={!providerReady || selected.size === 0}
+                  onClick={() => void suggestIntegration(draft.filter((_, i) => selected.has(i)), draftReferences)}
+                  title="Suggest edits for the currently ticked new characters"
+                >
+                  {integration ? "Suggest again" : "Suggest edits"}
+                </button>
+              </div>
+            )}
           </div>
         )}
 
