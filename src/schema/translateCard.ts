@@ -110,6 +110,13 @@ export function numbersIn(text: string): string[] {
 export function translationProblem(original: string, translated: string): string | null {
   const result = translated.trim();
   if (!result) return "came back empty";
+  // Returned as it was: every other check passes for an untranslated text, so this needs its own
+  // (seen with a Russian first message). A text already in the target language trips it too —
+  // then the retry fails the same way and the part keeps its (correct) original, just with a note.
+  const plain = (t: string) => t.replace(/\s+/g, " ").trim().toLowerCase();
+  if (plain(result) === plain(original) && (original.match(/\p{L}/gu)?.length ?? 0) >= 20) {
+    return "came back unchanged — not translated";
+  }
   if (result.length < original.trim().length * 0.3) return "much shorter than the original — probably cut off";
   const before = protectedTokens(original).join(" ");
   const after = protectedTokens(result).join(" ");

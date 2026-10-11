@@ -67,6 +67,8 @@ describe("checks", () => {
     expect(translationProblem("<START>\n{{user}}: Hi\n{{char}}: Yo", "{{user}}: Hallo\n{{char}}: Jo")).toContain("macros");
     expect(translationProblem("<backstory>A long text here</backstory>", "Ein langer Text hier")).toContain("tags");
     expect(translationProblem("Some text", " ")).toBe("came back empty");
+    expect(translationProblem("Двухуровневый лофт гудит басами.", " Двухуровневый  лофт гудит басами. ")).toContain("unchanged");
+    expect(translationProblem("Ja.", "Ja.")).toBeNull();
     expect(translationProblem("A much longer original text than this", "Mag")).toContain("cut off");
     expect(translationProblem("Hi {{user}}, *waves*", "Hallo {{User}}, *winkt*")).toBeNull();
     expect(translationProblem("Uncle Bernd, 58, runs the pub.", "The Black Forest, population 447.")).toContain("numbers");
