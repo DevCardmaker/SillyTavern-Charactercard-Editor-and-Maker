@@ -1,18 +1,25 @@
 import { useEffect, useState } from "react";
 import { useTokenCounter } from "../../hooks/useTokenCount";
-import { requestKeysTranslation, requestTranslation } from "../../io/aiClient";
+import { requestKeysTranslation, requestNameTranslation, requestTranslation } from "../../io/aiClient";
 import { concurrencyFor, mapConcurrent } from "../../io/concurrency";
 import {
   buildTranslateKeysSystemPrompt,
   buildTranslateKeysUserTurn,
+  buildTranslateNameSystemPrompt,
+  buildTranslateNameUserTurn,
   buildTranslateSystemPrompt,
   buildTranslateUserTurn,
+  translateNameNote,
 } from "../../schema/aiPrompt";
 import type { NormalizedCard } from "../../schema/normalize";
 import {
   type AiEntryTranslation,
   applyTranslations,
   collectTranslateTexts,
+  nameFitsScript,
+  nameProblem,
+  SCRIPT_PROBE,
+  scriptOf,
   translationProblem,
   withOriginalSpacing,
 } from "../../schema/translateCard";
@@ -93,6 +100,36 @@ export function TranslateCardPanel({ onClose }: Props) {
       const found: string[] = [];
       const tasks = [...chunkTasks, ...entryTasks];
       let done = 0;
+
+      // First the name, on its own, so every part gets the same spelling (Дарья → Darja). Whether it
+      // needs another script at all is decided by the code: a fixed test sentence shows which script
+      // the target language uses; a name already in that script stays as it is, without asking.
+      let name = card.name;
+      if (card.name.trim()) {
+        setProgress("Checking the name…");
+        const probe = await translateChecked(
+          () =>
+            requestTranslation(activeProfile, [
+              { role: "system", content: buildTranslateSystemPrompt(target, "a test sentence") },
+              buildTranslateUserTurn(SCRIPT_PROBE),
+            ]),
+          (translated) => (scriptOf(translated) ? null : "no letters"),
+        );
+        const targetScript = probe.value !== null ? scriptOf(probe.value) : null;
+        if (targetScript && !nameFitsScript(scriptOf(card.name), targetScript)) {
+          const result = await translateChecked(
+            () =>
+              requestNameTranslation(activeProfile, [
+                { role: "system", content: buildTranslateNameSystemPrompt(card.name, target, targetScript) },
+                buildTranslateNameUserTurn(card.name),
+              ]),
+            (translated) => nameProblem(card.name, translated, targetScript),
+          );
+          if (result.value !== null) name = result.value.trim();
+          else found.push(`Name: kept as it is (${result.problem})`);
+        }
+      }
+      const nameNote = translateNameNote(card.name, name);
       setProgress(`Translating 0 of ${tasks.length} parts…`);
 
       await mapConcurrent(tasks, concurrencyFor(activeProfile), async (task) => {
@@ -100,7 +137,7 @@ export function TranslateCardPanel({ onClose }: Props) {
           const { value, problem } = await translateChecked(
             () =>
               requestTranslation(activeProfile, [
-                { role: "system", content: buildTranslateSystemPrompt(target, task.label) },
+                { role: "system", content: buildTranslateSystemPrompt(target, task.label, nameNote) },
                 buildTranslateUserTurn(task.text),
               ]),
             (translated) => translationProblem(task.text, translated),
@@ -115,7 +152,7 @@ export function TranslateCardPanel({ onClose }: Props) {
           const content = await translateChecked(
             () =>
               requestTranslation(activeProfile, [
-                { role: "system", content: buildTranslateSystemPrompt(target, "lorebook") },
+                { role: "system", content: buildTranslateSystemPrompt(target, "lorebook", nameNote) },
                 buildTranslateUserTurn(entry.content),
               ]),
             (translated) => translationProblem(entry.content, translated),
@@ -126,7 +163,7 @@ export function TranslateCardPanel({ onClose }: Props) {
             const keys = await translateChecked(
               () =>
                 requestKeysTranslation(activeProfile, [
-                  { role: "system", content: buildTranslateKeysSystemPrompt(target) },
+                  { role: "system", content: buildTranslateKeysSystemPrompt(target, nameNote) },
                   buildTranslateKeysUserTurn(entry),
                 ]),
               (translated) => (translated.keys.some((k) => k.trim()) ? null : "no keys came back"),
@@ -143,7 +180,7 @@ export function TranslateCardPanel({ onClose }: Props) {
         setProgress(`Translating ${done} of ${tasks.length} parts…`);
       });
 
-      setResult(applyTranslations(card, texts, outputs.map((o) => o.join("")), withLorebook ? translatedEntries : null));
+      setResult(applyTranslations(card, texts, outputs.map((o) => o.join("")), withLorebook ? translatedEntries : null, name));
       setProblems(found);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -169,7 +206,8 @@ export function TranslateCardPanel({ onClose }: Props) {
         <p className="field-hint">
           Translates “{card?.name || "this card"}” into another language — part by part, each part checked (macros like
           {" {{char}}"}, tags like {"<START>"}, length) and retried once if something looks wrong. The result opens as a
-          copy in a new tab; the original stays unchanged. Names stay as they are.
+          copy in a new tab; the original stays unchanged. Names aren't translated, but written in the new language's
+          script where it differs (e.g. Дарья → Darja).
         </p>
 
         <AiProviderSettings />
@@ -218,6 +256,14 @@ export function TranslateCardPanel({ onClose }: Props) {
               </>
             ) : (
               <p className="field-hint">All parts translated.</p>
+            )}
+            {result.name !== card?.name && (
+              <div className="ai-assist-draft-field">
+                <span className="ai-assist-draft-label">Name</span>
+                <p className="ai-assist-draft-value">
+                  {card?.name} → {result.name}
+                </p>
+              </div>
             )}
             {(["description", "first_mes"] as const).map((field) =>
               result[field] ? (

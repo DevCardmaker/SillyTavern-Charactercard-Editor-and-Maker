@@ -133,6 +133,80 @@ export function withOriginalSpacing(original: string, translated: string): strin
   return lead + translated.trim() + trail;
 }
 
+const aiNameSchema = z.object({ name: z.string() });
+
+export function aiNameToJsonSchema(): Record<string, unknown> {
+  const schema = z.toJSONSchema(aiNameSchema) as Record<string, unknown>;
+  return { ...schema, additionalProperties: false };
+}
+
+export function parseAiName(raw: unknown): { success: true; data: string } | { success: false; error: string } {
+  const result = aiNameSchema.safeParse(raw);
+  return result.success ? { success: true, data: result.data.name } : { success: false, error: result.error.message };
+}
+
+/** The writing systems the code tells apart — enough to decide whether a name needs to be
+ * written in another script for the target language. */
+export type Script = "Latin" | "Cyrillic" | "Greek" | "Arabic" | "Hebrew" | "Korean" | "Japanese" | "Chinese" | "Thai" | "Devanagari";
+
+const SCRIPT_PATTERNS: [Script, RegExp][] = [
+  ["Latin", /\p{Script=Latin}/u],
+  ["Cyrillic", /\p{Script=Cyrillic}/u],
+  ["Greek", /\p{Script=Greek}/u],
+  ["Arabic", /\p{Script=Arabic}/u],
+  ["Hebrew", /\p{Script=Hebrew}/u],
+  ["Korean", /\p{Script=Hangul}/u],
+  ["Japanese", /[\p{Script=Hiragana}\p{Script=Katakana}]/u],
+  ["Chinese", /\p{Script=Han}/u],
+  ["Thai", /\p{Script=Thai}/u],
+  ["Devanagari", /\p{Script=Devanagari}/u],
+];
+
+/** The script most letters of `text` are in, or null for text without letters. Han characters
+ * mixed with kana count as Japanese (Japanese text uses both). */
+export function scriptOf(text: string): Script | null {
+  const counts = new Map<Script, number>();
+  for (const ch of text) {
+    for (const [script, pattern] of SCRIPT_PATTERNS) {
+      if (pattern.test(ch)) {
+        counts.set(script, (counts.get(script) ?? 0) + 1);
+        break;
+      }
+    }
+  }
+  if (counts.has("Japanese") && counts.has("Chinese")) {
+    counts.set("Japanese", (counts.get("Japanese") ?? 0) + (counts.get("Chinese") ?? 0));
+    counts.delete("Chinese");
+  }
+  let best: Script | null = null;
+  for (const [script, n] of counts) if (!best || n > (counts.get(best) ?? 0)) best = script;
+  return best;
+}
+
+/** Whether a name in `nameScript` is readable as it is for a reader of `targetScript`. Chinese
+ * characters count as readable in Japanese (kanji); anything else must match. */
+export function nameFitsScript(nameScript: Script | null, targetScript: Script | null): boolean {
+  if (!nameScript || !targetScript || nameScript === targetScript) return true;
+  return nameScript === "Chinese" && targetScript === "Japanese";
+}
+
+/** Fixed sentence whose translation tells the code which script the target language uses. */
+export const SCRIPT_PROBE = "The girl reads a book in the garden.";
+
+/** A usable name back from the model: not empty, not a sentence, and in the target script (in a
+ * live test the model answered with unrelated names in a third script, e.g. 林小雨 → Любовь for
+ * German). */
+export function nameProblem(original: string, translated: string, targetScript: Script | null = null): string | null {
+  const name = translated.trim();
+  if (!name) return "came back empty";
+  if (name.length > Math.max(40, original.trim().length * 4) || /[.!?]\s/.test(name)) return "not a name";
+  const script = scriptOf(name);
+  if (targetScript && script !== targetScript && !nameFitsScript(script, targetScript)) {
+    return `came back in ${script ?? "no"} script instead of ${targetScript}`;
+  }
+  return null;
+}
+
 const aiTranslationSchema = z.object({ translation: z.string() });
 
 export function aiTranslationToJsonSchema(): Record<string, unknown> {
@@ -168,10 +242,23 @@ export function parseAiKeysTranslation(
  * appears word for word in the translated entry text is a name (or a word that stays the same) —
  * it's always kept, since the model sometimes swaps a name for a translated noun (live test: the
  * pub "Zum Hirschen" lost its key "Hirschen" to "Gasthaus"). */
-export function cleanTranslatedKeys(original: string[], translated: string[], translatedContent = ""): string[] {
+export function cleanTranslatedKeys(
+  original: string[],
+  translated: string[],
+  translatedContent = "",
+  rename?: { from: string; to: string },
+): string[] {
   const seen = new Set<string>();
   const content = translatedContent.toLowerCase();
   const names = original.filter((k) => k.trim() && content.includes(k.trim().toLowerCase()));
+  // The character's own name as a key becomes its new spelling (Дарья → Darja): the reader's chat
+  // will contain the new one.
+  if (rename && rename.from.trim() !== rename.to.trim()) {
+    const from = rename.from.trim().toLowerCase();
+    translated = translated.map((k) => (k.trim().toLowerCase() === from ? rename.to : k));
+    if (original.some((k) => k.trim().toLowerCase() === from)) translated = [rename.to, ...translated];
+    names.splice(0, names.length, ...names.filter((k) => k.trim().toLowerCase() !== from));
+  }
   const keys = [...names, ...translated]
     .map((k) => k.trim())
     .filter((k) => {
@@ -184,14 +271,18 @@ export function cleanTranslatedKeys(original: string[], translated: string[], tr
 }
 
 /** The card with all translated texts put back in. `results` holds the joined text per
- * TranslateText (same order as `collectTranslateTexts`); the name stays as it is. */
+ * TranslateText (same order as `collectTranslateTexts`); `name` is the name as written for the new
+ * language (unchanged if it already fit). */
 export function applyTranslations(
   card: NormalizedCard,
   texts: TranslateText[],
   results: string[],
   entries: (AiEntryTranslation | null)[] | null,
+  name = card.name,
 ): NormalizedCard {
   const next: NormalizedCard = structuredClone(card);
+  next.name = name;
+  const rename = { from: card.name, to: name };
   texts.forEach((t, i) => {
     const value = results[i];
     if (value === undefined) return;
@@ -207,7 +298,7 @@ export function applyTranslations(
         ...entry,
         comment: tr.comment.trim() || entry.comment,
         content: tr.content,
-        keys: cleanTranslatedKeys(entry.keys, tr.keys, tr.content),
+        keys: cleanTranslatedKeys(entry.keys, tr.keys, tr.content, rename),
       };
     });
   }

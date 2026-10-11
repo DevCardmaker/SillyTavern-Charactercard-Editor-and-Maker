@@ -233,16 +233,21 @@ export const DEFAULT_PROMPTS = {
     about: "Translate: how a part of the card is translated. Placeholder: {language}.",
     text: lines(
       "Translate the text into {language}. Translate everything — narration, dialogue, descriptions and labels — and keep the meaning, tone, level of detail and explicitness. Don't summarise, shorten, add, explain or censor anything.",
-      "Keep names of people and places as they are; only if a name is written in a script {language} doesn't use, write it in the usual romanisation.",
+      "Names of people and places stay names — don't translate their meaning. If a name is written in a script {language} doesn't use, write it the way {language} writes foreign names (romanised, or e.g. in katakana for Japanese), so a {language} reader can read it.{name_note}",
       "Keep exactly as they are: macros like {{char}} and {{user}}, tags in angle brackets like <START> or <backstory>, line breaks, and any formatting such as Markdown, asterisks for actions, or W++/PList brackets and quotes — translate only the words inside them.",
       "Keep numbers as digits. If parts are already in {language}, keep them unchanged.",
     ),
+  },
+  translate_name: {
+    about:
+      "Translate: writing the character's name in the new language's script — only asked when the scripts differ. Placeholders: {name}, {language}, {script}.",
+    text: "Write the name {name} in {script} script, the way {language} writes foreign names: a transliteration of how it sounds — the same name, not a translation of its meaning and not a different name. Keep the order of given and family name.",
   },
   translate_keys: {
     about: "Translate: a lorebook entry's label and trigger keys (its text is translated like card text). Placeholder: {language}.",
     text: lines(
       "Translate the comment (label) into {language}.",
-      "keys trigger the entry when they appear in the chat, so translate each key into the word a {language} speaker would actually write. Keep proper names (people, places, brands, titles) exactly as they are. You may add a common variant of a translated word if it helps, but keep the list short.",
+      "keys trigger the entry when they appear in the chat, so translate each key into the word a {language} speaker would actually write. Proper names (people, places, brands, titles) stay names: keep them, but if they're written in a script {language} doesn't use, write them the way {language} writes foreign names — the same spelling as in the translated text. You may add a common variant of a translated word if it helps, but keep the list short.{name_note}",
     ),
   },
 } satisfies Record<string, PromptSection>;

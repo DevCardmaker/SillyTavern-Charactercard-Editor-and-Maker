@@ -7,6 +7,9 @@ import {
   chunkForTranslation,
   cleanTranslatedKeys,
   collectTranslateTexts,
+  nameFitsScript,
+  nameProblem,
+  scriptOf,
   translationProblem,
   withOriginalSpacing,
 } from "./translateCard";
@@ -54,6 +57,7 @@ describe("collectTranslateTexts / applyTranslations", () => {
       { comment: "Schwester", content: "Ihre Schwester.", keys: ["Schwester", "Lena", "lena"] },
     ]);
     expect(out.name).toBe("Lena");
+    expect(applyTranslations(card, texts, [], null, "Lenа2").name).toBe("Lenа2");
     expect(out.description).toBe("Lena ist 19.");
     expect(out.alternate_greetings).toEqual(["Hallo.", ""]);
     expect(getCharacterNote(out)).toEqual({ prompt: "Bleib in der Rolle.", depth: 2, role: "system" });
@@ -77,6 +81,33 @@ describe("checks", () => {
 
   it("keeps original keys when nothing usable came back", () => {
     expect(cleanTranslatedKeys(["sister"], ["", " "])).toEqual(["sister"]);
+  });
+
+  it("gives the character's own name key its new spelling", () => {
+    expect(cleanTranslatedKeys(["Дарья", "карате"], ["Дарья", "Karate"], "Darja hat einen schwarzen Gürtel.", { from: "Дарья", to: "Darja" })).toEqual([
+      "Darja",
+      "Karate",
+    ]);
+  });
+
+  it("tells scripts apart", () => {
+    expect(scriptOf("Das Mädchen liest ein Buch.")).toBe("Latin");
+    expect(scriptOf("Девочка читает книгу.")).toBe("Cyrillic");
+    expect(scriptOf("女の子は庭で本を読んでいます。")).toBe("Japanese");
+    expect(scriptOf("女孩在花园里看书。")).toBe("Chinese");
+    expect(scriptOf("123 …")).toBeNull();
+    expect(nameFitsScript("Latin", "Latin")).toBe(true);
+    expect(nameFitsScript("Chinese", "Japanese")).toBe(true);
+    expect(nameFitsScript("Cyrillic", "Latin")).toBe(false);
+  });
+
+  it("checks a returned name", () => {
+    expect(nameProblem("林小雨", "Lin Xiaoyu", "Latin")).toBeNull();
+    expect(nameProblem("林小雨", "Любовь", "Latin")).toContain("Cyrillic");
+    expect(nameProblem("Lena", "レナ", "Japanese")).toBeNull();
+    expect(nameProblem("Дарья", "Darja")).toBeNull();
+    expect(nameProblem("Дарья", " ")).toBe("came back empty");
+    expect(nameProblem("Дарья", "Her name is Darja. She is a student.")).toBe("not a name");
   });
 
   it("always keeps original keys that still appear in the translated text (names)", () => {

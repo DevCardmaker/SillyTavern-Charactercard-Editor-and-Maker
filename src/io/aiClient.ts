@@ -15,6 +15,8 @@ import {
 import {
   type AiKeysTranslation,
   aiKeysTranslationToJsonSchema,
+  aiNameToJsonSchema,
+  parseAiName,
   aiTranslationToJsonSchema,
   parseAiKeysTranslation,
   parseAiTranslation,
@@ -282,6 +284,16 @@ export async function requestTranslation(config: AiProviderConfig, messages: AiC
     { maxTokens: Math.max(config.maxTokens ?? 0, 2048), temperature: TRANSLATE_TEMPERATURE },
   );
   return parseOrThrow(content, parseAiTranslation);
+}
+
+export async function requestNameTranslation(config: AiProviderConfig, messages: AiChatMessage[]): Promise<string> {
+  const content = await callChatCompletion(
+    config,
+    messages,
+    { name: "name_translation", strict: true, schema: aiNameToJsonSchema() },
+    { temperature: TRANSLATE_TEMPERATURE },
+  );
+  return parseOrThrow(content, parseAiName);
 }
 
 export async function requestKeysTranslation(config: AiProviderConfig, messages: AiChatMessage[]): Promise<AiKeysTranslation> {
