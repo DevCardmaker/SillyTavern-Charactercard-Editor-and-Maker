@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { requestGroupGenerate, requestIntegration } from "../../io/aiClient";
+import { writeSnapshotBackup } from "../../io/fileIO";
 import type { AiGroupMemberDraft } from "../../schema/aiGroupGenerate";
 import { additionsToChanges } from "../../schema/aiIntegrateMembers";
 import {
@@ -60,7 +61,7 @@ export function AiGroupGeneratePanel({ onClose, onAddedWithReferences }: Props) 
   const [draftUsedReferences, setDraftUsedReferences] = useState(false);
   const [personaId, setPersonaId] = useState("");
   /** Also work the new characters into the reference cards (second AI step, reviewed edits). */
-  const [integrate, setIntegrate] = useState(true);
+  const [integrate, setIntegrate] = useState(false); // off by default: it edits cards people may love as they are
   /** Reference tabs the current draft was generated against — what the integration step edits. */
   const [draftReferences, setDraftReferences] = useState<{ id: string; card: NormalizedCard }[]>([]);
   const [integration, setIntegration] = useState<IntegrationState | null>(null);
@@ -174,9 +175,24 @@ export function AiGroupGeneratePanel({ onClose, onAddedWithReferences }: Props) 
     );
   }
 
-  function handleApply() {
+  async function handleApply() {
     // Edits to the existing tabs first — adding the new tabs below switches the active card.
-    if (integration?.status === "ready" && integration.changes) applyReviewedChanges(integration.changes);
+    const edits = integration?.status === "ready" ? (integration.changes ?? []).filter((c) => c.enabled && !c.problem) : [];
+    if (edits.length > 0) {
+      // A backup of every reference card about to change, taken from its current state (unsaved
+      // edits included) — same safety net as Condense. If one fails, nothing is changed.
+      const slots = useCardStore.getState().characters;
+      try {
+        for (const id of new Set(edits.map((c) => c.slotId))) {
+          const slot = slots.find((s) => s.id === id);
+          if (slot) await writeSnapshotBackup(slot.card, slot.currentFilePath, "before-new-characters");
+        }
+      } catch (err) {
+        setSendError(`Backup failed, nothing was changed: ${err instanceof Error ? err.message : String(err)}`);
+        return;
+      }
+      applyReviewedChanges(edits);
+    }
     for (const [i, member] of draft.entries()) {
       if (!selected.has(i)) continue;
       newCard();
@@ -214,7 +230,8 @@ export function AiGroupGeneratePanel({ onClose, onAddedWithReferences }: Props) 
             {referenceIds.size > 0 && (
               <label className="field-inline">
                 <input type="checkbox" checked={integrate} onChange={(e) => setIntegrate(e.target.checked)} />
-                Also update the reference cards so they know the new characters (you review the edits)
+                Also update the reference cards so they know the new characters — you review the edits, and each changed
+                card gets a backup first
               </label>
             )}
           </div>
@@ -332,7 +349,7 @@ export function AiGroupGeneratePanel({ onClose, onAddedWithReferences }: Props) 
           <button type="button" className="secondary" onClick={onClose}>
             Discard
           </button>
-          <button type="button" onClick={handleApply} disabled={!canApply}>
+          <button type="button" onClick={() => void handleApply()} disabled={!canApply}>
             Add selected as tabs
           </button>
         </div>
