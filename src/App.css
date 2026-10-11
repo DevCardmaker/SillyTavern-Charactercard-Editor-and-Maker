@@ -809,6 +809,14 @@ button.secondary.active {
   font-size: 0.9rem;
 }
 
+.prompt-preview {
+  margin: 0;
+  max-height: 300px;
+  overflow: auto;
+  white-space: pre-wrap;
+  font-size: 0.8rem;
+}
+
 .ai-lorebook-draft-entry {
   display: flex;
   align-items: flex-start;

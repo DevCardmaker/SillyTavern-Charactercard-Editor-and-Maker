@@ -17,6 +17,7 @@ import { type AiRelocateMember, aiRelocateToJsonSchema, parseAiRelocate } from "
 import { type AiLorebookEntryDraft, aiLorebookEntriesToJsonSchema, parseAiLorebookEntries } from "../schema/aiLorebookAssist";
 import { type AiLorebookEditEntry, aiLorebookEditToJsonSchema, parseAiLorebookEdit } from "../schema/aiLorebookEdit";
 import type { AiChatMessage } from "../schema/aiPrompt";
+import { usePromptFileStore } from "../state/promptFileStore";
 
 export interface AiProviderConfig {
   baseUrl: string;
@@ -38,6 +39,7 @@ async function callChatCompletion(
   jsonSchema: { name: string; strict: boolean; schema: Record<string, unknown> } | null,
   options: { maxTokens?: number; stop?: string[] } = {},
 ): Promise<string> {
+  usePromptFileStore.getState().setLastMessages(messages);
   const result = await invoke<{ content: string }>("ai_chat_completion", {
     req: {
       base_url: config.baseUrl.trim().replace(/\/+$/, ""),

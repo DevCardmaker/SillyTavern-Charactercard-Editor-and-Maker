@@ -21,6 +21,7 @@ import { openLorebookPaths } from "./io/lorebookIO";
 import { useCardStore } from "./state/cardStore";
 import { useLorebookStore } from "./state/lorebookStore";
 import { usePersonaStore } from "./state/personaStore";
+import { usePromptFileStore } from "./state/promptFileStore";
 import "./App.css";
 
 const TABS: { id: string; label: string; Component: (props: TabProps) => React.JSX.Element }[] = [
@@ -54,6 +55,11 @@ function App() {
   const personaDirty = usePersonaStore((s) => s.isDirty);
 
   const ActiveTab = TABS.find((t) => t.id === activeTab)?.Component ?? BasicTab;
+
+  // The user's prompts file (if any) replaces built-in prompt sections from the first AI request on.
+  useEffect(() => {
+    void usePromptFileStore.getState().reload();
+  }, []);
 
   // Mirrors the toolbar's filename/dirty display into the native window title, so the card in
   // progress is distinguishable from the taskbar or Alt+Tab without focusing the window first.

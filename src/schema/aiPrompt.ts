@@ -5,31 +5,21 @@ import type { AiLorebookEditEntry } from "./aiLorebookEdit";
 import type { SplitLorebookEntry } from "./aiSplitGroup";
 import type { Lorebook } from "./lorebook";
 import type { NormalizedCard } from "./normalize";
+import { promptText } from "./promptTexts";
 
 export interface AiChatMessage {
   role: "system" | "user" | "assistant";
   content: string;
 }
 
-/** Patrick's group uses metric: every prompt that writes card text asks for it. */
-const METRIC_UNITS =
-  "Use metric units for all measurements: height in cm or m (e.g. 180 cm), weight in kg, distances in m or km, temperatures in °C — never feet, inches, pounds, miles or °F.";
-
-/** Content checklists for fields where the model tends to drift toward only part of what the
- * field conventionally holds (e.g. "description" turning into pure backstory, appearance
- * forgotten) — same idea as `imageModelStyleGuidance` in aiImagePrompt.ts: hardcoded guidance the
- * model shouldn't have to infer, not something derived from the character itself. Named
- * constants (not just map values) so `buildGroupGenerateSystemPrompt` below can reuse the exact
- * same text without duplicating it — group generation has its own fixed description/personality
- * fields but doesn't go through `buildSystemPrompt`'s per-field-selection logic. */
-const DESCRIPTION_CHECKLIST =
-  "Cover physical appearance (build, hair, eyes, distinguishing features like scars or tattoos), typical clothing style, species/race if not human, age, and occupation/role. For the background/origin, include one specific formative experience rather than a neutral biography — something concrete enough to plausibly explain a fear, quirk, or behavior pattern the character has today.";
-
-const PERSONALITY_CHECKLIST =
-  "Cover core personality traits, likes, dislikes, quirks or speech mannerisms, notable skills or talents, fears or weaknesses, goals or motivations, secrets, and kinks (where relevant). Don't just list these as isolated facts: for at least one trait, quirk, or fear, name the causal link back to a past event or relationship (what happened, what belief or fear it created, how it shows up as a concrete behavior or tell today) — this makes the character playable, not just described.";
+/** Shared guidance lives in promptTexts.ts (editable via the prompts file); these read the
+ * current version at call time. */
+const METRIC_UNITS = () => promptText("metric_units");
+const DESCRIPTION_CHECKLIST = () => promptText("description_checklist");
+const PERSONALITY_CHECKLIST = () => promptText("personality_checklist");
 
 /** Fields without an entry here (name, scenario, first_mes, …) get no extra guidance line. */
-const AI_FIELD_GUIDANCE: Partial<Record<AiFieldKey, string>> = {
+const AI_FIELD_GUIDANCE: Partial<Record<AiFieldKey, () => string>> = {
   description: DESCRIPTION_CHECKLIST,
   personality: PERSONALITY_CHECKLIST,
 };
@@ -39,27 +29,26 @@ const AI_FIELD_GUIDANCE: Partial<Record<AiFieldKey, string>> = {
 export function buildSystemPrompt(selected: readonly AiFieldKey[]): string {
   const fieldList = selected
     .map((key) => {
-      const guidance = AI_FIELD_GUIDANCE[key];
+      const guidance = AI_FIELD_GUIDANCE[key]?.();
       const line = `- ${key}: ${aiFieldLabel(key)}`;
       return guidance ? `${line}\n  ${guidance}` : line;
     })
     .join("\n");
   return [
-    "You help fill in or revise a SillyTavern character card.",
+    promptText("assist_intro"),
     "Respond only with a JSON object containing exactly the following fields:",
     fieldList,
-    METRIC_UNITS,
+    METRIC_UNITS(),
     "Give no explanations, no prose outside the JSON, and no extra fields.",
     "The current draft state and the user's instruction follow in the next message.",
-  ].join("\n");
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 /** Fields the AI may fill for a persona — SillyTavern's "Convert to Persona" only carries over
  * name and description (plus the avatar), so nothing else would arrive. */
 export const PERSONA_AI_FIELD_KEYS = ["name", "description"] as const satisfies readonly AiFieldKey[];
-
-const PERSONA_DESCRIPTION_GUIDANCE =
-  "Write it in third person, referring to the persona by name (never use {{user}} or {{char}} macros). Focus on what other characters can perceive or plausibly know: physical appearance (build, hair, eyes, distinguishing features), typical clothing, age, species/race if not human, occupation/role, demeanor and how they come across, plus a few defining personality traits and only as much background as matters in interactions. Keep it compact — roughly 100–250 words — because it is sent with every message. Never write actions, dialogue, thoughts in the moment, or decisions for the persona, and don't describe how other characters feel about them.";
 
 /** Persona counterpart of `buildSystemPrompt`: a persona is the character the *user* plays, and
  * SillyTavern inserts its description so the AI characters know who they're talking to — a
@@ -68,45 +57,40 @@ export function buildPersonaSystemPrompt(selected: readonly AiFieldKey[]): strin
   const fieldList = selected
     .map((key) => {
       const line = `- ${key}: ${key === "name" ? "The persona's name" : aiFieldLabel(key)}`;
-      return key === "description" ? `${line}\n  ${PERSONA_DESCRIPTION_GUIDANCE}` : line;
+      return key === "description" ? `${line}\n  ${promptText("persona_description")}` : line;
     })
     .join("\n");
   return [
-    "You help write a SillyTavern user persona: the character the user plays in roleplay, not a character the AI plays.",
+    promptText("persona_intro"),
     "Respond only with a JSON object containing exactly the following fields:",
     fieldList,
-    "Write in the language of the user's instruction (or of the existing draft if it already has text) — not in the language of any character card given as context.",
-    METRIC_UNITS,
+    promptText("persona_language"),
+    METRIC_UNITS(),
     "Give no explanations, no prose outside the JSON, and no extra fields.",
     "The current draft state and the user's instruction follow in the next message.",
-  ].join("\n");
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 /** Field-specific rules for condensing, where the field has a format of its own to preserve. */
-const CONDENSE_FIELD_RULES: Partial<Record<AiFieldKey, string>> = {
-  mes_example:
-    "This is example dialogue: keep the <START> separators and the {{user}}:/{{char}}: line format. Shorten the exchanges, and drop the least characteristic ones before touching those that best show the character's voice.",
-  first_mes:
-    "This is the opening message of the roleplay: keep it a scene in the same voice and keep its hook; tighten the narration.",
+const CONDENSE_FIELD_RULES: Partial<Record<AiFieldKey, () => string>> = {
+  mes_example: () => promptText("condense_example_dialogue"),
+  first_mes: () => promptText("condense_first_message"),
 };
 
 /** System prompt for "condense this field": save prompt tokens without changing who the character
  * is. Reuses the field-patch response format (`{ "<field>": "..." }`). */
 export function buildCondenseSystemPrompt(field: AiFieldKey, currentTokens: number, targetTokens: number): string {
   return [
-    "You condense one field of a SillyTavern character card to save prompt tokens WITHOUT changing the character.",
-    `Field: ${aiFieldLabel(field)}. It is currently about ${currentTokens} tokens. Aim for about ${targetTokens} tokens — that is a floor as much as a ceiling: do not cut much below it, because shorter than that means facts are being lost.`,
-    "Every distinct fact must survive: names, ages, numbers, appearance and clothing details, traits (including qualifiers like \"slightly\"), likes and dislikes, attitudes and beliefs, habits, quirks, speech patterns, relationships, goals, secrets, and the cause-and-effect links in the backstory.",
-    "Every item of an enumeration (likes, fetishes, kinks, skills, …) is a fact of its own: keep each one; you may merge near-duplicates into one word, but never drop items.",
-    "Remove only redundancy: statements made twice, filler, flowery or purple prose, generic adjectives that add nothing, meta commentary. Keep any section labels or structure the original uses if they help, but write the content densely.",
-    "Don't switch to keyword lists or W++/JSON-style notation unless the original already uses it.",
-    "Keep the same language, point of view and tone, and keep macros like {{char}} and {{user}} exactly as written.",
+    promptText("condense", { field: aiFieldLabel(field), current_tokens: currentTokens, target_tokens: targetTokens }),
     "Never use the straight double-quote character (\") inside the text: write inches as in (5 ft 11 in) and use ‘single’ or “curly” quotes for quotations.",
-    ...(CONDENSE_FIELD_RULES[field] ? [CONDENSE_FIELD_RULES[field]] : []),
-    "Never add anything that isn't in the original — no new facts, motives, or interpretations. Before answering, check your version against the original: every fact still there, nothing added.",
-    `${METRIC_UNITS} Convert any imperial measurements in the original (feet/inches, pounds, miles, °F) to metric — this is the one change of content allowed.`,
+    CONDENSE_FIELD_RULES[field]?.() ?? "",
+    promptText("condense_closing"),
     `Respond only with a JSON object of the form { "${field}": "..." } — no explanations, no extra fields.`,
-  ].join("\n");
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 export function buildCondenseUserTurn(text: string): AiChatMessage {
@@ -130,44 +114,38 @@ export function buildUserTurn(instruction: string, draftValues: AiFieldPatch, co
 export function buildPersonaFitContext(cards: NormalizedCard[]): string {
   if (cards.length === 1) {
     return [
-      "The persona will be played opposite this character. Make the persona fit the character's setting and scenario — a plausible role in their world and a natural reason to interact with them — but don't describe the character, don't copy their traits, and don't decide how they feel about the persona.",
+      promptText("persona_fit_one"),
       `Character:\n${JSON.stringify(summarizeCardForAi(cards[0]), null, 2)}`,
-    ].join("\n");
+    ]
+    .filter(Boolean)
+    .join("\n");
   }
   return [
-    "The persona will be played opposite all of these characters together, in one group chat. Make the persona fit their shared setting and scenario — one plausible role in their world and a natural reason to interact with each of them, not just with one. If their settings differ, find a role that plausibly connects them. Don't describe the characters, don't copy their traits, and don't decide how they feel about the persona.",
+    promptText("persona_fit_group"),
     `Characters:\n${JSON.stringify(cards.map(summarizeCardForAi), null, 2)}`,
-  ].join("\n");
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
-
-/** Shared writing guidance for every prompt that produces lorebook entry text — new entries as
- * well as filled/revised ones. Lorebook entries are deliberately lighter than character cards:
- * the user asked for foundations they can expand later ("a basic fantasy world: name, races,
- * whether there's magic"), not fully fleshed-out profiles. */
-const LOREBOOK_ENTRY_GUIDANCE = [
-  "Write one entry per distinct person, place, faction, item, or concept — never bundle several into one entry.",
-  'For a broad request (e.g. "a family for this character" or "a basic fantasy world"), create the foundational entries the topic needs and keep each one brief: the essentials only (what or who it is, a few defining facts, how it relates to the rest), about 2–5 sentences. The user will expand details later.',
-  "keys are matched as plain text against recent chat messages, so use short words people would actually write: names, nicknames, and specific 1–2 word terms. Do not use long descriptive phrases, and do not use words that also match unrelated mentions — relationship words (mother, father, brother, sister, wife), or generic nouns (land, magic, town, king). Example for a mother named Elara Brightwood: good keys [\"Elara\", \"Elara Brightwood\"], bad keys [\"Mother\", \"Mira's mother\"].",
-  "comment: a short human-readable label for the entry (e.g. \"Mother Elara\").",
-  "Stay consistent with the existing lorebook entries, and write in the same language they use; if there are none, use the language of the user's instruction.",
-];
 
 /** Static instructions for a lorebook-entry-generation turn. Unlike the card-field prompt, the
  * model here proposes *new* entries to add to an existing lorebook, not values to overwrite.
  * Used both for a card's embedded lorebook and for standalone World Info files. */
 export function buildLorebookSystemPrompt(): string {
   return [
-    "You help propose lorebook entries (World Info) for SillyTavern.",
+    promptText("lorebook_intro"),
     'Respond only with a JSON object of the form { "entries": [...] }.',
     "Each entry has:",
     "- keys: a list of keywords that should trigger this entry in chat",
     "- content: the actual background text (e.g. a description of a person, place, or event)",
     "- comment: a short human-readable label for the entry",
-    ...LOREBOOK_ENTRY_GUIDANCE,
-    METRIC_UNITS,
+    promptText("lorebook_entry_guidance"),
+    METRIC_UNITS(),
     "Give no explanations, no prose outside the JSON, and no extra fields.",
     "The existing lorebook, the current draft state (entries already proposed but not yet added) and the user's instruction follow in the next message. Don't repeat entries the lorebook already has.",
-  ].join("\n");
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 /** Overview of a lorebook for AI context — name, description, and each entry's label + keys, but
@@ -217,18 +195,13 @@ export function buildLorebookUserTurn(
  * summarizes one card far more faithfully than several at once. */
 export function buildMemberEntrySystemPrompt(): string {
   return [
-    "You write one lorebook entry (World Info) for a SillyTavern group chat: a short profile of one group member, inserted into the other members' prompts whenever this member is mentioned, so they know who they are dealing with.",
+    promptText("member_entry"),
     'Respond only with a JSON object of the form { "entries": [ { "keys": [...], "content": "...", "comment": "..." } ] } containing exactly one entry.',
-    "content: 2–4 sentences, at most 90 words, third person by name: who they are and their role, the most recognizable appearance details, their relationships to the other group members named in the message, and two or three defining traits or habits others would notice. Pick the essentials — this is a quick reference, not a summary of the whole card.",
-    "Other members read this, so it must contain only what they could know: leave out secrets (affairs, hidden feelings, lies, things the member hides), backstory events others didn't witness, inner thoughts, fears and kinks.",
-    "Use only facts the card states — never invent appearance, habits, traits or feelings, and don't embellish. The profile must not be longer than the card's own text: if the card is one short line, the profile is one short sentence.",
-    "Relationships: the card's {{user}} and any unnamed relative (e.g. \"her little brother\") mean the human player, who is NOT a group member — write them as \"{{user}}\" (e.g. \"protective of her little brother {{user}}\"). Only connect this member to another group member if the card names that member and states the relationship; if unsure, leave the relationship out rather than guess (e.g. don't turn \"Father Greg\" into \"father of Mary\" — Mary might be his wife).",
-    "keys: nicknames or alternative names the card uses for this member (the full and first name are added automatically). No relationship words like mother or sister, no generic nouns. An empty list is fine.",
-    "comment: the member's name.",
-    METRIC_UNITS,
-    "Write in the language of the card. Never use the straight double-quote character inside the text; use ‘single’ or “curly” quotes instead.",
+    promptText("member_entry_rules"),
     "Give no explanations, no prose outside the JSON, and no extra fields.",
-  ].join("\n");
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 /** Only the lasting facts: scenario and first message describe a particular scene (who just came
@@ -245,14 +218,15 @@ export function buildMemberEntryUserTurn(member: NormalizedCard, otherMembers: s
 /** Static instructions for filling in / revising *existing* entries in place. */
 export function buildLorebookEditSystemPrompt(count: number): string {
   return [
-    `You fill in or revise ${count} existing lorebook entries (World Info) for SillyTavern.`,
-    "An entry with empty content needs its content written, based on its comment, its keys, and the rest of the lorebook. An entry that already has content should only change as far as the user's instruction asks; otherwise copy it through unchanged.",
-    ...LOREBOOK_ENTRY_GUIDANCE,
+    promptText("lorebook_edit_intro", { count }),
+    promptText("lorebook_entry_guidance"),
     `Respond only with a JSON object of the form { "entries": [...] } with exactly ${count} entries.`,
     "Each entry has: index (exactly as given, unchanged), keys, comment, content.",
-    METRIC_UNITS,
+    METRIC_UNITS(),
     "Give no explanations, no prose outside the JSON, and no extra fields.",
-  ].join("\n");
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 /** Fallback when the user just hits "Send" on a selection without typing anything. */
@@ -278,7 +252,7 @@ export function buildLorebookEditUserTurn(
  * (see `imageModelStyleGuidance`), not something the LLM should have to infer. */
 export function buildImagePromptSystemPrompt(modelStyle: AiImageModelStyle, artStyle: AiImageArtStyle): string {
   return [
-    "You create a single image-generation prompt for a SillyTavern character's appearance.",
+    promptText("image_prompt_intro"),
     imageModelStyleGuidance(modelStyle),
     imageArtStyleGuidance(artStyle),
     'Respond only with a JSON object of the form { "prompt": "..." }.',
@@ -325,15 +299,16 @@ export function summarizeCardForAi(card: NormalizedCard): AiCharacterSummary {
  * problems — an empty `findings` list is a normal, expected result, not a fallback. */
 export function buildConsistencyCheckSystemPrompt(): string {
   return [
-    "You check several SillyTavern character cards meant to be used together as a group (e.g. a family or class) for contradictions.",
-    "Examples: mismatched ages (e.g. a child older than a parent), contradictory family or relationship claims, name conflicts, contradictory timeline or location details in the backstory.",
+    promptText("consistency_check"),
     'Respond only with a JSON object of the form { "findings": [...] }.',
     "Each finding has:",
     "- characters: a list of the affected character names, exactly as given in their name field",
     "- issue: a short description of the contradiction",
     'If nothing stands out, respond with { "findings": [] } — do not invent problems.',
     "Give no explanations, no prose outside the JSON, and no extra fields.",
-  ].join("\n");
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 export function buildConsistencyCheckUserTurn(characters: AiCharacterSummary[], instruction: string): AiChatMessage {
@@ -356,12 +331,11 @@ export function buildConsistencyFixSystemPrompt(): string {
     "- changes: each has character (the name exactly as given), field (description, personality, scenario or first_mes), find and replace.",
     "- find: a passage copied word for word from that character's field — short (a sentence or part of one) but long enough to be unique.",
     "- replace: that passage, corrected — complete sentences that read naturally in place of the old passage, ending the same way it did.",
-    "Change as little as possible: usually one or two passages in the card where the fix is smallest. Keep everything else, including the card's language, style and point of view.",
-    "Fix only this contradiction, and make sure your fix doesn't create a new one with the other cards.",
-    "If the user says which version is correct, follow that.",
-    METRIC_UNITS,
+    promptText("consistency_fix"),
     "Give no explanations, no prose outside the JSON, and no extra fields.",
-  ].join("\n");
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 export function buildConsistencyFixUserTurn(characters: AiCharacterSummary[], issue: string, hint: string): AiChatMessage {
@@ -385,36 +359,19 @@ export function buildGroupGenerateSystemPrompt(
   { references = false, persona = false }: { references?: boolean; persona?: boolean } = {},
 ): string {
   return [
-    `You create ${count} new, related SillyTavern characters at once (e.g. a family or class).`,
-    "Keep the characters consistent with each other: plausible age gaps, consistent surnames/family or relationship claims, no contradictions between members.",
-    ...(references ? GROUP_REFERENCE_RULES : []),
-    ...(persona ? GROUP_PERSONA_RULES : []),
+    promptText("group_generate", { count }),
+    references ? promptText("group_references") : "",
+    persona ? promptText("group_persona") : "",
     `Respond only with a JSON object of the form { "characters": [...] } with exactly ${count} entries.`,
     "Each entry has: name, description, personality, scenario, first_mes.",
-    `For description: ${DESCRIPTION_CHECKLIST}`,
-    `For personality: ${PERSONALITY_CHECKLIST}`,
-    METRIC_UNITS,
+    `For description: ${DESCRIPTION_CHECKLIST()}`,
+    `For personality: ${PERSONALITY_CHECKLIST()}`,
+    METRIC_UNITS(),
     "Give no explanations, no prose outside the JSON, and no extra fields.",
-  ].join("\n");
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
-
-/** Extra rules when the new characters join existing ones (e.g. "the brother and mother of this
- * sister", or the missing members of an incomplete set). The reference cards are read-only facts:
- * anything they already say about a requested person — often a name, age or job mentioned in
- * passing — must be picked up, never contradicted or reinvented. */
-const GROUP_REFERENCE_RULES = [
-  "The user also gives existing reference characters. Create only the new characters the instruction asks for — never re-create, rewrite or include a reference character.",
-  "Everything the reference characters say is fact. If they mention one of the requested people (by name or by role), use those details — name, age, job, events, relationships — and build on them; never contradict them.",
-  "Fit the new characters into the references' world: the same setting, era and shared history, and state each new character's relationship to the reference characters in their description.",
-  "Write in the same language as the reference characters.",
-];
-
-/** The persona is the human player — in SillyTavern that's {{user}}, so the new cards name it by
- * macro and stay usable with any persona; the persona only shapes how they relate to the player. */
-const GROUP_PERSONA_RULES = [
-  "The user also gives their persona — the character the user plays in chats. Where the instruction or the setting suggests it, give the new characters a plausible relationship with the persona (e.g. neighbour, colleague, employer) that fits the persona's description.",
-  "In the new cards, always write the persona as {{user}}, never by name. Don't describe the persona's looks or personality, and don't decide how the persona feels.",
-];
 
 export interface AiPersonaSummary {
   name: string;
@@ -444,13 +401,11 @@ export function buildIntegrateMembersSystemPrompt(): string {
     'Respond only with a JSON object of the form { "explanation": "...", "additions": [...] }.',
     "- explanation: one short sentence saying what is added where.",
     "- additions: each has character (the name of an EXISTING character exactly as given — never a new one), field (description, personality or scenario), after and add.",
-    "- add: one or two new sentences about the new character(s): what this existing character would plausibly know — name, how they're related, maybe one key fact. Not a full profile.",
-    '- after: the sentence in that field the new text belongs after, copied word for word — or "" to add it at the end of the field.',
-    "Mostly add to the description; usually one addition per existing character is enough, mentioning every new character they know. Don't repeat what the card already says.",
-    "Write each addition in that card's language, style and point of view, and use macros like {{char}} and {{user}} the way the card does.",
-    METRIC_UNITS,
+    promptText("group_integrate"),
     "Give no explanations, no prose outside the JSON, and no extra fields.",
-  ].join("\n");
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 export function buildIntegrateMembersUserTurn(existing: AiCharacterSummary[], added: AiCharacterSummary[]): AiChatMessage {
@@ -491,15 +446,16 @@ export function summarizeCardForRelocate(card: NormalizedCard): AiRelocateSummar
  * backstory must survive; only setting-tied details change. */
 export function buildRelocateSystemPrompt(count: number): string {
   return [
-    `You update ${count} existing, related SillyTavern characters who are being moved to a new setting together.`,
-    "Keep each character's core identity the same: personality traits, backstory, formative experiences, and relationships to the others. Only adapt details tied to the old location — where they live/work/spend time, local references, and any setting-specific details in their scenario, first message, or example dialogue.",
+    promptText("relocate", { count }),
     `Respond only with a JSON object of the form { "characters": [...] } with exactly ${count} entries.`,
     "Each entry has:",
     "- name: exactly as given for that character, unchanged",
     "- description, personality, scenario, first_mes, mes_example: the same character, each adapted to the new setting only where relevant — copy through unchanged whatever isn't location-tied",
-    METRIC_UNITS,
+    METRIC_UNITS(),
     "Give no explanations, no prose outside the JSON, and no extra fields.",
-  ].join("\n");
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 /** Feeds every open character's current summary as context (so the model can see who's who and
@@ -530,9 +486,11 @@ export function buildSplitPeopleSystemPrompt(): string {
     "- name: the person's name as written (if they have no name, a short label like \"the mother\")",
     "- role: a few words on who they are (e.g. \"older twin sister, bodyguard maid\")",
     "- source: \"card\" if the card's own text describes them, \"lorebook\" if only the lorebook entries do",
-    "List every person who is described, not just named. Leave out {{user}} and a narrator.",
+    promptText("split_people"),
     "Give no explanations, no prose outside the JSON, and no extra fields.",
-  ].join("\n");
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 export function buildSplitPeopleUserTurn(card: NormalizedCard, entries: SplitLorebookEntry[]): AiChatMessage {
@@ -547,14 +505,11 @@ export function buildSplitMemberSystemPrompt(name: string, others: string[]): st
     `You turn one SillyTavern group card — a single card that describes several characters — into a card for ONE person: ${name}.${others.length > 0 ? ` The others (${others.join(", ")}) get their own cards separately.` : ""}`,
     'Respond only with a JSON object: { "name", "description", "personality", "scenario", "first_mes" }.',
     `- name: ${name}'s own name.`,
-    `- description: COPY everything the group card and the lorebook entries say about ${name} — every detail, item and line, word for word and in the same format (Markdown headings stay headings, W++/PList entries like Age("18") stay entries, prose stays prose). Do not summarise, shorten or rephrase. Leave out only what is solely about the others. Where a section describes several people at once, keep the parts that apply to ${name}. Add one line naming ${name}'s relationship to each of the others.`,
-    `- personality: only if the group card has a separate personality field with content about ${name}; otherwise "".`,
-    `- scenario: the group card's scenario, told for ${name}.`,
-    `- first_mes: a short new opening message (at most about 120 words) in which only ${name} acts and speaks, set in the group card's opening situation.`,
-    `In the group card, {{char}} means the whole group or a narrator; write ${name} by name instead, and leave out instructions about portraying several characters. Keep {{user}} exactly as written.`,
-    "Write in the group card's language.",
+    promptText("split_member", { name }),
     "Give no explanations, no prose outside the JSON, and no extra fields.",
-  ].join("\n");
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 export function buildSplitMemberUserTurn(card: NormalizedCard, entries: SplitLorebookEntry[]): AiChatMessage {
@@ -567,18 +522,13 @@ export function buildMergeSceneSystemPrompt(fields: readonly ("scenario" | "firs
   return [
     `You write the shared parts of a SillyTavern group card in which one {{char}} portrays several characters together: ${names.join(", ")}.`,
     `Respond only with a JSON object with exactly these fields: ${fields.join(", ")}.`,
-    ...(fields.includes("scenario")
-      ? ["- scenario: 2–4 sentences: a situation that brings all of them together with {{user}}, consistent with their cards and relationships."]
-      : []),
-    ...(fields.includes("first_mes")
-      ? [
-          "- first_mes: the opening message of that scene, about 150–250 words, narrated in third person: every one of the characters appears and acts or speaks in their own voice. Never act or speak for {{user}}.",
-        ]
-      : []),
-    "Follow the user's note if there is one. Write in the same language as the cards.",
-    METRIC_UNITS,
+    fields.includes("scenario") ? promptText("merge_scenario") : "",
+    fields.includes("first_mes") ? promptText("merge_first_message") : "",
+    promptText("merge_closing"),
     "Give no explanations, no prose outside the JSON, and no extra fields.",
-  ].join("\n");
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 export function buildMergeSceneUserTurn(cards: NormalizedCard[], note: string, scenario?: string): AiChatMessage {

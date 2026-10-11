@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { testConnection } from "../../io/aiClient";
 import { useAiProviderConfigStore } from "../../state/aiProviderConfigStore";
+import { PromptsSettings } from "./PromptsSettings";
 
 /** Provider profile selection/management + connection test, shared by every AI-assist panel.
  * Self-contained via `useAiProviderConfigStore` — no props, so any panel can drop it in without
@@ -41,7 +42,7 @@ export function AiProviderSettings() {
 
   return (
     <details className="ai-assist-settings" open={!activeProfile}>
-      <summary>Provider settings</summary>
+      <summary>Provider &amp; prompt settings</summary>
       <div className="ai-assist-settings-fields">
         <div className="ai-assist-profile-bar">
           <select
@@ -180,6 +181,7 @@ export function AiProviderSettings() {
           <p className="field-hint">No profile selected. Create a new profile.</p>
         )}
       </div>
+      <PromptsSettings />
     </details>
   );
 }
