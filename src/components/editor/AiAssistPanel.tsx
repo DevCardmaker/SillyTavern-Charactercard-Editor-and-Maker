@@ -16,9 +16,10 @@ interface Props {
   buildSystem?: (fields: readonly AiFieldKey[]) => string;
   title?: string;
   placeholder?: string;
-  /** Optional context the user can pick (e.g. "fit this persona to character X"); its text is sent
-   * ahead of the draft with every message. */
-  contextChoices?: { label: string; text: string }[];
+  /** Optional cards the user can tick as context (e.g. "fit this persona to characters X and Y");
+   * `buildContext` turns the ticked ones into text sent ahead of the draft with every message. */
+  contextChoices?: { label: string; card: NormalizedCard }[];
+  buildContext?: (cards: NormalizedCard[]) => string;
   contextLabel?: string;
 }
 
@@ -42,9 +43,10 @@ export function AiAssistPanel({
   title = "AI Assistant",
   placeholder = "e.g. “A shy librarian with a secret” or “Make the personality more sarcastic”",
   contextChoices,
+  buildContext,
   contextLabel = "Context",
 }: Props) {
-  const [contextIndex, setContextIndex] = useState(-1);
+  const [contextIndices, setContextIndices] = useState<Set<number>>(new Set());
   const configFile = useAiProviderConfigStore((s) => s.file);
   const ensureConfigLoaded = useAiProviderConfigStore((s) => s.ensureLoaded);
 
@@ -89,6 +91,20 @@ export function AiAssistPanel({
     setSelectedFields(new Set(fieldKeys));
   }
 
+  function toggleContext(index: number) {
+    const next = new Set(contextIndices);
+    if (next.has(index)) next.delete(index);
+    else next.add(index);
+    setContextIndices(next);
+  }
+
+  /** Ticked context cards in their listed order — the order the user sees, not the click order. */
+  function contextText(): string | undefined {
+    if (!contextChoices || !buildContext) return undefined;
+    const cards = contextChoices.filter((_, i) => contextIndices.has(i)).map((c) => c.card);
+    return cards.length > 0 ? buildContext(cards) : undefined;
+  }
+
   const providerReady = !!activeProfile?.baseUrl && !!activeProfile.model;
   const canSend = providerReady && selectedFields.size > 0 && instruction.trim() !== "" && !isSending;
 
@@ -100,7 +116,7 @@ export function AiAssistPanel({
       const fields = [...selectedFields];
       const patch = await requestFieldPatch(activeProfile, fields, [
         { role: "system", content: buildSystem(fields) },
-        buildUserTurn(instruction, draft, contextChoices?.[contextIndex]?.text),
+        buildUserTurn(instruction, draft, contextText()),
       ]);
       setDraft((prev) => ({ ...prev, ...patch }));
       setTranscript((prev) => [...prev, instruction]);
@@ -140,17 +156,17 @@ export function AiAssistPanel({
         </div>
 
         {contextChoices && contextChoices.length > 0 && (
-          <label className="field">
-            <span className="field-label">{contextLabel}</span>
-            <select className="field-input" value={contextIndex} onChange={(e) => setContextIndex(Number(e.target.value))}>
-              <option value={-1}>None</option>
+          <div>
+            <p className="field-hint">{contextLabel}</p>
+            <div className="ai-assist-field-checkboxes">
               {contextChoices.map((choice, i) => (
-                <option key={i} value={i}>
+                <label key={i} className="ai-assist-field-checkbox">
+                  <input type="checkbox" checked={contextIndices.has(i)} onChange={() => toggleContext(i)} />
                   {choice.label}
-                </option>
+                </label>
               ))}
-            </select>
-          </label>
+            </div>
+          </div>
         )}
 
         {selectedFields.size > 0 && (

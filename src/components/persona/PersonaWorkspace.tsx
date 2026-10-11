@@ -152,10 +152,11 @@ export function PersonaWorkspace({ onError }: Props) {
           buildSystem={buildPersonaSystemPrompt}
           title="AI Assistant — Persona"
           placeholder="e.g. “A retired mercenary turned tavern keeper” or “Make her look older”"
-          contextLabel="Fit to character (open in the Characters mode)"
+          contextLabel="Fit to characters (open in the Characters mode) — tick several for a group chat"
           contextChoices={openCharacters
             .filter((c) => c.card.name.trim())
-            .map((c) => ({ label: c.card.name, text: buildPersonaFitContext(c.card) }))}
+            .map((c) => ({ label: c.card.name, card: c.card }))}
+          buildContext={buildPersonaFitContext}
         />
       )}
 

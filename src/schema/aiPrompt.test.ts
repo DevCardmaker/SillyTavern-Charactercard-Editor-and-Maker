@@ -176,10 +176,22 @@ describe("buildPersonaSystemPrompt", () => {
 describe("persona fit context", () => {
   it("puts the character summary ahead of the draft", () => {
     const card = { ...createBlankCard(), name: "Mara", scenario: "A harbor town" };
-    const turn = buildUserTurn("a sailor", { name: "" }, buildPersonaFitContext(card));
+    const turn = buildUserTurn("a sailor", { name: "" }, buildPersonaFitContext([card]));
     expect(turn.content.indexOf("A harbor town")).toBeLessThan(turn.content.indexOf("Current draft"));
     expect(turn.content).toContain("don't describe the character");
+    expect(turn.content).toContain("opposite this character");
     expect(buildUserTurn("x", {}).content.startsWith("Current draft")).toBe(true);
+  });
+
+  it("asks for one role that fits the whole group when several characters are picked", () => {
+    const mara = { ...createBlankCard(), name: "Mara", scenario: "A harbor town" };
+    const jonas = { ...createBlankCard(), name: "Jonas", scenario: "The lighthouse" };
+    const context = buildPersonaFitContext([mara, jonas]);
+    expect(context).toContain("all of these characters together");
+    expect(context).toContain("each of them");
+    expect(context).toContain("A harbor town");
+    expect(context).toContain("The lighthouse");
+    expect(context).not.toContain("opposite this character");
   });
 });
 

@@ -123,12 +123,19 @@ export function buildUserTurn(instruction: string, draftValues: AiFieldPatch, co
   };
 }
 
-/** Context block for writing a persona that fits a specific character: the persona should have a
- * plausible place in that character's world and scenario — without describing the character. */
-export function buildPersonaFitContext(card: NormalizedCard): string {
+/** Context block for writing a persona that fits specific characters: the persona should have a
+ * plausible place in their world and scenario — without describing them. Several characters means
+ * a group chat, so the persona needs one role that connects to all of them, not just one. */
+export function buildPersonaFitContext(cards: NormalizedCard[]): string {
+  if (cards.length === 1) {
+    return [
+      "The persona will be played opposite this character. Make the persona fit the character's setting and scenario — a plausible role in their world and a natural reason to interact with them — but don't describe the character, don't copy their traits, and don't decide how they feel about the persona.",
+      `Character:\n${JSON.stringify(summarizeCardForAi(cards[0]), null, 2)}`,
+    ].join("\n");
+  }
   return [
-    "The persona will be played opposite this character. Make the persona fit the character's setting and scenario — a plausible role in their world and a natural reason to interact with them — but don't describe the character, don't copy their traits, and don't decide how they feel about the persona.",
-    `Character:\n${JSON.stringify(summarizeCardForAi(card), null, 2)}`,
+    "The persona will be played opposite all of these characters together, in one group chat. Make the persona fit their shared setting and scenario — one plausible role in their world and a natural reason to interact with each of them, not just with one. If their settings differ, find a role that plausibly connects them. Don't describe the characters, don't copy their traits, and don't decide how they feel about the persona.",
+    `Characters:\n${JSON.stringify(cards.map(summarizeCardForAi), null, 2)}`,
   ].join("\n");
 }
 
