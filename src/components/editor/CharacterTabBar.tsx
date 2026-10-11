@@ -6,6 +6,7 @@ import { useCardStore } from "../../state/cardStore";
 import { AiConsistencyCheckPanel } from "./AiConsistencyCheckPanel";
 import { AiRelocatePanel } from "./AiRelocatePanel";
 import { GroupLorebookPanel } from "./GroupLorebookPanel";
+import { MergeCardsPanel } from "./MergeCardsPanel";
 
 interface Props {
   onError: (message: string) => void;
@@ -26,6 +27,7 @@ export function CharacterTabBar({ onError }: Props) {
   const [isConsistencyCheckOpen, setIsConsistencyCheckOpen] = useState(false);
   const [isRelocateOpen, setIsRelocateOpen] = useState(false);
   const [isGroupLorebookOpen, setIsGroupLorebookOpen] = useState(false);
+  const [isMergeOpen, setIsMergeOpen] = useState(false);
   const [isSavingGroup, setIsSavingGroup] = useState(false);
 
   if (characters.length === 0) return null;
@@ -134,6 +136,17 @@ export function CharacterTabBar({ onError }: Props) {
         </button>
       )}
 
+      {characters.length >= 2 && (
+        <button
+          type="button"
+          className="character-tab-group-folder"
+          title="Combine several open characters into one group card that portrays all of them"
+          onClick={() => setIsMergeOpen(true)}
+        >
+          Merge into one card…
+        </button>
+      )}
+      {isMergeOpen && <MergeCardsPanel onClose={() => setIsMergeOpen(false)} />}
       {isGroupLorebookOpen && <GroupLorebookPanel onClose={() => setIsGroupLorebookOpen(false)} />}
       {isConsistencyCheckOpen && <AiConsistencyCheckPanel onClose={() => setIsConsistencyCheckOpen(false)} />}
       {isRelocateOpen && <AiRelocatePanel onClose={() => setIsRelocateOpen(false)} />}

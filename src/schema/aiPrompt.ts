@@ -560,3 +560,30 @@ export function buildSplitMemberSystemPrompt(name: string, others: string[]): st
 export function buildSplitMemberUserTurn(card: NormalizedCard, entries: SplitLorebookEntry[]): AiChatMessage {
   return { role: "user", content: splitGroupPayload(card, entries) };
 }
+
+/** The shared parts of a merged group card — scenario and/or first message for all the merged
+ * characters at once. A small, creative task; the characters' own text is copied, not rewritten. */
+export function buildMergeSceneSystemPrompt(fields: readonly ("scenario" | "first_mes")[], names: string[]): string {
+  return [
+    `You write the shared parts of a SillyTavern group card in which one {{char}} portrays several characters together: ${names.join(", ")}.`,
+    `Respond only with a JSON object with exactly these fields: ${fields.join(", ")}.`,
+    ...(fields.includes("scenario")
+      ? ["- scenario: 2–4 sentences: a situation that brings all of them together with {{user}}, consistent with their cards and relationships."]
+      : []),
+    ...(fields.includes("first_mes")
+      ? [
+          "- first_mes: the opening message of that scene, about 150–250 words, narrated in third person: every one of the characters appears and acts or speaks in their own voice. Never act or speak for {{user}}.",
+        ]
+      : []),
+    "Follow the user's note if there is one. Write in the same language as the cards.",
+    METRIC_UNITS,
+    "Give no explanations, no prose outside the JSON, and no extra fields.",
+  ].join("\n");
+}
+
+export function buildMergeSceneUserTurn(cards: NormalizedCard[], note: string, scenario?: string): AiChatMessage {
+  const parts = [`Characters:\n${JSON.stringify(cards.map(summarizeCardForAi), null, 2)}`];
+  if (scenario) parts.push(`The group card's scenario (write the opening message for it):\n${scenario}`);
+  if (note.trim()) parts.push(`Note: ${note.trim()}`);
+  return { role: "user", content: parts.join("\n\n") };
+}
