@@ -98,6 +98,12 @@ export function AiAssistPanel({
     setContextIndices(next);
   }
 
+  const allContextSelected = !!contextChoices && contextChoices.every((_, i) => contextIndices.has(i));
+
+  function toggleAllContext() {
+    setContextIndices(allContextSelected ? new Set() : new Set(contextChoices?.map((_, i) => i)));
+  }
+
   /** Ticked context cards in their listed order — the order the user sees, not the click order. */
   function contextText(): string | undefined {
     if (!contextChoices || !buildContext) return undefined;
@@ -159,6 +165,9 @@ export function AiAssistPanel({
           <div>
             <p className="field-hint">{contextLabel}</p>
             <div className="ai-assist-field-checkboxes">
+              <button type="button" className="secondary" onClick={toggleAllContext}>
+                {allContextSelected ? "Select none" : "Select all"}
+              </button>
               {contextChoices.map((choice, i) => (
                 <label key={i} className="ai-assist-field-checkbox">
                   <input type="checkbox" checked={contextIndices.has(i)} onChange={() => toggleContext(i)} />
