@@ -227,6 +227,24 @@ export const DEFAULT_PROMPTS = {
     about: "Merge into one card: final rules for the new scene.",
     text: lines("Follow the user's note if there is one. Write in the same language as the cards.", "{metric_units}"),
   },
+
+  // ── Translate ──────────────────────────────────────────────────────────────────────────────
+  translate: {
+    about: "Translate: how a part of the card is translated. Placeholder: {language}.",
+    text: lines(
+      "Translate the text into {language}. Translate everything — narration, dialogue, descriptions and labels — and keep the meaning, tone, level of detail and explicitness. Don't summarise, shorten, add, explain or censor anything.",
+      "Keep names of people and places as they are; only if a name is written in a script {language} doesn't use, write it in the usual romanisation.",
+      "Keep exactly as they are: macros like {{char}} and {{user}}, tags in angle brackets like <START> or <backstory>, line breaks, and any formatting such as Markdown, asterisks for actions, or W++/PList brackets and quotes — translate only the words inside them.",
+      "Keep numbers as digits. If parts are already in {language}, keep them unchanged.",
+    ),
+  },
+  translate_keys: {
+    about: "Translate: a lorebook entry's label and trigger keys (its text is translated like card text). Placeholder: {language}.",
+    text: lines(
+      "Translate the comment (label) into {language}.",
+      "keys trigger the entry when they appear in the chat, so translate each key into the word a {language} speaker would actually write. Keep proper names (people, places, brands, titles) exactly as they are. You may add a common variant of a translated word if it helps, but keep the list short.",
+    ),
+  },
 } satisfies Record<string, PromptSection>;
 
 export type PromptKey = keyof typeof DEFAULT_PROMPTS;

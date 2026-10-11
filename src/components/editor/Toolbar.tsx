@@ -5,6 +5,7 @@ import { useCardStore } from "../../state/cardStore";
 import { AiConsistencyCheckPanel } from "./AiConsistencyCheckPanel";
 import { AiGroupGeneratePanel } from "./AiGroupGeneratePanel";
 import { AiSplitGroupPanel } from "./AiSplitGroupPanel";
+import { TranslateCardPanel } from "./TranslateCardPanel";
 import { ContextBudgetPanel } from "./ContextBudgetPanel";
 
 interface Props {
@@ -25,6 +26,7 @@ export function Toolbar({ onError, onOpenAiAssist, isTestChatOpen, onToggleTestC
   const [isGroupGenerateOpen, setIsGroupGenerateOpen] = useState(false);
   const [isConsistencyCheckOpen, setIsConsistencyCheckOpen] = useState(false);
   const [isSplitOpen, setIsSplitOpen] = useState(false);
+  const [isTranslateOpen, setIsTranslateOpen] = useState(false);
 
   function handleOpenAiAssist() {
     if (!card) newCard();
@@ -155,6 +157,15 @@ export function Toolbar({ onError, onOpenAiAssist, isTestChatOpen, onToggleTestC
       </button>
       <button
         type="button"
+        className="secondary"
+        onClick={() => setIsTranslateOpen(true)}
+        disabled={!card}
+        title="Translate this card into another language — as a copy in a new tab"
+      >
+        Translate…
+      </button>
+      <button
+        type="button"
         className={isTestChatOpen ? "secondary active" : "secondary"}
         onClick={onToggleTestChat}
         disabled={!card}
@@ -169,6 +180,7 @@ export function Toolbar({ onError, onOpenAiAssist, isTestChatOpen, onToggleTestC
         />
       )}
       {isSplitOpen && <AiSplitGroupPanel onClose={() => setIsSplitOpen(false)} />}
+      {isTranslateOpen && <TranslateCardPanel onClose={() => setIsTranslateOpen(false)} />}
       {isConsistencyCheckOpen && <AiConsistencyCheckPanel onClose={() => setIsConsistencyCheckOpen(false)} />}
       <div className="toolbar-title">
         {fileName}

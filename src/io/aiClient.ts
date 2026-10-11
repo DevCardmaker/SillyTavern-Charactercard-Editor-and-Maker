@@ -12,6 +12,13 @@ import {
   parseAiSplitMember,
   parseAiSplitPeople,
 } from "../schema/aiSplitGroup";
+import {
+  type AiKeysTranslation,
+  aiKeysTranslationToJsonSchema,
+  aiTranslationToJsonSchema,
+  parseAiKeysTranslation,
+  parseAiTranslation,
+} from "../schema/translateCard";
 import { aiImagePromptToJsonSchema, parseAiImagePrompt } from "../schema/aiImagePrompt";
 import { type AiRelocateMember, aiRelocateToJsonSchema, parseAiRelocate } from "../schema/aiRelocate";
 import { type AiLorebookEntryDraft, aiLorebookEntriesToJsonSchema, parseAiLorebookEntries } from "../schema/aiLorebookAssist";
@@ -37,7 +44,7 @@ async function callChatCompletion(
   config: AiProviderConfig,
   messages: AiChatMessage[],
   jsonSchema: { name: string; strict: boolean; schema: Record<string, unknown> } | null,
-  options: { maxTokens?: number; stop?: string[] } = {},
+  options: { maxTokens?: number; stop?: string[]; temperature?: number } = {},
 ): Promise<string> {
   usePromptFileStore.getState().setLastMessages(messages);
   const result = await invoke<{ content: string }>("ai_chat_completion", {
@@ -47,7 +54,7 @@ async function callChatCompletion(
       model: config.model,
       messages,
       json_schema: jsonSchema,
-      temperature: config.temperature ?? null,
+      temperature: options.temperature ?? config.temperature ?? null,
       max_tokens: options.maxTokens ?? config.maxTokens ?? null,
       stop: options.stop ?? null,
     },
@@ -260,6 +267,31 @@ export async function requestSplitMember(config: AiProviderConfig, messages: AiC
     { maxTokens: Math.max(config.maxTokens ?? 0, 4096) },
   );
   return parseOrThrow(content, parseAiSplitMember);
+}
+
+/** One translated chunk. Some languages need far more tokens than English for the same text, hence
+ * the raised limit; the low temperature keeps the model from rewriting structure (live test at 0.9:
+ * a W++ block came back as prose — at 0.3 it stayed W++). */
+const TRANSLATE_TEMPERATURE = 0.3;
+
+export async function requestTranslation(config: AiProviderConfig, messages: AiChatMessage[]): Promise<string> {
+  const content = await callChatCompletion(
+    config,
+    messages,
+    { name: "translation", strict: true, schema: aiTranslationToJsonSchema() },
+    { maxTokens: Math.max(config.maxTokens ?? 0, 2048), temperature: TRANSLATE_TEMPERATURE },
+  );
+  return parseOrThrow(content, parseAiTranslation);
+}
+
+export async function requestKeysTranslation(config: AiProviderConfig, messages: AiChatMessage[]): Promise<AiKeysTranslation> {
+  const content = await callChatCompletion(
+    config,
+    messages,
+    { name: "keys_translation", strict: true, schema: aiKeysTranslationToJsonSchema() },
+    { temperature: TRANSLATE_TEMPERATURE },
+  );
+  return parseOrThrow(content, parseAiKeysTranslation);
 }
 
 function parseOrThrow<T>(content: string, parse: (raw: unknown) => { success: true; data: T } | { success: false; error: string }): T {
