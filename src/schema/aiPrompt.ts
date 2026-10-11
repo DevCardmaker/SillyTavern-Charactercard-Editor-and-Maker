@@ -2,6 +2,7 @@ import { type AiFieldKey, aiFieldLabel, type AiFieldPatch } from "./aiAssist";
 import { type AiImageArtStyle, type AiImageModelStyle, imageArtStyleGuidance, imageModelStyleGuidance } from "./aiImagePrompt";
 import type { AiLorebookEntryDraft } from "./aiLorebookAssist";
 import type { AiLorebookEditEntry } from "./aiLorebookEdit";
+import type { SplitLorebookEntry } from "./aiSplitGroup";
 import type { Lorebook } from "./lorebook";
 import type { NormalizedCard } from "./normalize";
 
@@ -510,4 +511,52 @@ export function buildRelocateUserTurn(characters: AiRelocateSummary[], instructi
     role: "user",
     content: `Characters:\n${payload}\n\nNew setting: ${instruction}`,
   };
+}
+
+/** Payload both split passes send: the group card's text fields plus its lorebook entries. */
+function splitGroupPayload(card: NormalizedCard, entries: SplitLorebookEntry[]): string {
+  const parts = [`Group card:\n${JSON.stringify({ ...summarizeCardForAi(card), mes_example: card.mes_example }, null, 2)}`];
+  if (entries.length > 0) parts.push(`Lorebook entries:\n${JSON.stringify(entries, null, 2)}`);
+  return parts.join("\n\n");
+}
+
+/** Split pass 1: only list the people — a small task, so a local model gets it right; the user
+ * then picks who to extract. */
+export function buildSplitPeopleSystemPrompt(): string {
+  return [
+    "You read one SillyTavern group card — a single card that describes several characters — and its lorebook entries, and list the people in it.",
+    'Respond only with a JSON object of the form { "people": [...] }.',
+    "Each entry has:",
+    "- name: the person's name as written (if they have no name, a short label like \"the mother\")",
+    "- role: a few words on who they are (e.g. \"older twin sister, bodyguard maid\")",
+    "- source: \"card\" if the card's own text describes them, \"lorebook\" if only the lorebook entries do",
+    "List every person who is described, not just named. Leave out {{user}} and a narrator.",
+    "Give no explanations, no prose outside the JSON, and no extra fields.",
+  ].join("\n");
+}
+
+export function buildSplitPeopleUserTurn(card: NormalizedCard, entries: SplitLorebookEntry[]): AiChatMessage {
+  return { role: "user", content: splitGroupPayload(card, entries) };
+}
+
+/** Split pass 2, once per person. "Copy word for word, same format" matters for completeness, not
+ * looks: asked to merely keep the content, the local model rephrased and summarised (live test:
+ * a W++ character went from ~2,100 to ~300 characters); asked to copy, it kept nearly everything. */
+export function buildSplitMemberSystemPrompt(name: string, others: string[]): string {
+  return [
+    `You turn one SillyTavern group card — a single card that describes several characters — into a card for ONE person: ${name}.${others.length > 0 ? ` The others (${others.join(", ")}) get their own cards separately.` : ""}`,
+    'Respond only with a JSON object: { "name", "description", "personality", "scenario", "first_mes" }.',
+    `- name: ${name}'s own name.`,
+    `- description: COPY everything the group card and the lorebook entries say about ${name} — every detail, item and line, word for word and in the same format (Markdown headings stay headings, W++/PList entries like Age("18") stay entries, prose stays prose). Do not summarise, shorten or rephrase. Leave out only what is solely about the others. Where a section describes several people at once, keep the parts that apply to ${name}. Add one line naming ${name}'s relationship to each of the others.`,
+    `- personality: only if the group card has a separate personality field with content about ${name}; otherwise "".`,
+    `- scenario: the group card's scenario, told for ${name}.`,
+    `- first_mes: a short new opening message (at most about 120 words) in which only ${name} acts and speaks, set in the group card's opening situation.`,
+    `In the group card, {{char}} means the whole group or a narrator; write ${name} by name instead, and leave out instructions about portraying several characters. Keep {{user}} exactly as written.`,
+    "Write in the group card's language.",
+    "Give no explanations, no prose outside the JSON, and no extra fields.",
+  ].join("\n");
+}
+
+export function buildSplitMemberUserTurn(card: NormalizedCard, entries: SplitLorebookEntry[]): AiChatMessage {
+  return { role: "user", content: splitGroupPayload(card, entries) };
 }

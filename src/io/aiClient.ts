@@ -4,6 +4,14 @@ import { type AiConsistencyFinding, aiConsistencyCheckToJsonSchema, parseAiConsi
 import { type AiConsistencyFix, aiConsistencyFixToJsonSchema, parseAiConsistencyFix } from "../schema/aiConsistencyFix";
 import { type AiGroupMemberDraft, aiGroupToJsonSchema, parseAiGroup } from "../schema/aiGroupGenerate";
 import { type AiIntegration, aiIntegrateToJsonSchema, parseAiIntegration } from "../schema/aiIntegrateMembers";
+import {
+  type AiSplitMember,
+  type AiSplitPerson,
+  aiSplitMemberToJsonSchema,
+  aiSplitPeopleToJsonSchema,
+  parseAiSplitMember,
+  parseAiSplitPeople,
+} from "../schema/aiSplitGroup";
 import { aiImagePromptToJsonSchema, parseAiImagePrompt } from "../schema/aiImagePrompt";
 import { type AiRelocateMember, aiRelocateToJsonSchema, parseAiRelocate } from "../schema/aiRelocate";
 import { type AiLorebookEntryDraft, aiLorebookEntriesToJsonSchema, parseAiLorebookEntries } from "../schema/aiLorebookAssist";
@@ -227,6 +235,42 @@ export async function requestIntegration(config: AiProviderConfig, messages: AiC
     throw new Error(`Model response did not match the expected format: ${parsed.error}`);
   }
 
+  return parsed.data;
+}
+
+/** Split pass 1: the people a group card (and its lorebook) describes. */
+export async function requestSplitPeople(config: AiProviderConfig, messages: AiChatMessage[]): Promise<AiSplitPerson[]> {
+  const content = await callChatCompletion(config, messages, {
+    name: "split_people",
+    strict: true,
+    schema: aiSplitPeopleToJsonSchema(),
+  });
+  return parseOrThrow(content, parseAiSplitPeople);
+}
+
+/** Split pass 2: one person's card. Copying a person's part of a long group card word for word
+ * needs room — a cut-off reply is invalid JSON — hence the raised token limit. */
+export async function requestSplitMember(config: AiProviderConfig, messages: AiChatMessage[]): Promise<AiSplitMember> {
+  const content = await callChatCompletion(
+    config,
+    messages,
+    { name: "split_member", strict: true, schema: aiSplitMemberToJsonSchema() },
+    { maxTokens: Math.max(config.maxTokens ?? 0, 4096) },
+  );
+  return parseOrThrow(content, parseAiSplitMember);
+}
+
+function parseOrThrow<T>(content: string, parse: (raw: unknown) => { success: true; data: T } | { success: false; error: string }): T {
+  let raw: unknown;
+  try {
+    raw = JSON.parse(content);
+  } catch {
+    throw new Error(`Model response was not valid JSON (maybe cut off — try again): ${truncate(content)}`);
+  }
+  const parsed = parse(raw);
+  if (!parsed.success) {
+    throw new Error(`Model response did not match the expected format: ${parsed.error}`);
+  }
   return parsed.data;
 }
 

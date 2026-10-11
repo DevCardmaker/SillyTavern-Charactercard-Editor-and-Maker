@@ -7,7 +7,7 @@ import { z } from "zod";
  * patch — deliberately a small, fixed subset (not all of `AI_FIELD_KEYS` from aiAssist.ts) to keep
  * the request/response size sane once multiplied across several members; the rest (example
  * dialogue, tags, system prompt, …) is left to the existing per-card `AiAssistPanel` afterwards. */
-const aiGroupMemberSchema = z.object({
+export const aiGroupMemberSchema = z.object({
   name: z.string(),
   description: z.string(),
   personality: z.string(),

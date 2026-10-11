@@ -4,6 +4,7 @@ import { openCardFile, openFolderAsTabs, saveCard, saveCardAsCopy } from "../../
 import { useCardStore } from "../../state/cardStore";
 import { AiConsistencyCheckPanel } from "./AiConsistencyCheckPanel";
 import { AiGroupGeneratePanel } from "./AiGroupGeneratePanel";
+import { AiSplitGroupPanel } from "./AiSplitGroupPanel";
 import { ContextBudgetPanel } from "./ContextBudgetPanel";
 
 interface Props {
@@ -23,6 +24,7 @@ export function Toolbar({ onError, onOpenAiAssist, isTestChatOpen, onToggleTestC
   const totalTokenCount = useTotalTokenCount(card);
   const [isGroupGenerateOpen, setIsGroupGenerateOpen] = useState(false);
   const [isConsistencyCheckOpen, setIsConsistencyCheckOpen] = useState(false);
+  const [isSplitOpen, setIsSplitOpen] = useState(false);
 
   function handleOpenAiAssist() {
     if (!card) newCard();
@@ -144,6 +146,15 @@ export function Toolbar({ onError, onOpenAiAssist, isTestChatOpen, onToggleTestC
       </button>
       <button
         type="button"
+        className="secondary"
+        onClick={() => setIsSplitOpen(true)}
+        disabled={!card}
+        title="Turn a card that describes several characters into one card per character"
+      >
+        Split Card…
+      </button>
+      <button
+        type="button"
         className={isTestChatOpen ? "secondary active" : "secondary"}
         onClick={onToggleTestChat}
         disabled={!card}
@@ -157,6 +168,7 @@ export function Toolbar({ onError, onOpenAiAssist, isTestChatOpen, onToggleTestC
           onAddedWithReferences={() => setIsConsistencyCheckOpen(true)}
         />
       )}
+      {isSplitOpen && <AiSplitGroupPanel onClose={() => setIsSplitOpen(false)} />}
       {isConsistencyCheckOpen && <AiConsistencyCheckPanel onClose={() => setIsConsistencyCheckOpen(false)} />}
       <div className="toolbar-title">
         {fileName}
