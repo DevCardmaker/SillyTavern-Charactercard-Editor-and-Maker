@@ -1,7 +1,7 @@
 import { getCharacterNote } from "./characterNote";
 import type { NormalizedCard } from "./normalize";
 
-/** Prompt-size settings. Defaults are Patrick's SillyTavern (checked in its settings.json):
+/** Prompt-size settings. Defaults follow a typical SillyTavern setup:
  * 16k context, 400-token responses, World Info capped at 25% of the context. */
 export interface BudgetSettings {
   contextSize: number;
@@ -44,7 +44,7 @@ export interface ContextBudget {
 }
 
 /** Breaks a card's prompt footprint down the way SillyTavern assembles it (with "prefer the
- * character's system prompt / post-history instructions" on, as in Patrick's ST). Ignores the
+ * character's system prompt / post-history instructions" on, as is common). Ignores the
  * instruct template's own few dozen tokens. `count` is the token counter to use. */
 export function contextBudget(
   card: NormalizedCard,

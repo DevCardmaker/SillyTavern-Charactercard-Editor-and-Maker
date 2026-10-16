@@ -1,7 +1,7 @@
 import type { Lorebook, LorebookEntry } from "./lorebook";
 
-/** The global World Info settings that change how keys match. Defaults mirror Patrick's
- * SillyTavern (checked in its settings.json): case-insensitive, whole words, recursion on. */
+/** The global World Info settings that change how keys match. Defaults mirror a typical
+ * SillyTavern setup: case-insensitive, whole words, recursion on. */
 export interface KeyTestSettings {
   caseSensitive: boolean;
   matchWholeWords: boolean;
