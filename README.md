@@ -41,6 +41,7 @@ Point the app at any OpenAI-compatible `/v1/chat/completions` endpoint — a loc
 - Check every currently open character together for contradictions (ages, relationships, names, timeline) — and fix them right there: the AI suggests small text edits across the affected cards, checked against the cards and shown for review before anything is applied
 - Generate a whole group of new, mutually consistent characters from a single prompt — or build them on existing cards: the family of one character, the missing members of a set, or people a card only mentions, optionally relating to your persona
 - **Split** a group card (one card describing several characters) into one card per person, including people only found in its lorebook — or **merge** several cards into one group card, optionally shortened to save tokens
+- **Cards from a story**: turn a fan fiction, short story or book excerpt into character cards, a shared lorebook of its world and side characters, and a persona for your place in it — read part by part, so it works with small local models
 - **Translate** a card into any language, part by part with checks — names are written in the new language's script, lorebook keys are translated too
 - Edit a whole group at once, e.g. move every open character to a new setting while keeping who they are
 - Condense long fields section by section to save prompt tokens without changing the character (one field or all at once, compared side by side, with a backup first)
@@ -96,6 +97,10 @@ The prompt follows SillyTavern's structure closely (system prompt, lorebook, des
 "Split Card…" first lists the people in the open card and its lorebook; tick who should get a card of their own, then each one is extracted separately — redo any single one if it came out too short. "Merge into one card…" (with two or more cards open) copies each character into a section of one group card; choose whether to shorten them, and whether scenario and first message come from one of the cards or are written new. "Translate…" takes any language name you type. Both split/merge and translate create new tabs — the original cards are never changed.
 
 Local models work best with these step-by-step features: each request is a small task, and the editor checks every result (lost macros, missing numbers, untranslated or shortened text) before using it.
+
+### Cards from a story
+
+"From Story…" reads a story you paste or load (`.txt`/`.md`). "Find people" lists everyone in it — tick who gets a card, and use "same person as" where the story calls one person by different names. Choose your own place in the story, then "Create cards". "Find places & terms" adds a lorebook of the story's world and its side characters; in a story character's place (or playing one), "Create persona" writes your persona. Everything is shown for review first, and "Add" opens the cards as tabs, the lorebook in the Lorebooks mode and the persona in the Personas mode.
 
 ### Changing the prompts
 

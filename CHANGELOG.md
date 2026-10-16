@@ -2,6 +2,18 @@
 
 All notable changes to this project are documented here. The project follows [Semantic Versioning](https://semver.org/): new features raise the minor version, fixes the patch version.
 
+## [1.5.0] – 2026-10-16
+
+### Added
+- **From Story…**: create character cards from a story — your fan fiction, a short story, an excerpt from a book (paste it or load a `.txt`/`.md` file). The story is read part by part, so it works with small local models too:
+  - **People**: everyone in the story is listed with how often they appear; the main characters are preselected. Names the model gets wrong are checked against the text, and entries it didn't connect ("the sister" and "Grete") can be merged by hand. Mark the narrator of a first-person story.
+  - **You in the story**: a new person meeting the characters for the first time, a new person who has always been part of it, someone taking the place of a story character, or one of the story's characters. The cards and their opening scenes are written for that — the character you play or replace becomes `{{user}}`.
+  - **Cards**: notes are taken on each picked person from every part they appear in, and the card is written new from the notes — not copied from the story — as the person is at the end. The opening scene continues after the story's end.
+  - **Lorebook**: places, groups and terms of the story's world, plus side characters without a card of their own — short entries with keys from the names the story uses, each checked and editable before adding. It opens in the Lorebooks mode and is shared by all new cards. Works without creating any cards, too.
+  - **Persona**: in a story character's place, a persona fitted to the new cards and your wishes; playing a story character, that character as your persona. The opening scenes can be rewritten for it. It opens in the Personas mode.
+  - The language of the cards is the story's (detected) or one you type; replies in another language are retried once and flagged.
+- A hint on how to set up the new cards as a group chat in SillyTavern, in Create Group, Split Card and From Story.
+
 ## [1.4.0] – 2026-10-11
 
 ### Added
