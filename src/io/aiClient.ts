@@ -13,6 +13,21 @@ import {
   parseAiSplitPeople,
 } from "../schema/aiSplitGroup";
 import {
+  type AiStoryNote,
+  type AiStoryPerson,
+  aiStoryNotesToJsonSchema,
+  aiStoryPeopleToJsonSchema,
+  parseAiStoryNotes,
+  parseAiStoryPeople,
+} from "../schema/storyToCards";
+import {
+  type AiStoryLoreThing,
+  aiStoryLoreEntryToJsonSchema,
+  aiStoryLoreToJsonSchema,
+  parseAiStoryLore,
+  parseAiStoryLoreEntry,
+} from "../schema/storyLore";
+import {
   type AiKeysTranslation,
   aiKeysTranslationToJsonSchema,
   aiNameToJsonSchema,
@@ -304,6 +319,52 @@ export async function requestKeysTranslation(config: AiProviderConfig, messages:
     { temperature: TRANSLATE_TEMPERATURE },
   );
   return parseOrThrow(content, parseAiKeysTranslation);
+}
+
+/** Cards from a story, pass 1: the people in one part of the story. */
+export async function requestStoryPeople(config: AiProviderConfig, messages: AiChatMessage[]): Promise<AiStoryPerson[]> {
+  const content = await callChatCompletion(
+    config,
+    messages,
+    { name: "story_people", strict: true, schema: aiStoryPeopleToJsonSchema() },
+    { maxTokens: Math.max(config.maxTokens ?? 0, 2048) },
+  );
+  return parseOrThrow(content, parseAiStoryPeople);
+}
+
+/** Cards from a story, pass 2: notes on one person from one batch of passages. */
+export async function requestStoryNotes(config: AiProviderConfig, messages: AiChatMessage[]): Promise<AiStoryNote[]> {
+  const content = await callChatCompletion(
+    config,
+    messages,
+    { name: "story_notes", strict: true, schema: aiStoryNotesToJsonSchema() },
+    { maxTokens: Math.max(config.maxTokens ?? 0, 2048) },
+  );
+  return parseOrThrow(content, parseAiStoryNotes);
+}
+
+/** Story lorebook, step 1: the places, groups and terms in one part of the story. */
+export async function requestStoryLore(config: AiProviderConfig, messages: AiChatMessage[]): Promise<AiStoryLoreThing[]> {
+  const content = await callChatCompletion(
+    config,
+    messages,
+    { name: "story_lore", strict: true, schema: aiStoryLoreToJsonSchema() },
+    { maxTokens: Math.max(config.maxTokens ?? 0, 2048) },
+  );
+  return parseOrThrow(content, parseAiStoryLore);
+}
+
+/** Story lorebook, step 2: one entry's text. */
+export async function requestStoryLoreEntry(config: AiProviderConfig, messages: AiChatMessage[]): Promise<string> {
+  const content = await callChatCompletion(
+    config,
+    messages,
+    { name: "story_lore_entry", strict: true, schema: aiStoryLoreEntryToJsonSchema() },
+    // Low and fixed, like translation: at the profile's 0.7 the model filled gaps with what it knew
+    // of a famous story ("London, 8.9 million people", a coachman invented for Mrs. Hudson).
+    { maxTokens: Math.max(config.maxTokens ?? 0, 1024), temperature: TRANSLATE_TEMPERATURE },
+  );
+  return parseOrThrow(content, parseAiStoryLoreEntry);
 }
 
 function parseOrThrow<T>(content: string, parse: (raw: unknown) => { success: true; data: T } | { success: false; error: string }): T {

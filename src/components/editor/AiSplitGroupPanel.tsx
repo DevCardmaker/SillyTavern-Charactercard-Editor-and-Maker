@@ -16,6 +16,7 @@ import {
 import { useAiProviderConfigStore } from "../../state/aiProviderConfigStore";
 import { useCardStore } from "../../state/cardStore";
 import { AiProviderSettings } from "./AiProviderSettings";
+import { GroupChatHint } from "./GroupChatHint";
 
 interface Props {
   onClose: () => void;
@@ -274,6 +275,8 @@ export function AiSplitGroupPanel({ onClose }: Props) {
             Waiting for a response — with a local model running partly on CPU this can take several minutes per person.
           </p>
         )}
+
+        <GroupChatHint />
 
         <div className="modal-actions">
           <button type="button" className="secondary" onClick={onClose}>

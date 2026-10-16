@@ -185,6 +185,7 @@ function App() {
             onOpenAiAssist={() => setIsAiAssistOpen(true)}
             isTestChatOpen={isTestChatOpen}
             onToggleTestChat={() => setIsTestChatOpen((open) => !open)}
+            onShowLorebooks={() => setMode("lorebooks")}
           />
           <CharacterTabBar onError={setError} />
         </>

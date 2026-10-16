@@ -228,6 +228,114 @@ export const DEFAULT_PROMPTS = {
     text: lines("Follow the user's note if there is one. Write in the same language as the cards.", "{metric_units}"),
   },
 
+  // ── Cards from a story ─────────────────────────────────────────────────────────────────────
+  story_people: {
+    about: "Cards from Story, step 1: finding the people in one part of the story.",
+    text: lines(
+      "List every person who appears or is talked about in this part — main and side characters, also people without a name (then a short label like \"the mother\" or \"the innkeeper\"). Only single persons, not groups or crowds.",
+      "Write every name and label exactly as the text writes it, in the text's own language (e.g. \"die Mutter\" in a German text, not \"the mother\"), without explanations in brackets.",
+      'If the story is told in first person ("I"), list the narrator too: by name if this part gives one, otherwise as "the narrator".',
+      "- also_called: other names this part uses for the same person (first name, surname, nickname, title like \"the King\") — only names that are actually written in the text.",
+      "- role: a few words on who they are in the story.",
+    ),
+  },
+  story_notes: {
+    about: "Cards from Story, step 2: notes on one person from each part of the story they appear in. Placeholders: {name}, {language}.",
+    text: lines(
+      "Write short notes about {name} — everything this part of the story tells or clearly shows about them:",
+      "appearance, clothing, age, occupation, where they live, personality and behaviour, habits, way of speaking, likes and dislikes, skills, fears, goals, secrets, their relationship to each other person (by name), and the important things they do or that happen to them.",
+      "One fact per note, in your own words, short. Only what the text says or clearly shows — nothing from your own knowledge of the story, no guesses. Leave out what is only about other people.",
+      "- who: whom the note is about — {name}. Notes about other people aren't needed; if one slips in, put that person's name here.",
+      "Write the notes in {language}. If this part says nothing about {name}, return an empty list.",
+    ),
+  },
+  story_card: {
+    about: "Cards from Story, step 3: writing the card from the notes. Placeholders: {name}, {language}.",
+    text: lines(
+      "The notes are in story order and overlap. Where they disagree, the later one wins: the card describes {name} as they are at the END of the story. Leave out plot details that only mattered along the way (plans, threats, timetables, who was searching for what) unless they still matter at the end; notes that clearly misread the story can be dropped.",
+      "- description: flowing prose in short paragraphs, in this order: who {name} is now and what they look like (appearance, age, clothing, occupation, where they live); their background; what happened to them in the story, briefly; then one line on their relationship to each important person.",
+      "- personality: their character in prose: traits, habits, way of speaking, likes and dislikes, skills, fears and goals — and how these show in what they did in the story.",
+      "Write the facts directly in your own words — never \"she is described as\" or \"the story says\", and don't copy sentences from the story. Use only what the notes say: if they say nothing about something (e.g. their age), leave it out instead of making it up. Don't pad, don't repeat yourself.",
+      "Write {name} by name, not {{char}}. Write in {language}.",
+      "{metric_units}",
+    ),
+  },
+  story_scene: {
+    about: "Cards from Story, step 4: scenario and first message, continuing the story. Placeholders: {name}, {language}.",
+    text: lines(
+      "{name} is the character {{user}} will talk to, so {name} must be in the scene, face to face with {{user}}.",
+      "- scenario: 2–4 sentences: where and when the roleplay starts — after the end of the story, where {name} is at that point (unless the user's note says otherwise) — and how {name} and {{user}} come to be together.",
+      "- first_mes: the opening message of that scene, about 150–250 words, narrated in third person in the tone of the story: {name} is the focus and acts and speaks in their own voice, and turns to {{user}}. Other characters from the story may appear only briefly. Never act, speak or decide for {{user}}.",
+      "This is a NEW scene that continues the story — don't retell or replay how the story ended. Stay true to the story and to the card. Write in {language}.",
+    ),
+  },
+  story_user_joins: {
+    about: "Cards from Story: the user plays a new person who meets the characters for the first time. Placeholder: {about}.",
+    text: "{{user}} is not part of the story: they are new and meet the characters for the first time in the opening scene. About {{user}}: {about}",
+  },
+  story_user_always: {
+    about: "Cards from Story: the user plays a new person who has been part of the story all along. Placeholder: {about}.",
+    text: "{{user}} has been part of the story all along, even though the story text never mentions them: the characters know {{user}} and share their history. About {{user}}: {about}",
+  },
+  story_user_replaces: {
+    about: "Cards from Story: the user takes the place of a character from the story. Placeholders: {person}, {about}.",
+    text: "{{user}} takes the place of {person}: {person}'s role, history and relationships in the story now belong to {{user}} — write {{user}} wherever {person} would be. If {person} leaves the story or dies at its end, the opening scene is set at a moment when {{user}} is still there. About {{user}}: {about}",
+  },
+  story_user_plays: {
+    about: "Cards from Story: the user plays one of the story's characters. Placeholder: {person}.",
+    text: "{{user}} plays {person} from the story — write {{user}} wherever {person} would be. If {person} leaves the story or dies at its end, the opening scene is set at a moment when {{user}} is still there.",
+  },
+  story_user_card: {
+    about: "Cards from Story: added to step 3 when the characters know {{user}} — what the card says about them.",
+    text: "Add one line on {name}'s relationship to {{user}}, fitting the story.",
+  },
+
+  story_lore: {
+    about: "Cards from Story, lorebook step 1: finding places, groups and terms in one part of the story.",
+    text: lines(
+      "List the places, groups and terms that belong to this story's world:",
+      "- place: named places and places that matter to the story (a city, a house, a room, a tavern, a ship);",
+      "- group: families, organisations, orders, gangs, peoples, companies;",
+      "- term: things the story has its own words for — objects, magic, creatures, customs, events, titles.",
+      "Not single persons (they are listed separately), and not everyday things without a name of their own (a door, the weather, a chair).",
+      "Write every name exactly as the text writes it, in the text's own language, without explanations in brackets.",
+      "- also_called: other names this part uses for the same thing — only names that are actually written in the text.",
+      "- about: a few words on what it is in the story.",
+    ),
+  },
+  story_lore_entry: {
+    about: "Cards from Story, lorebook step 2: writing one lorebook entry from the passages that mention it. Placeholders: {name}, {kind}, {language}.",
+    text: lines(
+      "Write a lorebook entry about {name} ({kind}): at most 5 short sentences that tell an AI in a roleplay what it needs to know about {name} — what it is, what it is like, and how it stands at the END of the story.",
+      "For a side character: who they are, how they behave, and how they relate to the main characters.",
+      "Treat the story as unknown to you: it may be a fan fiction that differs from any book you know. Only what the passages say — use nothing else. Don't explain what a word means in general or give facts about a real place (its size, landmarks) — only what {name} is and does in this story. If the passages don't give a detail (height, age, looks, clothing, income), leave it out; never guess. Write in your own words, don't copy sentences, don't retell the plot.",
+      "Write {name} by name, never {{char}}. Write in {language}.",
+      "{metric_units}",
+    ),
+  },
+
+  story_persona_self: {
+    about: "Cards from Story: persona for a new person in a story character's place — who they are; their place in the story is in the cards. Placeholders: {person}, {language}.",
+    text: lines(
+      "Write who the persona is as a person: name, looks, age, clothing, manner and a few defining traits — about 60–150 words. Nothing about family, relationships, history or situation: the character cards already tell that.",
+      "The persona belongs in the world of the story whose characters are given in the user's message — same time and place, so clothing and occupation fit that world. It is a new person, not {person}: a different name and looks.",
+      "Follow the user's wishes exactly — name, gender, age, looks as given. Don't repeat yourself. Write in {language}.",
+    ),
+  },
+  story_persona_plays: {
+    about: "Cards from Story: persona for the story character the user plays, from notes on them. Placeholders: {person}, {language}.",
+    text: lines(
+      "The persona is {person} from a story, whom the user plays. The user's message holds notes on {person}, taken while reading the story, in story order.",
+      "Describe who {person} is, not what happens in the story: looks, age, clothing, occupation, how they come across, their way of speaking and their defining traits, and their place among the other characters. Don't retell the plot. If {person} dies or leaves at the end, describe them as they are while still there.",
+      "Use only what the notes say: if they say nothing about something (e.g. their age or eye colour), leave it out instead of making it up. Follow the user's wishes. Use {person} as the name. Don't repeat yourself.",
+      "Write in {language}.",
+    ),
+  },
+  story_scene_persona: {
+    about: "Cards from Story: added to the opening scene when it is rewritten for a persona.",
+    text: "\"persona\" describes {{user}} — {{user}} IS this person: use the persona's gender (brother or sister, he or she), and call them {{user}}, never by the name of a character from the original story. Let the opening show how {name} perceives {{user}} — their looks, their manner — without acting, speaking or deciding for {{user}}.",
+  },
+
   // ── Translate ──────────────────────────────────────────────────────────────────────────────
   translate: {
     about: "Translate: how a part of the card is translated. Placeholder: {language}.",

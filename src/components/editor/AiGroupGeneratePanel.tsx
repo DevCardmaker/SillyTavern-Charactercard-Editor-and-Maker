@@ -16,6 +16,7 @@ import { useAiProviderConfigStore } from "../../state/aiProviderConfigStore";
 import { useCardStore } from "../../state/cardStore";
 import { usePersonaStore } from "../../state/personaStore";
 import { AiProviderSettings } from "./AiProviderSettings";
+import { GroupChatHint } from "./GroupChatHint";
 import { applyReviewedChanges, FixChangeList, type ReviewableChange } from "./FixChangeList";
 
 /** The optional second step: edits that work the new characters into the reference cards. */
@@ -344,6 +345,8 @@ export function AiGroupGeneratePanel({ onClose, onAddedWithReferences }: Props) 
             Waiting for a response — with a local model running partly on CPU this can take several minutes.
           </p>
         )}
+
+        <GroupChatHint />
 
         <div className="modal-actions">
           <button type="button" className="secondary" onClick={onClose}>

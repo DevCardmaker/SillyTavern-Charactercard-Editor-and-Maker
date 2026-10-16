@@ -5,6 +5,7 @@ import { useCardStore } from "../../state/cardStore";
 import { AiConsistencyCheckPanel } from "./AiConsistencyCheckPanel";
 import { AiGroupGeneratePanel } from "./AiGroupGeneratePanel";
 import { AiSplitGroupPanel } from "./AiSplitGroupPanel";
+import { StoryToCardsPanel } from "./StoryToCardsPanel";
 import { TranslateCardPanel } from "./TranslateCardPanel";
 import { ContextBudgetPanel } from "./ContextBudgetPanel";
 
@@ -13,9 +14,10 @@ interface Props {
   onOpenAiAssist: () => void;
   isTestChatOpen: boolean;
   onToggleTestChat: () => void;
+  onShowLorebooks: () => void;
 }
 
-export function Toolbar({ onError, onOpenAiAssist, isTestChatOpen, onToggleTestChat }: Props) {
+export function Toolbar({ onError, onOpenAiAssist, isTestChatOpen, onToggleTestChat, onShowLorebooks }: Props) {
   const card = useCardStore((s) => s.card);
   const isDirty = useCardStore((s) => s.isDirty);
   const currentFilePath = useCardStore((s) => s.currentFilePath);
@@ -27,6 +29,7 @@ export function Toolbar({ onError, onOpenAiAssist, isTestChatOpen, onToggleTestC
   const [isConsistencyCheckOpen, setIsConsistencyCheckOpen] = useState(false);
   const [isSplitOpen, setIsSplitOpen] = useState(false);
   const [isTranslateOpen, setIsTranslateOpen] = useState(false);
+  const [isStoryOpen, setIsStoryOpen] = useState(false);
 
   function handleOpenAiAssist() {
     if (!card) newCard();
@@ -149,6 +152,14 @@ export function Toolbar({ onError, onOpenAiAssist, isTestChatOpen, onToggleTestC
       <button
         type="button"
         className="secondary"
+        onClick={() => setIsStoryOpen(true)}
+        title="Create character cards from a story — fan fiction, a short story, an excerpt from a book"
+      >
+        From Story…
+      </button>
+      <button
+        type="button"
+        className="secondary"
         onClick={() => setIsSplitOpen(true)}
         disabled={!card}
         title="Turn a card that describes several characters into one card per character"
@@ -181,6 +192,7 @@ export function Toolbar({ onError, onOpenAiAssist, isTestChatOpen, onToggleTestC
       )}
       {isSplitOpen && <AiSplitGroupPanel onClose={() => setIsSplitOpen(false)} />}
       {isTranslateOpen && <TranslateCardPanel onClose={() => setIsTranslateOpen(false)} />}
+      {isStoryOpen && <StoryToCardsPanel onClose={() => setIsStoryOpen(false)} onShowLorebooks={onShowLorebooks} />}
       {isConsistencyCheckOpen && <AiConsistencyCheckPanel onClose={() => setIsConsistencyCheckOpen(false)} />}
       <div className="toolbar-title">
         {fileName}
