@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { openPromptsFile } from "../../io/promptFile";
+import { messageText } from "../../schema/aiPrompt";
 import { usePromptFileStore } from "../../state/promptFileStore";
 
 /** The prompts file (customisable AI instructions) and a read-only view of what the last AI
@@ -67,7 +68,7 @@ export function PromptsSettings() {
             {lastMessages.map((m, i) => (
               <div key={i} className="ai-assist-draft-field">
                 <span className="ai-assist-draft-label">{m.role}</span>
-                <pre className="prompt-preview">{m.content}</pre>
+                <pre className="prompt-preview">{messageText(m)}</pre>
               </div>
             ))}
           </div>

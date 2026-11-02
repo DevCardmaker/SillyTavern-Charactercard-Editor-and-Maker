@@ -8,9 +8,23 @@ import type { Lorebook } from "./lorebook";
 import type { NormalizedCard } from "./normalize";
 import { promptText } from "./promptTexts";
 
+/** One part of a message with an image — OpenAI's format, which KoboldCpp (with a vision
+ * projector loaded) and cloud vision models accept. The image goes as a data URL. */
+export type AiContentPart = { type: "text"; text: string } | { type: "image_url"; image_url: { url: string } };
+
 export interface AiChatMessage {
   role: "system" | "user" | "assistant";
   content: string;
+}
+
+/** What is actually sent: text messages, or a user message with an image. Separate from
+ * AiChatMessage, which everything that builds or reads prompt text relies on being text. */
+export type AiRequestMessage = AiChatMessage | { role: "user"; content: AiContentPart[] };
+
+/** A message's text for display ("Show last prompt"): an image shows as "[image]", not as its data. */
+export function messageText(message: AiRequestMessage): string {
+  if (typeof message.content === "string") return message.content;
+  return message.content.map((part) => (part.type === "text" ? part.text : "[image]")).join("\n");
 }
 
 /** Shared guidance lives in promptTexts.ts (editable via the prompts file); these read the

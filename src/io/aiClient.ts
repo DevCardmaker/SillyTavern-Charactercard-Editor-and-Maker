@@ -28,6 +28,15 @@ import {
   parseAiStoryLoreEntry,
 } from "../schema/storyLore";
 import {
+  aiImageDescriptionToJsonSchema,
+  aiImageIdeasToJsonSchema,
+  type ImageDescription,
+  type ImageIdea,
+  type ImagePerson,
+  parseAiImageDescription,
+  parseAiImageIdeas,
+} from "../schema/imageToCards";
+import {
   type AiKeysTranslation,
   aiKeysTranslationToJsonSchema,
   aiNameToJsonSchema,
@@ -40,7 +49,7 @@ import { aiImagePromptToJsonSchema, parseAiImagePrompt } from "../schema/aiImage
 import { type AiRelocateMember, aiRelocateToJsonSchema, parseAiRelocate } from "../schema/aiRelocate";
 import { type AiLorebookEntryDraft, aiLorebookEntriesToJsonSchema, parseAiLorebookEntries } from "../schema/aiLorebookAssist";
 import { type AiLorebookEditEntry, aiLorebookEditToJsonSchema, parseAiLorebookEdit } from "../schema/aiLorebookEdit";
-import type { AiChatMessage } from "../schema/aiPrompt";
+import type { AiChatMessage, AiRequestMessage } from "../schema/aiPrompt";
 import { usePromptFileStore } from "../state/promptFileStore";
 
 export interface AiProviderConfig {
@@ -59,7 +68,7 @@ function truncate(text: string, max = 300): string {
 
 async function callChatCompletion(
   config: AiProviderConfig,
-  messages: AiChatMessage[],
+  messages: AiRequestMessage[],
   jsonSchema: { name: string; strict: boolean; schema: Record<string, unknown> } | null,
   options: { maxTokens?: number; stop?: string[]; temperature?: number } = {},
 ): Promise<string> {
@@ -85,7 +94,7 @@ async function callChatCompletion(
 export async function requestFieldPatch(
   config: AiProviderConfig,
   selected: readonly AiFieldKey[],
-  messages: AiChatMessage[],
+  messages: AiRequestMessage[],
 ): Promise<AiFieldPatch> {
   const content = await callChatCompletion(config, messages, {
     name: "card_fields",
@@ -367,10 +376,46 @@ export async function requestStoryLoreEntry(config: AiProviderConfig, messages: 
   return parseOrThrow(content, parseAiStoryLoreEntry);
 }
 
+/** Cards from an image, step 1: the picture described plainly (needs a model that can see images). */
+export async function requestImageDescription(config: AiProviderConfig, messages: AiRequestMessage[]): Promise<ImageDescription> {
+  const content = await callChatCompletion(
+    config,
+    messages,
+    { name: "image_description", strict: true, schema: aiImageDescriptionToJsonSchema() },
+    // Low and fixed: this step only says what is there.
+    { maxTokens: Math.max(config.maxTokens ?? 0, 2048), temperature: TRANSLATE_TEMPERATURE },
+  );
+  return parseOrThrow(content, parseAiImageDescription);
+}
+
+/** Cards from an image with a separate describing model: its plain-text description. */
+export async function requestImageCaption(config: AiProviderConfig, messages: AiRequestMessage[]): Promise<string> {
+  const text = await callChatCompletion(config, messages, null, { maxTokens: 1000, temperature: 0.6 });
+  if (!text.trim()) throw new Error("The describing model returned nothing.");
+  return text.trim();
+}
+
+/** Cards from an image, step 2: story ideas, their cast tied to the people of the description. */
+export async function requestImageIdeas(config: AiProviderConfig, messages: AiRequestMessage[], people: ImagePerson[]): Promise<ImageIdea[]> {
+  const content = await callChatCompletion(
+    config,
+    messages,
+    { name: "image_ideas", strict: true, schema: aiImageIdeasToJsonSchema() },
+    { maxTokens: Math.max(config.maxTokens ?? 0, 3000) },
+  );
+  return parseOrThrow(content, (raw) => parseAiImageIdeas(raw, people));
+}
+
+/** The JSON of a reply, also when a model without grammar wraps it in a ```json block. */
+export function unfenceJson(content: string): string {
+  const fenced = content.trim().match(/^```(?:json)?\s*\n([\s\S]*?)\n?```$/i);
+  return fenced ? fenced[1] : content;
+}
+
 function parseOrThrow<T>(content: string, parse: (raw: unknown) => { success: true; data: T } | { success: false; error: string }): T {
   let raw: unknown;
   try {
-    raw = JSON.parse(content);
+    raw = JSON.parse(unfenceJson(content));
   } catch {
     throw new Error(`Model response was not valid JSON (maybe cut off — try again): ${truncate(content)}`);
   }

@@ -336,6 +336,81 @@ export const DEFAULT_PROMPTS = {
     text: "\"persona\" describes {{user}} — {{user}} IS this person: use the persona's gender (brother or sister, he or she), and call them {{user}}, never by the name of a character from the original story. Let the opening show how {name} perceives {{user}} — their looks, their manner — without acting, speaking or deciding for {{user}}.",
   },
 
+  // ── Cards from an image ────────────────────────────────────────────────────────────────
+  image_describe: {
+    about: "Cards from an Image, step 1: describing the picture plainly, before any story is made up.",
+    text: lines(
+      "Describe the picture precisely and plainly, for a writer who can't see it. Only what is visible — no story, no guesses about names or what happened.",
+      "- description: first the whole picture as it is — where the camera is (the viewer's point of view: inside a car looking out, across a table, from above …) and who is where relative to it, what happens, the setting (place, inside or outside, time of day, weather, era or style), the important objects, the light and the mood.",
+      "- people: every person or person-like figure — also those only partly visible, seen from behind, at the edge, leaning in or reflected — each with: who — a short label that tells them apart (\"the woman with the fox ears\", \"the boy on the left\"); looks — 2–5 sentences: species or non-human features (ears, tail, horns …), hair, build, clothing, what they hold, their pose and expression, and how they seem to relate to the others (by pose and look).",
+      "Name non-human features exactly (fox, cat, wolf …) and don't let the colour of the light change the colour of things. If the picture shows no people, return an empty list.",
+      "Write in {language}.",
+    ),
+  },
+  image_caption: {
+    about: "Cards from an Image with a separate describing model (e.g. JoyCaption): what it is asked. Plain text, no JSON — captioning models are trained on plain requests.",
+    text: "Write a long, detailed description of this image. Start with the camera's point of view (where the viewer is). Describe every person precisely: body, hair, clothing or nudity, exact pose and position of arms, legs and body, facial expression, and where they are relative to the viewer and to each other. Then the setting, objects, light and mood. Describe exactly what is visible, explicitly and without euphemisms.",
+  },
+  image_structure: {
+    about: "Cards from an Image with a separate describing model: the main model sorts that description into scene and people. Placeholder: {language}.",
+    text: lines(
+      "The user's message is a detailed description of a picture, written by an image captioning model. Sort it into:",
+      "- description: the camera's point of view, what happens, the setting, objects, light and mood — the people only in a few words (who is where), their details belong to people;",
+      "- people: every person, with who — a short label that tells them apart — and looks — everything the text says about them: body, clothing or nudity, exact pose, expression, position.",
+      "Keep every detail exactly as written — explicit content, body details and poses included. Don't soften, shorten, judge or leave anything out, and add nothing. Write in {language}.",
+    ),
+  },
+  image_ideas: {
+    about: "Cards from an Image, step 2: three story ideas for the picture. Placeholders: {count}, {language}.",
+    text: lines(
+      "Invent {count} very different ideas for the story behind this picture, for a roleplay. The \"facts\" in the user's message are what the picture shows — they are fixed: never change a species, a look, the setting or the era (a fox girl stays a fox girl, a modern city stays modern). Be creative with everything the picture leaves open: who the people are, their names, what happened just before, why they are where they are, their personalities and relationships.",
+      "Each idea has:",
+      "- title: a few words;",
+      "- story: 4–6 sentences — who they are, what happened just before the moment of the picture, what is going on now, and their personalities;",
+      "- cast: the characters of the idea. For each person in the picture an entry with image_person = their label from the facts, a name you choose and role \"character\"; if the picture shows no one, invent one character who belongs to the place (image_person empty), or make the card a narrator of the scene (role \"narrator\");",
+      "- you: what or who the user is in this situation, as a short phrase about the user only — not a sentence with \"you\" (\"a guest of the hotel, just stepping outside\", \"the photographer\", \"a traveller who got lost\").",
+      "Follow the user's direction if there is one. Write in {language}.",
+    ),
+  },
+  image_card: {
+    about: "Cards from an Image, step 3: writing one character's card from the picture and the chosen idea. Placeholders: {name}, {language}.",
+    text: lines(
+      "The \"facts\" are what the picture shows — fixed: {name}'s species, looks, clothing and the setting come from them and must not change. The \"idea\" is the story behind the picture; build on it. Be creative where neither says anything, but stay consistent with both.",
+      "- description: flowing prose in short paragraphs: who {name} is and what they look like (from the facts), age, occupation, where they live; their background, with one formative experience; what led to the moment of the picture; then one line on their relationship to each other character.",
+      "- personality: traits, habits, way of speaking, likes and dislikes, fears and goals — and how they show.",
+      "Write {name} by name, not {{char}}, and the user as {{user}} — never \"you\". Write in {language}.",
+      "{metric_units}",
+    ),
+  },
+  image_card_narrator: {
+    about: "Cards from an Image: added to step 3 when the card is a narrator of the scene rather than a person.",
+    text: "{name} is not a person but the narrator of this scene: the description sets out the world and the place as the picture shows it, the characters {{user}} can meet there, and the narrator's voice and tone; the personality describes how the narrator tells the story.",
+  },
+  image_scene: {
+    about: "Cards from an Image, step 4: scenario and first message — the moment of the picture. Placeholders: {name}, {language}.",
+    text: lines(
+      "- scenario: 2–4 sentences: the situation of the picture, where and when, and how {name} and {{user}} come to be together in it.",
+      "- first_mes: the opening message, about 150–250 words, narrated in third person: the moment the picture shows (or a breath later), with {name} in focus, acting and speaking in their own voice and turning to {{user}}. Never act, speak or decide for {{user}}.",
+      "Keep everything the picture shows. Write the user as {{user}} — never \"you\" (narration in third person: \"she noticed {{user}}\"). Write in {language}.",
+    ),
+  },
+  image_user_joins: {
+    about: "Cards from an Image: the user is new and meets the characters in this situation. Placeholder: {you}.",
+    text: "{{user}} is new to the characters: they meet for the first time in the situation of the picture. {{user}} in this situation: {you}",
+  },
+  image_user_known: {
+    about: "Cards from an Image: the user already belongs to the characters' lives. Placeholder: {you}.",
+    text: "The characters already know {{user}} and share some history with them. {{user}} in this situation: {you}",
+  },
+  image_user_plays: {
+    about: "Cards from an Image: the user is one of the people in the picture. Placeholders: {person}, {you}.",
+    text: "{{user}} is {person} in the picture — write {{user}} wherever {person} would be. {you}",
+  },
+  image_user_card: {
+    about: "Cards from an Image: added to step 3 when the characters know {{user}}.",
+    text: "Add one line on {name}'s relationship to {{user}}, fitting the idea.",
+  },
+
   // ── Translate ──────────────────────────────────────────────────────────────────────────────
   translate: {
     about: "Translate: how a part of the card is translated. Placeholder: {language}.",

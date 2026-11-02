@@ -5,6 +5,7 @@ import { useCardStore } from "../../state/cardStore";
 import { AiConsistencyCheckPanel } from "./AiConsistencyCheckPanel";
 import { AiGroupGeneratePanel } from "./AiGroupGeneratePanel";
 import { AiSplitGroupPanel } from "./AiSplitGroupPanel";
+import { ImageToCardsPanel } from "./ImageToCardsPanel";
 import { StoryToCardsPanel } from "./StoryToCardsPanel";
 import { TranslateCardPanel } from "./TranslateCardPanel";
 import { ContextBudgetPanel } from "./ContextBudgetPanel";
@@ -30,6 +31,7 @@ export function Toolbar({ onError, onOpenAiAssist, isTestChatOpen, onToggleTestC
   const [isSplitOpen, setIsSplitOpen] = useState(false);
   const [isTranslateOpen, setIsTranslateOpen] = useState(false);
   const [isStoryOpen, setIsStoryOpen] = useState(false);
+  const [isImageOpen, setIsImageOpen] = useState(false);
 
   function handleOpenAiAssist() {
     if (!card) newCard();
@@ -160,6 +162,14 @@ export function Toolbar({ onError, onOpenAiAssist, isTestChatOpen, onToggleTestC
       <button
         type="button"
         className="secondary"
+        onClick={() => setIsImageOpen(true)}
+        title="Create character cards from a picture that tells a story — needs a model that can see images"
+      >
+        From Image…
+      </button>
+      <button
+        type="button"
+        className="secondary"
         onClick={() => setIsSplitOpen(true)}
         disabled={!card}
         title="Turn a card that describes several characters into one card per character"
@@ -192,6 +202,7 @@ export function Toolbar({ onError, onOpenAiAssist, isTestChatOpen, onToggleTestC
       )}
       {isSplitOpen && <AiSplitGroupPanel onClose={() => setIsSplitOpen(false)} />}
       {isTranslateOpen && <TranslateCardPanel onClose={() => setIsTranslateOpen(false)} />}
+      {isImageOpen && <ImageToCardsPanel onClose={() => setIsImageOpen(false)} />}
       {isStoryOpen && <StoryToCardsPanel onClose={() => setIsStoryOpen(false)} onShowLorebooks={onShowLorebooks} />}
       {isConsistencyCheckOpen && <AiConsistencyCheckPanel onClose={() => setIsConsistencyCheckOpen(false)} />}
       <div className="toolbar-title">

@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { AiChatMessage } from "../schema/aiPrompt";
+import type { AiRequestMessage } from "../schema/aiPrompt";
 import { setPromptOverrides } from "../schema/promptTexts";
 import { type PromptsFileStatus, readPromptsFile } from "../io/promptFile";
 
@@ -7,9 +7,9 @@ interface PromptFileState {
   status: PromptsFileStatus | null;
   error: string | null;
   /** What the last AI request actually sent — for "Show last prompt". */
-  lastMessages: AiChatMessage[] | null;
+  lastMessages: AiRequestMessage[] | null;
   reload: () => Promise<void>;
-  setLastMessages: (messages: AiChatMessage[]) => void;
+  setLastMessages: (messages: AiRequestMessage[]) => void;
 }
 
 /** The user's prompts file (see promptTexts.ts): loaded once at startup and on "Reload prompts";

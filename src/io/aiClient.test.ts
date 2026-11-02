@@ -5,7 +5,7 @@ vi.mock("@tauri-apps/api/core", () => ({
   invoke: (...args: unknown[]) => mockInvoke(...args),
 }));
 
-const { requestFieldPatch, requestImagePrompt, requestLorebookEntries, testConnection } = await import("./aiClient");
+const { requestFieldPatch, requestImagePrompt, requestLorebookEntries, testConnection, unfenceJson } = await import("./aiClient");
 
 const CONFIG = { baseUrl: "http://localhost:5001/", apiKey: "", model: "test-model" };
 
@@ -93,5 +93,13 @@ describe("testConnection", () => {
   it("propagates a rejected invoke call", async () => {
     mockInvoke.mockRejectedValueOnce(new Error("Connection failed"));
     await expect(testConnection(CONFIG)).rejects.toThrow(/Connection failed/);
+  });
+});
+
+describe("unfenceJson", () => {
+  it("unwraps a ```json block and leaves plain JSON alone", () => {
+    expect(unfenceJson('```json\n{"a": 1}\n```')).toBe('{"a": 1}');
+    expect(unfenceJson('```\n{"a": 1}\n```\n')).toBe('{"a": 1}');
+    expect(unfenceJson('{"a": 1}')).toBe('{"a": 1}');
   });
 });
