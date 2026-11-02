@@ -42,6 +42,7 @@ Point the app at any OpenAI-compatible `/v1/chat/completions` endpoint — a loc
 - Generate a whole group of new, mutually consistent characters from a single prompt — or build them on existing cards: the family of one character, the missing members of a set, or people a card only mentions, optionally relating to your persona
 - **Split** a group card (one card describing several characters) into one card per person, including people only found in its lorebook — or **merge** several cards into one group card, optionally shortened to save tokens
 - **Cards from a story**: turn a fan fiction, short story or book excerpt into character cards, a shared lorebook of its world and side characters, and a persona for your place in it — read part by part, so it works with small local models
+- **Cards from an image**: turn a picture into story ideas and character cards with opening scenes — with a model that can see images, a separate describing model (such as JoyCaption), or your own description of the picture
 - **Translate** a card into any language, part by part with checks — names are written in the new language's script, lorebook keys are translated too
 - Edit a whole group at once, e.g. move every open character to a new setting while keeping who they are
 - Condense long fields section by section to save prompt tokens without changing the character (one field or all at once, compared side by side, with a backup first)
@@ -101,6 +102,12 @@ Local models work best with these step-by-step features: each request is a small
 ### Cards from a story
 
 "From Story…" reads a story you paste or load (`.txt`/`.md`). "Find people" lists everyone in it — tick who gets a card, and use "same person as" where the story calls one person by different names. Choose your own place in the story, then "Create cards". "Find places & terms" adds a lorebook of the story's world and its side characters; in a story character's place (or playing one), "Create persona" writes your persona. Everything is shown for review first, and "Add" opens the cards as tabs, the lorebook in the Lorebooks mode and the persona in the Personas mode.
+
+### Cards from an image
+
+"From Image…" loads a picture and describes it, with the model chosen under "Describe the picture with" — or describe it yourself if your model can't see images. Correct the description, tick who gets a card and get three story ideas. Pick one, adjust the story and your place in it, then create the cards. They use the picture as their avatar and are shown for review before they open as tabs.
+
+In pictures with more than two people, models often miss some. Add them by hand with "Add a person", or adjust the `image_*` sections of the prompts file.
 
 ### Changing the prompts
 

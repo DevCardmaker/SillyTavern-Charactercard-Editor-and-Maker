@@ -2,6 +2,19 @@
 
 All notable changes to this project are documented here. The project follows [Semantic Versioning](https://semver.org/): new features raise the minor version, fixes the patch version.
 
+## [1.6.0] – 2026-11-02
+
+### Added
+- **From Image…**: create character cards from a picture that tells a story. It needs a model that can see images; if yours can't, describe the picture yourself or let a separate describing model (such as JoyCaption) do it, and write with your usual model.
+  - **The picture**: first it's described plainly — the scene, the camera's point of view and everyone in it. Correct anything that's wrong; the facts you keep carry through to the cards and the opening scene.
+  - **Story ideas**: three ideas for the situation, with an optional direction of your own and "3 new ideas" for more. The story stays editable.
+  - **You in the situation**: say what or who you are there — someone new, someone the characters know, or one of the people in the picture.
+  - **Cards**: tick who gets a card; relationships are read from poses and expressions. A picture without people gets an invented character or a narrator. Each card comes with an opening scene and uses the picture as its avatar, with optional cropping.
+
+### Fixed
+- AI features no longer fail when a model that doesn't enforce the reply format (DeepSeek, for example) answers with an unexpected word in a field that allows only certain values — the closest allowed value is used. This covers From Image, the From Story lorebook, Split Card, Consistency Check fixes and Create Group's updates to reference cards.
+- Replies wrapped in a ```` ```json ```` block are now read correctly.
+
 ## [1.5.0] – 2026-10-16
 
 ### Added
