@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { guessCardField, lenientEnum } from "./lenientEnum";
 import { type ConsistencyFixField, locateSnippet, type ResolvedFixChange } from "./aiConsistencyFix";
 import type { NormalizedCard } from "./normalize";
 
@@ -14,7 +15,7 @@ const aiIntegrateSchema = z.object({
   additions: z.array(
     z.object({
       character: z.string(),
-      field: z.enum(INTEGRATE_FIELDS),
+      field: lenientEnum(INTEGRATE_FIELDS, guessCardField(INTEGRATE_FIELDS)),
       after: z.string(),
       add: z.string(),
     }),

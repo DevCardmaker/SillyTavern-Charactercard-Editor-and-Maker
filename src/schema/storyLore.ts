@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { lenientEnum } from "./lenientEnum";
 import { cleanAiKeys } from "./aiLorebookAssist";
 import type { Lorebook } from "./lorebook";
 import { upsertMemberEntries } from "./memberEntries";
@@ -31,12 +32,19 @@ export const LORE_KIND_LABELS: Record<LoreKind, string> = {
 
 // ── Finding pass ────────────────────────────────────────────────────────────────────────────────
 
+/** A kind the model named in its own words ("location", "faction") — anything unclear is a term. */
+function guessLoreKind(text: string): "place" | "group" | "term" {
+  if (/place|locat|city|town|village|build|region|country|land|street|room|area|planet|world/.test(text)) return "place";
+  if (/group|faction|organi|family|clan|order|team|guild|gang|house|company|tribe|band|crew/.test(text)) return "group";
+  return "term";
+}
+
 const aiStoryLoreSchema = z.object({
   things: z
     .array(
       z.object({
         name: z.string().max(80),
-        kind: z.enum(["place", "group", "term"]),
+        kind: lenientEnum(["place", "group", "term"], guessLoreKind),
         also_called: z.array(z.string().max(60)).max(6),
         about: z.string().max(160),
       }),

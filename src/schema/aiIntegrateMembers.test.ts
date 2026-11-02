@@ -52,7 +52,8 @@ describe("lastSentence / parse", () => {
     expect(lastSentence("no break")).toBe("no break");
   });
 
-  it("rejects first_mes as a field", () => {
-    expect(parseAiIntegration({ explanation: "", additions: [{ character: "a", field: "first_mes", after: "", add: "x" }] }).success).toBe(false);
+  it("never adds to first_mes — that field falls back to the description", () => {
+    const parsed = parseAiIntegration({ explanation: "", additions: [{ character: "a", field: "first_mes", after: "", add: "x" }] });
+    expect(parsed.success && parsed.data.additions[0].field).toBe("description");
   });
 });

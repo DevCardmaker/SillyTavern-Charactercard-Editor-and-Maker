@@ -67,11 +67,11 @@ describe("resolveFixChanges", () => {
 });
 
 describe("schema", () => {
-  it("parses a valid reply and rejects fields outside the allowed set", () => {
+  it("parses a valid reply and reads a field outside the allowed set as the description", () => {
     const ok = parseAiConsistencyFix({ explanation: "x", changes: [{ character: "A", field: "scenario", find: "a", replace: "b" }] });
     expect(ok.success).toBe(true);
-    const bad = parseAiConsistencyFix({ explanation: "x", changes: [{ character: "A", field: "name", find: "a", replace: "b" }] });
-    expect(bad.success).toBe(false);
+    const other = parseAiConsistencyFix({ explanation: "x", changes: [{ character: "A", field: "name", find: "a", replace: "b" }] });
+    expect(other.success && other.data.changes[0].field).toBe("description");
     expect(aiConsistencyFixToJsonSchema().additionalProperties).toBe(false);
   });
 });

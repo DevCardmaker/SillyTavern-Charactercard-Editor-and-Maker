@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { guessCardField, lenientEnum } from "./lenientEnum";
 import type { NormalizedCard } from "./normalize";
 
 /** The card fields a consistency fix may edit — the ones the check looks at, minus `name`
@@ -21,7 +22,7 @@ const aiConsistencyFixSchema = z.object({
   changes: z.array(
     z.object({
       character: z.string(),
-      field: z.enum(CONSISTENCY_FIX_FIELDS),
+      field: lenientEnum(CONSISTENCY_FIX_FIELDS, guessCardField(CONSISTENCY_FIX_FIELDS)),
       find: z.string(),
       replace: z.string(),
     }),

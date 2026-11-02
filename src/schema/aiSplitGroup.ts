@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { lenientEnum } from "./lenientEnum";
 import { aiGroupMemberSchema } from "./aiGroupGenerate";
 import type { NormalizedCard } from "./normalize";
 
@@ -16,7 +17,7 @@ const aiSplitPeopleSchema = z.object({
       z.object({
         name: z.string(),
         role: z.string(),
-        source: z.enum(["card", "lorebook"]),
+        source: lenientEnum(["card", "lorebook"], (t) => (/lore/.test(t) ? "lorebook" : "card")),
       }),
     )
     .max(MAX_SPLIT_PEOPLE),

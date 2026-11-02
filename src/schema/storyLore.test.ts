@@ -40,8 +40,14 @@ describe("parseAiStoryLore", () => {
     ]);
   });
 
-  it("rejects an unknown kind", () => {
-    expect(parseAiStoryLore({ things: [{ ...thing("X"), kind: "person" }] }).success).toBe(false);
+  it("reads a kind in the model's own words, else as a term", () => {
+    const kinds = (kind: string) => {
+      const parsed = parseAiStoryLore({ things: [{ ...thing("X"), kind }] });
+      return parsed.success && parsed.data[0]?.kind;
+    };
+    expect(kinds("Location")).toBe("place");
+    expect(kinds("faction")).toBe("group");
+    expect(kinds("person")).toBe("term");
   });
 
   it("keeps the lore names that are written in the part", () => {
