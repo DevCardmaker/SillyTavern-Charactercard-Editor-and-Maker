@@ -1,6 +1,7 @@
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { useEffect, useRef, useState } from "react";
+import { TextContextMenu } from "./components/common/TextContextMenu";
 import { AvatarPanel } from "./components/image/AvatarPanel";
 import { AiAssistPanel } from "./components/editor/AiAssistPanel";
 import { BasicTab } from "./components/editor/BasicTab";
@@ -159,6 +160,7 @@ function App() {
 
   return (
     <div className="app">
+      <TextContextMenu onError={setError} />
       {isDragOver && (
         <div className="drop-overlay">
           <p>

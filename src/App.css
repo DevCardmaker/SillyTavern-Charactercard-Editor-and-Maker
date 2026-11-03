@@ -1104,6 +1104,41 @@ button.secondary.active {
   width: 5rem;
 }
 
+/* Right-click menu */
+
+.context-menu {
+  position: fixed;
+  z-index: 1000;
+  min-width: 150px;
+  display: flex;
+  flex-direction: column;
+  padding: 0.25rem;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+}
+
+.context-menu button {
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: var(--text);
+  padding: 0.35rem 0.75rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.context-menu button:hover:not(:disabled) {
+  background: var(--accent-strong);
+}
+
+.context-menu button:disabled {
+  color: var(--text-dim);
+  opacity: 0.6;
+  cursor: default;
+}
+
 /* Version history */
 
 .history-modal {
