@@ -1104,6 +1104,34 @@ button.secondary.active {
   width: 5rem;
 }
 
+/* AI assistant: length and point of view */
+
+.ai-assist-writing {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+}
+
+.ai-assist-writing select {
+  margin-left: 0.4rem;
+}
+
+.ai-assist-writing-fields {
+  flex-basis: 100%;
+}
+
+.ai-assist-writing-fields summary {
+  cursor: pointer;
+  color: var(--text-dim);
+}
+
+.ai-assist-writing-fields .field-inline {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 0.3rem;
+}
+
 /* Right-click menu */
 
 .context-menu {

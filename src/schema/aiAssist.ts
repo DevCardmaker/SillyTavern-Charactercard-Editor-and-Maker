@@ -68,3 +68,9 @@ export function parseAiPatch(selected: readonly AiFieldKey[], raw: unknown): Par
   }
   return { success: true, data: result.data as AiFieldPatch };
 }
+
+/** Whether a field has nothing in it yet, for picking only what's missing on an imported card. */
+export function isEmptyField(card: NormalizedCard, key: AiFieldKey): boolean {
+  const value = card[key];
+  return Array.isArray(value) ? value.length === 0 : !String(value ?? "").trim();
+}

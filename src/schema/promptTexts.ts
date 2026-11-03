@@ -41,6 +41,22 @@ export const DEFAULT_PROMPTS = {
   },
 
   // ── AI Assistant (character / persona) ─────────────────────────────────────────────────────
+  field_length: {
+    about: "AI Assistant, a length picked for a field. Placeholders: {field}, {amount}.",
+    text: "{field}: aim for about {amount}. This is a guide, not an exact count.",
+  },
+  pov_first: {
+    about: "AI Assistant, point of view picked for opening messages: first person.",
+    text: "Write opening messages in first person from {{char}}'s point of view (I, me, my). Never write what {{user}} does, says or feels.",
+  },
+  pov_second: {
+    about: "AI Assistant, point of view picked for opening messages: second person.",
+    text: "Write opening messages addressing {{user}} as \"you\", with {{char}} in third person. Never decide what {{user}} does, says or feels.",
+  },
+  pov_third: {
+    about: "AI Assistant, point of view picked for opening messages: third person.",
+    text: "Write opening messages in third person, for {{char}} and for {{user}} alike. Mention {{user}}'s presence, but never decide what {{user}} does, says or feels.",
+  },
   assist_intro: {
     about: "AI Assistant for a character card: the opening line.",
     text: "You help fill in or revise a SillyTavern character card.",

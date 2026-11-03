@@ -1,7 +1,17 @@
 import { useEffect, useState } from "react";
 import { requestFieldPatch } from "../../io/aiClient";
-import { AI_FIELD_KEYS, type AiFieldKey, type AiFieldPatch, aiFieldLabel } from "../../schema/aiAssist";
+import { AI_FIELD_KEYS, type AiFieldKey, type AiFieldPatch, aiFieldLabel, isEmptyField } from "../../schema/aiAssist";
 import { buildSystemPrompt, buildUserTurn } from "../../schema/aiPrompt";
+import {
+  buildWritingNotes,
+  FIELD_LENGTHS,
+  fieldsWithLength,
+  OPENING_POVS,
+  usesOpeningPov,
+  type FieldLength,
+  type LengthChoices,
+  type OpeningPov,
+} from "../../schema/writingOptions";
 import type { NormalizedCard } from "../../schema/normalize";
 import { useAiProviderConfigStore } from "../../state/aiProviderConfigStore";
 import { AiProviderSettings } from "./AiProviderSettings";
@@ -28,6 +38,27 @@ function displayValue(key: AiFieldKey, draft: AiFieldPatch): string {
   if (value === undefined) return "";
   if (Array.isArray(value)) return value.join(key === "tags" ? ", " : "\n\n");
   return String(value);
+}
+
+const LENGTH_KEY = "ai-assist-length";
+const POV_KEY = "ai-assist-pov";
+
+/** The last choice, if it's still a valid one. Storage can be unavailable: nothing depends on it. */
+function readStored<T extends string>(key: string, allowed: readonly T[]): T | "" {
+  try {
+    const value = localStorage.getItem(key) as T | null;
+    return value && allowed.includes(value) ? value : "";
+  } catch {
+    return "";
+  }
+}
+
+function storeChoice(key: string, value: string): void {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    // Only a convenience: the choice applies for now either way.
+  }
 }
 
 /** Iterative AI assistant: refines a draft (separate from the live card) across as many messages
@@ -58,6 +89,8 @@ export function AiAssistPanel({
   const [instruction, setInstruction] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
+  const [lengths, setLengths] = useState<LengthChoices>(() => ({ all: readStored(LENGTH_KEY, FIELD_LENGTHS), fields: {} }));
+  const [pov, setPov] = useState<OpeningPov | "">(() => readStored(POV_KEY, OPENING_POVS));
 
   useEffect(() => {
     ensureConfigLoaded();
@@ -91,6 +124,37 @@ export function AiAssistPanel({
     setSelectedFields(new Set(fieldKeys));
   }
 
+  const emptyFields = fieldKeys.filter((key) => isEmptyField(card, key));
+
+  /** Ticks exactly what's still empty, for completing an imported card. */
+  function selectEmptyFields() {
+    const seeded = { ...draft };
+    for (const key of emptyFields) {
+      if (!(key in seeded)) Object.assign(seeded, { [key]: card[key] });
+    }
+    setDraft(seeded);
+    setSelectedFields(new Set(emptyFields));
+  }
+
+  function chooseAllLength(value: FieldLength | "") {
+    setLengths((prev) => ({ ...prev, all: value }));
+    storeChoice(LENGTH_KEY, value);
+  }
+
+  function chooseFieldLength(key: AiFieldKey, value: FieldLength | "same") {
+    setLengths((prev) => {
+      const fields = { ...prev.fields };
+      if (value === "same") delete fields[key];
+      else fields[key] = value;
+      return { ...prev, fields };
+    });
+  }
+
+  function choosePov(value: OpeningPov | "") {
+    setPov(value);
+    storeChoice(POV_KEY, value);
+  }
+
   function toggleContext(index: number) {
     const next = new Set(contextIndices);
     if (next.has(index)) next.delete(index);
@@ -111,6 +175,8 @@ export function AiAssistPanel({
     return cards.length > 0 ? buildContext(cards) : undefined;
   }
 
+  const lengthFields = fieldsWithLength([...selectedFields]);
+
   const providerReady = !!activeProfile?.baseUrl && !!activeProfile.model;
   const canSend = providerReady && selectedFields.size > 0 && instruction.trim() !== "" && !isSending;
 
@@ -121,7 +187,7 @@ export function AiAssistPanel({
     try {
       const fields = [...selectedFields];
       const patch = await requestFieldPatch(activeProfile, fields, [
-        { role: "system", content: buildSystem(fields) },
+        { role: "system", content: [buildSystem(fields), ...buildWritingNotes(fields, lengths, pov)].join("\n") },
         buildUserTurn(instruction, draft, contextText()),
       ]);
       setDraft((prev) => ({ ...prev, ...patch }));
@@ -152,6 +218,15 @@ export function AiAssistPanel({
             <button type="button" className="secondary" onClick={toggleAllFields}>
               {allSelected ? "Select none" : "Select all"}
             </button>
+            <button
+              type="button"
+              className="secondary"
+              onClick={selectEmptyFields}
+              disabled={emptyFields.length === 0}
+              title="Tick only the fields that are still empty"
+            >
+              Select empty
+            </button>
             {fieldKeys.map((key) => (
               <label key={key} className="ai-assist-field-checkbox">
                 <input type="checkbox" checked={selectedFields.has(key)} onChange={() => toggleField(key)} />
@@ -160,6 +235,50 @@ export function AiAssistPanel({
             ))}
           </div>
         </div>
+
+        {lengthFields.length > 0 && (
+          <div className="ai-assist-writing">
+            <label className="field-inline">
+              Length
+              <select value={lengths.all} onChange={(e) => chooseAllLength(e.target.value as FieldLength | "")}>
+                <option value="">As you ask</option>
+                <option value="short">Short</option>
+                <option value="medium">Medium</option>
+                <option value="long">Long</option>
+              </select>
+            </label>
+            {usesOpeningPov([...selectedFields]) && (
+              <label className="field-inline">
+                Opening point of view
+                <select value={pov} onChange={(e) => choosePov(e.target.value as OpeningPov | "")}>
+                  <option value="">As you ask</option>
+                  <option value="first">First person</option>
+                  <option value="second">Second person</option>
+                  <option value="third">Third person</option>
+                </select>
+              </label>
+            )}
+            {lengthFields.length > 1 && (
+              <details className="ai-assist-writing-fields">
+                <summary>Length per field</summary>
+                {lengthFields.map((key) => (
+                  <label key={key} className="field-inline">
+                    {aiFieldLabel(key)}
+                    <select
+                      value={lengths.fields[key] ?? "same"}
+                      onChange={(e) => chooseFieldLength(key, e.target.value as FieldLength | "same")}
+                    >
+                      <option value="same">Same as above</option>
+                      <option value="short">Short</option>
+                      <option value="medium">Medium</option>
+                      <option value="long">Long</option>
+                    </select>
+                  </label>
+                ))}
+              </details>
+            )}
+          </div>
+        )}
 
         {contextChoices && contextChoices.length > 0 && (
           <div>
