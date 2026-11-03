@@ -951,6 +951,159 @@ button.secondary.active {
   margin-bottom: 0.25rem;
 }
 
+/* Presets mode */
+
+.preset-layout {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.preset-list-panel {
+  width: 360px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+}
+
+.preset-list-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.preset-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.preset-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.1rem 0.35rem;
+  border-radius: 6px;
+}
+
+.preset-row:hover {
+  background: var(--bg-panel);
+}
+
+.preset-row.active {
+  background: var(--bg-input);
+}
+
+.preset-row.off .preset-row-name {
+  color: var(--text-dim);
+}
+
+.preset-row-name {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  padding: 0.3rem 0.2rem;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.preset-row-warning {
+  color: var(--warning);
+}
+
+.preset-row-tokens {
+  color: var(--text-dim);
+  font-size: 0.8rem;
+}
+
+.preset-row-move {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  padding: 0.2rem;
+  font-size: 0.7rem;
+  cursor: pointer;
+}
+
+.preset-row-move:hover:not(:disabled) {
+  color: var(--text);
+}
+
+.preset-row-move:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.preset-unplaced summary {
+  cursor: pointer;
+  color: var(--text-dim);
+  padding: 0.3rem 0;
+}
+
+.preset-unplaced-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.preset-detail {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+}
+
+.preset-detail-title {
+  margin: 0;
+}
+
+.preset-fix {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.preset-settings {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.preset-settings .field {
+  flex: 1;
+  min-width: 0;
+}
+
+.preset-detail-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.preset-position {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-dim);
+}
+
+.preset-position input {
+  width: 5rem;
+}
+
 /* Lorebook key tester */
 
 .key-test-results {

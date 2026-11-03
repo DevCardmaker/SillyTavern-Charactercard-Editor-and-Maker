@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented here. The project follows [Semantic Versioning](https://semver.org/): new features raise the minor version, fixes the patch version.
 
+## [1.7.0] – 2026-11-03
+
+### Added
+- **Presets**: a new mode for SillyTavern Chat Completion presets. No AI or internet connection needed.
+  - **Prompts**: switch them on and off, reorder them, edit name, role, text and position, add your own and delete them. Token counts per prompt and roughly for everything switched on.
+  - **Nothing else changes**: regex scripts, settings and fields the editor doesn't know stay as they are in the file. Every save leaves a copy of the old file in a `backups` folder, and if another program such as SillyTavern changed the file in the meantime, you're asked first.
+  - **A warning for prompts that never get sent**: your own prompts marked as system prompts look switched on, but SillyTavern ignores them. "Fix it" corrects that.
+
 ## [1.6.0] – 2026-11-02
 
 ### Added
