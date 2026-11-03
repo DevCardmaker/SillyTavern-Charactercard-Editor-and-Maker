@@ -35,7 +35,7 @@ export const DEFAULT_PROMPTS = {
       "Write one entry per distinct person, place, faction, item, or concept — never bundle several into one entry.",
       'For a broad request (e.g. "a family for this character" or "a basic fantasy world"), create the foundational entries the topic needs and keep each one brief: the essentials only (what or who it is, a few defining facts, how it relates to the rest), about 2–5 sentences. The user will expand details later.',
       'keys are matched as plain text against recent chat messages, so use short words people would actually write: names, nicknames, and specific 1–2 word terms. Do not use long descriptive phrases, and do not use words that also match unrelated mentions — relationship words (mother, father, brother, sister, wife), or generic nouns (land, magic, town, king). Example for a mother named Elara Brightwood: good keys ["Elara", "Elara Brightwood"], bad keys ["Mother", "Mira\'s mother"].',
-      'comment: a short human-readable label for the entry (e.g. "Mother Elara").',
+      'comment: a short human-readable label for the entry (e.g. "Anna, the mother").',
       "Stay consistent with the existing lorebook entries, and write in the same language they use; if there are none, use the language of the user's instruction.",
     ),
   },

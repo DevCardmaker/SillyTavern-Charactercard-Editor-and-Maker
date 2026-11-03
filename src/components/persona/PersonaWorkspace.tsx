@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { confirmDiscardChanges } from "../../io/confirmDiscard";
 import { openCardFile, saveCard, saveCardAsCopy } from "../../io/fileIO";
 import { buildPersonaFitContext, buildPersonaSystemPrompt, PERSONA_AI_FIELD_KEYS } from "../../schema/aiPrompt";
+import { overusedNameWarning } from "../../schema/overusedNames";
 import { personaMacroWarning } from "../../schema/persona";
 import { combineWarnings, emptyNameWarning, unbalancedMacroWarning } from "../../schema/warnings";
 import { useCardStore } from "../../state/cardStore";
@@ -176,7 +177,7 @@ export function PersonaWorkspace({ onError }: Props) {
                 label="Name"
                 value={persona.name}
                 onChange={(name) => updateCard({ name })}
-                warning={emptyNameWarning(persona.name)}
+                warning={combineWarnings(emptyNameWarning(persona.name), overusedNameWarning(persona.name))}
               />
               <TextAreaField
                 label="Description"

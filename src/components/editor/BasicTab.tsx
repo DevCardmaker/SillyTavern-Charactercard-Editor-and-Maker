@@ -1,5 +1,6 @@
 import { TextAreaField, TextField } from "../common/FormField";
 import { combineWarnings, emptyFirstMesWarning, emptyNameWarning, unbalancedMacroWarning } from "../../schema/warnings";
+import { overusedNameWarning } from "../../schema/overusedNames";
 import type { TabProps } from "./types";
 
 export function BasicTab({ card, onChange }: TabProps) {
@@ -9,7 +10,7 @@ export function BasicTab({ card, onChange }: TabProps) {
         label="Name"
         value={card.name}
         onChange={(name) => onChange({ name })}
-        warning={emptyNameWarning(card.name)}
+        warning={combineWarnings(emptyNameWarning(card.name), overusedNameWarning(card.name))}
       />
       <TextAreaField
         label="Description"
