@@ -86,6 +86,8 @@ Open "AI Assistant…" (or any other AI-powered button) and set up a provider un
 
 AI suggestions are never written into a card unseen: field edits, lorebook entries, group profiles and consistency fixes are all shown for review first, and most of them can be edited before you apply them.
 
+In the AI Assistant, "Select empty" ticks only the fields a card is still missing. You can also set a rough length for the selected fields, overall or per field, and the point of view for opening messages. The wording of these rules is in the prompts file, like the rest.
+
 ### Trying out characters
 
 "Test Chat" in the toolbar opens a chat next to the editor. With one card open, you chat with that character; with several cards open, tick who takes part and it becomes a group chat — press Enter to let them take turns, or click a name to pick who replies. Replies always use the cards as they are at that moment, unsaved edits included, so you can change a field and hit "Regenerate" to see the difference. Pick an open persona to play as yourself. The chat is never saved; closing the sidebar ends it.

@@ -2,6 +2,17 @@
 
 All notable changes to this project are documented here. The project follows [Semantic Versioning](https://semver.org/): new features raise the minor version, fixes the patch version.
 
+## [1.9.0] – 2026-11-03
+
+### Added
+- **AI Assistant**:
+  - **Length**: pick Short, Medium or Long for the selected fields, or differently per field. These are rough sizes, not exact word counts. Left at "As you ask", nothing changes.
+  - **Opening point of view**: first, second or third person for the first message and alternate greetings.
+  - **Select empty**: ticks only the fields that are still empty, for completing an imported card.
+
+### Changed
+- When a reply was cut off at the token limit, the error now says so and points to "Max tokens", instead of only reporting invalid JSON. This needs a server that reports why the reply ended; otherwise the old message stays.
+
 ## [1.8.0] – 2026-11-03
 
 ### Added
