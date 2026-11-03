@@ -73,7 +73,8 @@ async function callChatCompletion(
   options: { maxTokens?: number; stop?: string[]; temperature?: number } = {},
 ): Promise<string> {
   usePromptFileStore.getState().setLastMessages(messages);
-  const result = await invoke<{ content: string }>("ai_chat_completion", {
+  const maxTokens = options.maxTokens ?? config.maxTokens ?? null;
+  const result = await invoke<{ content: string; finish_reason?: string | null }>("ai_chat_completion", {
     req: {
       base_url: config.baseUrl.trim().replace(/\/+$/, ""),
       api_key: config.apiKey || null,
@@ -81,11 +82,29 @@ async function callChatCompletion(
       messages,
       json_schema: jsonSchema,
       temperature: options.temperature ?? config.temperature ?? null,
-      max_tokens: options.maxTokens ?? config.maxTokens ?? null,
+      max_tokens: maxTokens,
       stop: options.stop ?? null,
     },
   });
+  if (jsonSchema && result.finish_reason === "length" && !isCompleteJson(result.content)) {
+    throw new Error(cutOffMessage(maxTokens));
+  }
   return result.content;
+}
+
+/** A reply can end exactly at the limit and still be whole, so only broken JSON counts as cut off. */
+function isCompleteJson(content: string): boolean {
+  try {
+    JSON.parse(unfenceJson(content));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function cutOffMessage(maxTokens: number | null): string {
+  const limit = maxTokens ? ` of ${maxTokens}` : "";
+  return `The model's reply was cut off because it reached the token limit${limit}. Raise “Max tokens” in the provider settings if you can, or ask for less at once.`;
 }
 
 /** Sends one turn to the configured LLM and validates its reply against the selected fields'

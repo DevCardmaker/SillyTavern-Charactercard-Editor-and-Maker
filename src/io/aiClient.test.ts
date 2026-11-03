@@ -33,6 +33,23 @@ describe("requestFieldPatch", () => {
     await expect(requestFieldPatch(CONFIG, ["tags"], [])).rejects.toThrow(/did not match/);
   });
 
+  it("says so when the reply was cut off at the token limit", async () => {
+    mockInvoke.mockResolvedValueOnce({ content: '{"description": "A wander', finish_reason: "length" });
+    await expect(requestFieldPatch({ ...CONFIG, maxTokens: 500 }, ["description"], [])).rejects.toThrow(
+      /cut off.*token limit of 500.*Max tokens/,
+    );
+  });
+
+  it("accepts a complete reply that ends exactly at the limit", async () => {
+    mockInvoke.mockResolvedValueOnce({ content: '{"description": "Whole."}', finish_reason: "length" });
+    expect(await requestFieldPatch(CONFIG, ["description"], [])).toEqual({ description: "Whole." });
+  });
+
+  it("keeps the normal error for broken JSON that wasn't cut off", async () => {
+    mockInvoke.mockResolvedValueOnce({ content: '{"description": "A wander', finish_reason: "stop" });
+    await expect(requestFieldPatch(CONFIG, ["description"], [])).rejects.toThrow(/not valid JSON/);
+  });
+
   it("propagates a rejected invoke call", async () => {
     mockInvoke.mockRejectedValueOnce(new Error("Server responded with 500"));
     await expect(requestFieldPatch(CONFIG, ["description"], [])).rejects.toThrow(/500/);

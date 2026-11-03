@@ -80,6 +80,8 @@ struct ChatCompletionRequest {
 #[derive(serde::Serialize)]
 struct ChatCompletionResult {
     content: String,
+    /// Why the model stopped; "length" means it ran into the token limit. Not every server sends it.
+    finish_reason: Option<String>,
 }
 
 async fn post_chat_completion(
@@ -123,7 +125,7 @@ async fn post_chat_completion(
     Ok((status, text))
 }
 
-fn extract_content(status: reqwest::StatusCode, text: &str) -> Result<String, String> {
+fn extract_content(status: reqwest::StatusCode, text: &str) -> Result<ChatCompletionResult, String> {
     if !status.is_success() {
         let snippet: String = text.chars().take(500).collect();
         return Err(format!("Server responded with {status}: {snippet}"));
@@ -132,17 +134,22 @@ fn extract_content(status: reqwest::StatusCode, text: &str) -> Result<String, St
     let parsed: serde_json::Value = serde_json::from_str(text)
         .map_err(|e| format!("Response was not valid JSON: {e}"))?;
 
-    parsed
-        .get("choices")
-        .and_then(|c| c.get(0))
+    let choice = parsed.get("choices").and_then(|c| c.get(0));
+    let content = choice
         .and_then(|c| c.get("message"))
         .and_then(|m| m.get("content"))
         .and_then(|c| c.as_str())
-        .map(|c| c.to_string())
         .ok_or_else(|| {
             let snippet: String = text.chars().take(500).collect();
             format!("Unexpected response format: {snippet}")
-        })
+        })?;
+    Ok(ChatCompletionResult {
+        content: content.to_string(),
+        finish_reason: choice
+            .and_then(|c| c.get("finish_reason"))
+            .and_then(|r| r.as_str())
+            .map(|r| r.to_string()),
+    })
 }
 
 /// Calls an OpenAI-compatible `/v1/chat/completions` endpoint. Deliberately provider-agnostic:
@@ -176,9 +183,7 @@ async fn ai_chat_completion(req: ChatCompletionRequest) -> Result<ChatCompletion
 
     let Some(schema) = req.json_schema.clone() else {
         let (status, text) = post_chat_completion(&client, &url, &req, None).await?;
-        return Ok(ChatCompletionResult {
-            content: extract_content(status, &text)?,
-        });
+        return extract_content(status, &text);
     };
 
     let schema_format = serde_json::json!({
@@ -190,14 +195,10 @@ async fn ai_chat_completion(req: ChatCompletionRequest) -> Result<ChatCompletion
     if !status.is_success() && text.to_lowercase().contains("response_format") {
         let (status, text) =
             post_chat_completion(&client, &url, &req, Some(serde_json::json!({ "type": "json_object" }))).await?;
-        return Ok(ChatCompletionResult {
-            content: extract_content(status, &text)?,
-        });
+        return extract_content(status, &text);
     }
 
-    Ok(ChatCompletionResult {
-        content: extract_content(status, &text)?,
-    })
+    extract_content(status, &text)
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
