@@ -10,6 +10,7 @@ import { CardStoreContext } from "../../state/cardStoreContext";
 import { usePersonaStore } from "../../state/personaStore";
 import { TextAreaField, TextField } from "../common/FormField";
 import { AiAssistPanel } from "../editor/AiAssistPanel";
+import { CardHistoryPanel } from "../editor/CardHistoryPanel";
 import { AvatarPanel } from "../image/AvatarPanel";
 
 interface Props {
@@ -35,6 +36,7 @@ export function PersonaWorkspace({ onError }: Props) {
   const setActive = usePersonaStore((s) => s.setActiveCharacter);
   const close = usePersonaStore((s) => s.closeCharacter);
   const [isAiAssistOpen, setIsAiAssistOpen] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const openCharacters = useCardStore((s) => s.characters);
 
   async function run(action: () => Promise<void>) {
@@ -109,6 +111,16 @@ export function PersonaWorkspace({ onError }: Props) {
         >
           Save as Copy…
         </button>
+        <button
+          type="button"
+          className="secondary"
+          onClick={() => setIsHistoryOpen(true)}
+          disabled={!persona}
+          title="Compare with older versions of this persona and bring back all or parts of them"
+        >
+          History…
+        </button>
+        {isHistoryOpen && <CardHistoryPanel store={usePersonaStore} onClose={() => setIsHistoryOpen(false)} />}
         <button type="button" className="secondary" onClick={handleOpenAiAssist}>
           AI Assistant…
         </button>

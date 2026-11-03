@@ -1104,6 +1104,127 @@ button.secondary.active {
   width: 5rem;
 }
 
+/* Version history */
+
+.history-modal {
+  width: min(1100px, 90vw);
+  height: 85vh;
+}
+
+.history-head,
+.history-legend,
+.history-change-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.history-layout {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  gap: 0.75rem;
+}
+
+.history-versions {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 230px;
+  flex-shrink: 0;
+  overflow-y: auto;
+}
+
+.history-version {
+  display: block;
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--text);
+  padding: 0.4rem 0.5rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.history-version:hover {
+  background: var(--bg-input);
+}
+
+.history-version.active {
+  background: var(--accent-strong);
+}
+
+.history-changes {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.history-change {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
+}
+
+.history-diff {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 0.9rem;
+}
+
+.history-modal del {
+  background: rgba(224, 96, 122, 0.25);
+  text-decoration: line-through;
+}
+
+.history-modal ins {
+  background: rgba(90, 190, 130, 0.25);
+  text-decoration: none;
+}
+
+.history-fold {
+  color: var(--text-dim);
+}
+
+.history-unfold {
+  align-self: flex-start;
+}
+
+.history-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.history-item-label {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+}
+
+.history-images {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.history-images img {
+  max-width: 200px;
+  max-height: 260px;
+  border-radius: 6px;
+}
+
+.history-note {
+  margin-right: auto;
+  align-self: center;
+}
+
 /* Lorebook key tester */
 
 .key-test-results {

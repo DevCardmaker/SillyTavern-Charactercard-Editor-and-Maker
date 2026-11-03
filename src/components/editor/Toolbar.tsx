@@ -3,6 +3,7 @@ import { useTotalTokenCount } from "../../hooks/useTokenCount";
 import { openCardFile, openFolderAsTabs, saveCard, saveCardAsCopy } from "../../io/fileIO";
 import { useCardStore } from "../../state/cardStore";
 import { AiConsistencyCheckPanel } from "./AiConsistencyCheckPanel";
+import { CardHistoryPanel } from "./CardHistoryPanel";
 import { AiGroupGeneratePanel } from "./AiGroupGeneratePanel";
 import { AiSplitGroupPanel } from "./AiSplitGroupPanel";
 import { ImageToCardsPanel } from "./ImageToCardsPanel";
@@ -32,6 +33,7 @@ export function Toolbar({ onError, onOpenAiAssist, isTestChatOpen, onToggleTestC
   const [isTranslateOpen, setIsTranslateOpen] = useState(false);
   const [isStoryOpen, setIsStoryOpen] = useState(false);
   const [isImageOpen, setIsImageOpen] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
   function handleOpenAiAssist() {
     if (!card) newCard();
@@ -145,6 +147,16 @@ export function Toolbar({ onError, onOpenAiAssist, isTestChatOpen, onToggleTestC
       >
         Save as Copy…
       </button>
+      <button
+        type="button"
+        className="secondary"
+        onClick={() => setIsHistoryOpen(true)}
+        disabled={!card}
+        title="Compare with older versions of this card and bring back all or parts of them"
+      >
+        History…
+      </button>
+      {isHistoryOpen && <CardHistoryPanel store={useCardStore} onClose={() => setIsHistoryOpen(false)} />}
       <button type="button" className="secondary" onClick={handleOpenAiAssist}>
         AI Assistant…
       </button>

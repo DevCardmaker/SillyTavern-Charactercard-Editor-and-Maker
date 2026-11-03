@@ -17,7 +17,7 @@ function detectFormat(path: string): FileFormat {
   return path.toLowerCase().endsWith(".json") ? "json" : "png";
 }
 
-function splitDirAndFile(path: string): { dir: string; file: string } {
+export function splitDirAndFile(path: string): { dir: string; file: string } {
   const idx = Math.max(path.lastIndexOf("/"), path.lastIndexOf("\\"));
   return { dir: path.slice(0, idx + 1), file: path.slice(idx + 1) };
 }
