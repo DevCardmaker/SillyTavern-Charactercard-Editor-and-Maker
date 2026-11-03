@@ -2,6 +2,13 @@
 
 All notable changes to this project are documented here. The project follows [Semantic Versioning](https://semver.org/): new features raise the minor version, fixes the patch version.
 
+## [1.8.0] – 2026-11-03
+
+### Added
+- **Version history** ("History…", for characters and personas): compare the open card with its older versions, word by word for each field, greeting and lorebook entry, plus the image and other data like the Character's Note. Bring back a whole version or single sections; the last restore can be undone. It reads the copies in the `backups` folder, so versions you already have show up right away. The file only changes when you save.
+- **A right-click menu for text**: cut, copy, paste and select all, the same on Windows and Linux.
+- **A hint for overused names**: names AI models use very often, like Elara or Kael, get a note at the name field. It doesn't stop you from using them.
+
 ## [1.7.0] – 2026-11-03
 
 ### Added

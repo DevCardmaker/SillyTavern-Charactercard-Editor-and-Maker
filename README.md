@@ -16,6 +16,8 @@ A desktop editor for [SillyTavern](https://github.com/SillyTavern/SillyTavern) c
 - A **key tester** that shows which lorebook entries SillyTavern would insert for a piece of chat text, and why — plus search across entries and a warning for keys shared between entries
 - A **Personas** mode for SillyTavern user personas (name, description, avatar), saved as cards for SillyTavern's "Convert to Persona"
 - A **Presets** mode for SillyTavern Chat Completion presets: switch, reorder and edit their prompts, without AI and without touching anything else in the file
+- A **version history**: compare a card with its older versions and bring back all of it or single sections
+- A hint at the name field for names AI models overuse
 - A **context budget** view: what a card sends with every message, what only at the start of a chat, and how much room is left for the chat history
 - The **Character's Note** (per-character Author's Note) with depth and role
 - Reusable prompt presets for System Prompt / Post-History Instructions
@@ -115,6 +117,10 @@ In pictures with more than two people, models often miss some. Add them by hand 
 The "Presets" mode opens the Chat Completion presets from SillyTavern's `data/<user>/OpenAI Settings` folder, or a preset you exported there. Switch prompts on and off, reorder them, edit their text, role and position, add your own and see roughly how many tokens the switched-on prompts take. Everything else in the file, such as regex scripts and settings the editor doesn't show, stays as it is, and every save leaves a copy of the old file in a `backups` folder next to it.
 
 SillyTavern keeps the preset in use in memory. After saving over its file, reload SillyTavern and switch to another preset and back, and don't press "Save preset" there before that, or its older copy overwrites your changes.
+
+### Going back to an older version
+
+Every save over an existing file keeps the previous state in a `backups` folder next to it. "History…" lists those versions and shows what differs from the card right now. "Restore" brings back one section, "Restore whole version" all of them, and "Undo restore" takes the last restore back. Only the open card changes; the file does when you save.
 
 ### Changing the prompts
 
