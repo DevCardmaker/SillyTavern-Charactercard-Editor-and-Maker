@@ -1,5 +1,6 @@
 import { cardV2Schema, type CardV2 } from "./cardV2";
 import { cardV3Schema, type CardV3, type CardV3Data } from "./cardV3";
+import { resolveGroupGreetings, withLegacyGroupGreetings } from "./groupGreetings";
 import type { LegacyV1Card } from "./legacyV1";
 
 export type SourceSpec = "v1" | "v2" | "v3";
@@ -33,13 +34,18 @@ export function normalizeFromV2(card: CardV2): NormalizedCard {
   return {
     ...card.data,
     character_book: card.data.character_book ?? undefined,
-    group_only_greetings: [],
+    group_only_greetings: resolveGroupGreetings(card.data),
     sourceSpec: "v2",
   };
 }
 
 export function normalizeFromV3(card: CardV3): NormalizedCard {
-  return { ...card.data, character_book: card.data.character_book ?? undefined, sourceSpec: "v3" };
+  return {
+    ...card.data,
+    character_book: card.data.character_book ?? undefined,
+    group_only_greetings: resolveGroupGreetings(card.data),
+    sourceSpec: "v3",
+  };
 }
 
 export function normalizeFromLegacyV1(card: LegacyV1Card): NormalizedCard {
@@ -88,9 +94,9 @@ export function createBlankCard(): NormalizedCard {
 }
 
 /** Serializes a NormalizedCard back into a validated V2 or V3 card object. Downgrading a V3-
- * sourced card to V2 intentionally drops the V3-only fields (group_only_greetings, assets, ...)
- * — there's no V2 slot to put them in, so exporting as V2 is a deliberate compatibility choice,
- * not a bug. */
+ * sourced card to V2 intentionally drops the V3-only fields (assets, nickname, ...) — there's no
+ * V2 slot to put them in, so exporting as V2 is a deliberate compatibility choice, not a bug.
+ * Group greetings are the exception: they stay in `extensions` (see groupGreetings.ts). */
 /** SillyTavern files embedded lorebook entries under `id ?? position` (`convertCharacterBook`), so
  * two entries ending up with the same id — easy after merging lorebooks or appending AI entries —
  * silently overwrite each other on import. Only in that case are all entries renumbered 0, 1, 2, …;
@@ -103,9 +109,12 @@ export function withUniqueEntryIds<T extends { id?: number }>(entries: T[]): T[]
 
 export function denormalize(card: NormalizedCard, targetSpec: "v2" | "v3"): CardV2 | CardV3 {
   const { sourceSpec: _sourceSpec, ...rest } = card;
-  const data = rest.character_book
-    ? { ...rest, character_book: { ...rest.character_book, entries: withUniqueEntryIds(rest.character_book.entries) } }
-    : rest;
+  const data = withLegacyGroupGreetings(
+    rest.character_book
+      ? { ...rest, character_book: { ...rest.character_book, entries: withUniqueEntryIds(rest.character_book.entries) } }
+      : rest,
+    targetSpec,
+  );
 
   if (targetSpec === "v2") {
     const v2Data = { ...data };

@@ -38,6 +38,7 @@ describe("collectTranslateTexts / applyTranslations", () => {
     description: "Lena is 19.",
     first_mes: "Hi {{user}}!",
     alternate_greetings: ["Hello.", ""],
+    group_only_greetings: ["Hi all.", " "],
     extensions: { depth_prompt: { prompt: "Stay in character.", depth: 2, role: "system" } },
     character_book: { extensions: {}, entries: [{ keys: ["sister", "Lena"], content: "Her sister.", comment: "Sister", extensions: {}, enabled: true, insertion_order: 100 }] },
   };
@@ -47,19 +48,21 @@ describe("collectTranslateTexts / applyTranslations", () => {
       "Description",
       "First message",
       "Alternate greeting 1",
+      "Group greeting 1",
       "Character's note",
     ]);
   });
 
   it("puts translations back, keeps the name and the note's depth, translates keys", () => {
     const texts = collectTranslateTexts(card, words);
-    const out = applyTranslations(card, texts, ["Lena ist 19.", "Hallo {{user}}!", "Hallo.", "Bleib in der Rolle."], [
+    const out = applyTranslations(card, texts, ["Lena ist 19.", "Hallo {{user}}!", "Hallo.", "Hallo zusammen.", "Bleib in der Rolle."], [
       { comment: "Schwester", content: "Ihre Schwester.", keys: ["Schwester", "Lena", "lena"] },
     ]);
     expect(out.name).toBe("Lena");
     expect(applyTranslations(card, texts, [], null, "Lenа2").name).toBe("Lenа2");
     expect(out.description).toBe("Lena ist 19.");
     expect(out.alternate_greetings).toEqual(["Hallo.", ""]);
+    expect(out.group_only_greetings).toEqual(["Hallo zusammen.", " "]);
     expect(getCharacterNote(out)).toEqual({ prompt: "Bleib in der Rolle.", depth: 2, role: "system" });
     expect(out.character_book?.entries[0].keys).toEqual(["Schwester", "Lena"]);
     expect(card.description).toBe("Lena is 19."); // original untouched

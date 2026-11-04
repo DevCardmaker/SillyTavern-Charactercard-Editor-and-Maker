@@ -3,6 +3,7 @@ import { useTotalTokenCount } from "../../hooks/useTokenCount";
 import { openCardFile, openFolderAsTabs, saveCard, saveCardAsCopy } from "../../io/fileIO";
 import { useCardStore } from "../../state/cardStore";
 import { AiConsistencyCheckPanel } from "./AiConsistencyCheckPanel";
+import { AiGroupScenePanel } from "./AiGroupScenePanel";
 import { CardHistoryPanel } from "./CardHistoryPanel";
 import { AiGroupGeneratePanel } from "./AiGroupGeneratePanel";
 import { AiSplitGroupPanel } from "./AiSplitGroupPanel";
@@ -29,6 +30,8 @@ export function Toolbar({ onError, onOpenAiAssist, isTestChatOpen, onToggleTestC
   const totalTokenCount = useTotalTokenCount(card);
   const [isGroupGenerateOpen, setIsGroupGenerateOpen] = useState(false);
   const [isConsistencyCheckOpen, setIsConsistencyCheckOpen] = useState(false);
+  const [isGroupSceneOpen, setIsGroupSceneOpen] = useState(false);
+  const openCharacterCount = useCardStore((s) => s.characters.length);
   const [isSplitOpen, setIsSplitOpen] = useState(false);
   const [isTranslateOpen, setIsTranslateOpen] = useState(false);
   const [isStoryOpen, setIsStoryOpen] = useState(false);
@@ -166,6 +169,15 @@ export function Toolbar({ onError, onOpenAiAssist, isTestChatOpen, onToggleTestC
       <button
         type="button"
         className="secondary"
+        onClick={() => setIsGroupSceneOpen(true)}
+        disabled={openCharacterCount < 2}
+        title="Write one opening scene for a group chat with the open characters — needs at least two"
+      >
+        Group Greeting…
+      </button>
+      <button
+        type="button"
+        className="secondary"
         onClick={() => setIsStoryOpen(true)}
         title="Create character cards from a story — fan fiction, a short story, an excerpt from a book"
       >
@@ -212,6 +224,7 @@ export function Toolbar({ onError, onOpenAiAssist, isTestChatOpen, onToggleTestC
           onAddedWithReferences={() => setIsConsistencyCheckOpen(true)}
         />
       )}
+      {isGroupSceneOpen && <AiGroupScenePanel onClose={() => setIsGroupSceneOpen(false)} />}
       {isSplitOpen && <AiSplitGroupPanel onClose={() => setIsSplitOpen(false)} />}
       {isTranslateOpen && <TranslateCardPanel onClose={() => setIsTranslateOpen(false)} />}
       {isImageOpen && <ImageToCardsPanel onClose={() => setIsImageOpen(false)} />}

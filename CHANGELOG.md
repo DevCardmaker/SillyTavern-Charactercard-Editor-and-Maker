@@ -2,6 +2,15 @@
 
 All notable changes to this project are documented here. The project follows [Semantic Versioning](https://semver.org/): new features raise the minor version, fixes the patch version.
 
+## [1.10.0] – 2026-11-04
+
+### Added
+- **Group greetings** in the Greetings tab: first messages that are only used when a new group chat starts, for SillyTavern's [Group Greetings](https://github.com/SillyTavern/Extension-GroupGreetings) extension, with its choice between a random one and picking one yourself. SillyTavern ignores them without the extension. They work in V2 and V3 cards, are translated with the card and appear in the version history.
+- **Group Greeting…**: let the AI write one opening scene for a group chat. Tick who's there, set the order and say what happens. SillyTavern shows one first message per member, so each character gets their part as a group greeting, which you can edit before applying. The order goes into the Creator's Notes, because it's set in SillyTavern's member list.
+
+### Changed
+- **Test chat**: in a group, members now start with one of their group greetings. Without any, one is picked at random from the first message and the alternate greetings, as SillyTavern does; before, it was always the first message.
+
 ## [1.9.0] – 2026-11-03
 
 ### Added

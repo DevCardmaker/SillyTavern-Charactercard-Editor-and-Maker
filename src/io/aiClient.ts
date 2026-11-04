@@ -3,6 +3,7 @@ import { type AiFieldKey, type AiFieldPatch, aiFieldsToJsonSchema, parseAiPatch 
 import { type AiConsistencyFinding, aiConsistencyCheckToJsonSchema, parseAiConsistencyCheck } from "../schema/aiConsistencyCheck";
 import { type AiConsistencyFix, aiConsistencyFixToJsonSchema, parseAiConsistencyFix } from "../schema/aiConsistencyFix";
 import { type AiGroupMemberDraft, aiGroupToJsonSchema, parseAiGroup } from "../schema/aiGroupGenerate";
+import { type AiGroupSceneMessage, aiGroupSceneToJsonSchema, parseAiGroupScene } from "../schema/aiGroupScene";
 import { type AiIntegration, aiIntegrateToJsonSchema, parseAiIntegration } from "../schema/aiIntegrateMembers";
 import {
   type AiSplitMember,
@@ -293,6 +294,16 @@ export async function requestIntegration(config: AiProviderConfig, messages: AiC
 }
 
 /** Split pass 1: the people a group card (and its lorebook) describes. */
+/** One opening scene for a group chat; whether everyone got a part is checked by the caller. */
+export async function requestGroupScene(config: AiProviderConfig, messages: AiChatMessage[]): Promise<AiGroupSceneMessage[]> {
+  const content = await callChatCompletion(config, messages, {
+    name: "group_scene",
+    strict: true,
+    schema: aiGroupSceneToJsonSchema(),
+  });
+  return parseOrThrow(content, parseAiGroupScene);
+}
+
 export async function requestSplitPeople(config: AiProviderConfig, messages: AiChatMessage[]): Promise<AiSplitPerson[]> {
   const content = await callChatCompletion(config, messages, {
     name: "split_people",

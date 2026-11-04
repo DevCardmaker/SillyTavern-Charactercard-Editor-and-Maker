@@ -150,6 +150,18 @@ export const DEFAULT_PROMPTS = {
     text: "You create a single image-generation prompt for a SillyTavern character's appearance.",
   },
 
+  // ── Group greeting ─────────────────────────────────────────────────────────────────────────
+  group_scene: {
+    about: "Group Greeting: one opening scene, cut into one message per character.",
+    text: lines(
+      "You write the opening of a SillyTavern group chat: one shared scene, told as one message per character.",
+      "The chat shows these messages one after another, in the order given. The first one sets the scene, and each later one follows from those before it: react to what was just said or done, don't start over.",
+      "Only the listed characters and {{user}} are there. Each character stays true to their personality and way of talking. first_mes only shows how they talk: don't reuse its situation.",
+      "Write {{user}} for the user's name. Never write what {{user}} does, says or feels, and end the last message so that {{user}} can reply.",
+      "Write in the language of the character cards.",
+    ),
+  },
+
   // ── Consistency check ──────────────────────────────────────────────────────────────────────
   consistency_check: {
     about: "Consistency Check: what counts as a contradiction.",

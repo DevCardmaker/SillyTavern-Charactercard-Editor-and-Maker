@@ -51,6 +51,27 @@ describe("startMessages", () => {
     const messages = startMessages([member("A", { first_mes: "a" }), member("B", {}), member("C", { first_mes: "c" })], "Tom");
     expect(messages.map((m) => m.speakerId)).toEqual(["A", "C"]);
   });
+
+  it("uses a member's group greetings in a group chat, but not in a single chat", () => {
+    const alice = member("Alice", { first_mes: "Hi", group_only_greetings: ["", "Hi all", "Hello {{user}} and all"] });
+    const bob = member("Bob", { first_mes: "Yo" });
+    const last = () => 0.99;
+    expect(startMessages([alice, bob], "Tom", 0, last).map((m) => m.content)).toEqual(["Hello Tom and all", "Yo"]);
+    expect(startMessages([alice, bob], "Tom", 0, () => 0)[0].content).toBe("Hi all");
+    expect(startMessages([alice], "Tom")[0].content).toBe("Hi");
+  });
+
+  it("picks from the first message and the alternates in a group chat without group greetings", () => {
+    const alice = member("Alice", { first_mes: "Hi", alternate_greetings: ["Hey"], group_only_greetings: ["  "] });
+    const bob = member("Bob", { first_mes: "Yo" });
+    expect(startMessages([alice, bob], "Tom", 0, () => 0)[0].content).toBe("Hi");
+    expect(startMessages([alice, bob], "Tom", 0, () => 0.99)[0].content).toBe("Hey");
+  });
+
+  it("lets a member without a first message greet with an alternate in a group chat", () => {
+    const messages = startMessages([member("A", { alternate_greetings: ["Hey"] }), member("B", { first_mes: "Yo" })], "Tom");
+    expect(messages.map((m) => m.content)).toEqual(["Hey", "Yo"]);
+  });
 });
 
 describe("nextSpeaker", () => {

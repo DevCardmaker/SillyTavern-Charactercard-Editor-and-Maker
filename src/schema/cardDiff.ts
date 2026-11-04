@@ -1,4 +1,5 @@
 import type { NormalizedCard } from "./normalize";
+import { withoutLegacyGroupGreetings } from "./groupGreetings";
 
 /** What differs between an older version of a card and its current state. Each section carries
  * the patch that brings the older state back, so restoring one section is the same operation as
@@ -41,6 +42,7 @@ const NOT_COMPARED = new Set(["sourceSpec", "creation_date", "modification_date"
 const HANDLED = new Set<string>([
   ...TEXT_FIELDS.map((f) => String(f.key)),
   "alternate_greetings",
+  "group_only_greetings",
   "tags",
   "character_book",
   ...NOT_COMPARED,
@@ -124,13 +126,18 @@ function compareBooks(version: NormalizedCard, current: NormalizedCard): CardCha
   return { key: "character_book", label: "Lorebook", items, patch: { character_book: before } };
 }
 
-function compareGreetings(version: NormalizedCard, current: NormalizedCard): CardChange | null {
-  const before = version.alternate_greetings.map(cleanText);
-  const after = current.alternate_greetings.map(cleanText);
+function compareGreetings(
+  key: "alternate_greetings" | "group_only_greetings",
+  label: string,
+  version: NormalizedCard,
+  current: NormalizedCard,
+): CardChange | null {
+  const before = (version[key] ?? []).map(cleanText);
+  const after = (current[key] ?? []).map(cleanText);
   if (stableJson(before) === stableJson(after)) return null;
   const items = compareTexts(before, after, () => "Greeting");
   if (items.length === 0) items.push({ label: "Order of the greetings changed" });
-  return { key: "alternate_greetings", label: "Alternate greetings", items, patch: { alternate_greetings: version.alternate_greetings } };
+  return { key, label, items, patch: { [key]: version[key] ?? [] } };
 }
 
 /** Sections that differ, in the order they appear in the editor. Everything the sections don't
@@ -147,8 +154,10 @@ export function compareCards(version: NormalizedCard, current: NormalizedCard): 
     }
   }
 
-  const greetings = compareGreetings(version, current);
+  const greetings = compareGreetings("alternate_greetings", "Alternate greetings", version, current);
   if (greetings) changes.push(greetings);
+  const groupGreetings = compareGreetings("group_only_greetings", "Group greetings", version, current);
+  if (groupGreetings) changes.push(groupGreetings);
 
   if (stableJson(version.tags) !== stableJson(current.tags)) {
     changes.push({
@@ -163,7 +172,12 @@ export function compareCards(version: NormalizedCard, current: NormalizedCard): 
   if (book) changes.push(book);
 
   const otherOf = (card: NormalizedCard) =>
-    Object.fromEntries(Object.entries(card).filter(([key]) => !HANDLED.has(key)));
+    Object.fromEntries(
+      Object.entries(card)
+        .filter(([key]) => !HANDLED.has(key))
+        // The older group greetings list only follows the real one, which has its own section.
+        .map(([key, value]) => [key, key === "extensions" && isObject(value) ? withoutLegacyGroupGreetings(value) : value]),
+    );
   const otherBefore = otherOf(version);
   const otherAfter = otherOf(current);
   if (stableJson(otherBefore) !== stableJson(otherAfter)) {

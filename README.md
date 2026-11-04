@@ -20,6 +20,7 @@ A desktop editor for [SillyTavern](https://github.com/SillyTavern/SillyTavern) c
 - A hint at the name field for names AI models overuse
 - A **context budget** view: what a card sends with every message, what only at the start of a chat, and how much room is left for the chat history
 - The **Character's Note** (per-character Author's Note) with depth and role
+- **Group greetings** for SillyTavern's Group Greetings extension, with its random or pick-one mode
 - Reusable prompt presets for System Prompt / Post-History Instructions
 - Live token counter for the main text fields
 - Inline warnings for common authoring mistakes (unbalanced `{{macro}}` braces, empty name, empty first message, a lorebook entry with no keys)
@@ -46,6 +47,7 @@ Point the app at any OpenAI-compatible `/v1/chat/completions` endpoint — a loc
 - **Split** a group card (one card describing several characters) into one card per person, including people only found in its lorebook — or **merge** several cards into one group card, optionally shortened to save tokens
 - **Cards from a story**: turn a fan fiction, short story or book excerpt into character cards, a shared lorebook of its world and side characters, and a persona for your place in it — read part by part, so it works with small local models
 - **Cards from an image**: turn a picture into story ideas and character cards with opening scenes — with a model that can see images, a separate describing model (such as JoyCaption), or your own description of the picture
+- **Group Greeting**: one opening scene for a group chat, written by the AI and split into one group greeting per character
 - **Translate** a card into any language, part by part with checks — names are written in the new language's script, lorebook keys are translated too
 - Edit a whole group at once, e.g. move every open character to a new setting while keeping who they are
 - Condense long fields section by section to save prompt tokens without changing the character (one field or all at once, compared side by side, with a backup first)

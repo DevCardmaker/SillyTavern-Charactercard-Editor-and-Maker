@@ -104,3 +104,13 @@ describe("compareCards", () => {
     expect(compareCards(old, restored)).toEqual([]);
   });
 });
+
+describe("group greetings", () => {
+  it("get their own section, and the older list isn't reported as a second change", () => {
+    const version = base({ group_only_greetings: ["a"], extensions: { group_greetings: ["a"] } });
+    const current = base({ group_only_greetings: ["b"], extensions: { group_greetings: ["b"] } });
+    const changes = compareCards(version, current);
+    expect(changes.map((c) => c.key)).toEqual(["group_only_greetings"]);
+    expect(changes[0].patch).toEqual({ group_only_greetings: ["a"] });
+  });
+});

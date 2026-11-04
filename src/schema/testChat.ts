@@ -42,9 +42,23 @@ export function greetingsFor(card: NormalizedCard): string[] {
   return [card.first_mes, ...card.alternate_greetings].filter((g) => g.trim());
 }
 
-/** How a fresh chat starts: the chosen greeting in a single chat; in a group, every member's first
- * message, like SillyTavern does when a group chat is created. */
-export function startMessages(members: TestChatMember[], userName: string, greetingIndex = 0): TestChatMessage[] {
+/** What a member says first in a group chat, like in SillyTavern: one of the group greetings if
+ * the card has any (the extension's "let me choose" needs no dialog in a test, so it's random here
+ * too), otherwise SillyTavern's own random pick from the first message and the alternates. */
+export function groupGreetingFor(card: NormalizedCard, random: () => number = Math.random): string | undefined {
+  const own = (card.group_only_greetings ?? []).filter((g) => g.trim());
+  const choices = own.length > 0 ? own : greetingsFor(card);
+  return choices[Math.floor(random() * choices.length)];
+}
+
+/** How a fresh chat starts: the chosen greeting in a single chat; in a group, one greeting from
+ * every member, as SillyTavern does when a group chat is created. */
+export function startMessages(
+  members: TestChatMember[],
+  userName: string,
+  greetingIndex = 0,
+  random: () => number = Math.random,
+): TestChatMessage[] {
   const greet = (member: TestChatMember, text: string): TestChatMessage => ({
     id: crypto.randomUUID(),
     speakerId: member.id,
@@ -56,7 +70,10 @@ export function startMessages(members: TestChatMember[], userName: string, greet
     const text = greetings[greetingIndex] ?? greetings[0];
     return text ? [greet(members[0], text)] : [];
   }
-  return members.filter((m) => m.card.first_mes.trim()).map((m) => greet(m, m.card.first_mes));
+  return members.flatMap((m) => {
+    const text = groupGreetingFor(m.card, random);
+    return text ? [greet(m, text)] : [];
+  });
 }
 
 /** Round robin: the member after whoever of them spoke last. */

@@ -14,6 +14,7 @@ export const CHUNK_TOKENS = 350;
 export type TranslateTarget =
   | { kind: "field"; field: TranslatableField }
   | { kind: "greeting"; index: number }
+  | { kind: "groupGreeting"; index: number }
   | { kind: "note" };
 
 export const TRANSLATABLE_FIELDS = [
@@ -88,6 +89,7 @@ export function collectTranslateTexts(card: NormalizedCard, count: (text: string
   };
   for (const field of TRANSLATABLE_FIELDS) add({ kind: "field", field }, FIELD_LABELS[field], card[field]);
   card.alternate_greetings.forEach((g, index) => add({ kind: "greeting", index }, `Alternate greeting ${index + 1}`, g));
+  card.group_only_greetings?.forEach((g, index) => add({ kind: "groupGreeting", index }, `Group greeting ${index + 1}`, g));
   add({ kind: "note" }, "Character's note", getCharacterNote(card).prompt);
   return texts;
 }
@@ -288,6 +290,7 @@ export function applyTranslations(
     if (value === undefined) return;
     if (t.target.kind === "field") next[t.target.field] = value;
     else if (t.target.kind === "greeting") next.alternate_greetings[t.target.index] = value;
+    else if (t.target.kind === "groupGreeting") next.group_only_greetings![t.target.index] = value;
     else Object.assign(next, characterNotePatch(next, { prompt: value }));
   });
   if (entries && next.character_book) {
