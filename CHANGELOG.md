@@ -2,6 +2,17 @@
 
 All notable changes to this project are documented here. The project follows [Semantic Versioning](https://semver.org/): new features raise the minor version, fixes the patch version.
 
+## [1.14.0] – 2026-11-14
+
+### Added
+- **Generate image prompt…**: 23 new **art styles**, grouped in the list: Photo (cinematic, studio portrait, polaroid, film noir, selfie, cosplay photo), Painting & drawing (watercolor, oil, gouache, pencil sketch, charcoal, ink/manga monochrome, ukiyo-e, Art Nouveau), Stylized (semi-realistic, retro 90s anime, chibi, visual novel sprite, western comic, 3D render, pixel art) and Mood (dark fantasy, cyberpunk). Each comes with its own negative prompt.
+- For Anima, Pony and Stable Diffusion the style's Danbooru tags are set in code. Anima also gets a closing style sentence, because its quality tags otherwise drown out the medium (in testing, watercolor and chibi only came through this way).
+- A hint when a photo style is picked for Anima, which draws photo looks poorly.
+
+### Fixed
+- **Generate image prompt…** now always asks for an English prompt. With a German card, prose models like Krea 2 sometimes got a German prompt, which they barely understand.
+- A lead-in the AI copied from the style description ("Watercolor painting: …") no longer ends up as a tag.
+
 ## [1.13.0] – 2026-11-14
 
 ### Added
