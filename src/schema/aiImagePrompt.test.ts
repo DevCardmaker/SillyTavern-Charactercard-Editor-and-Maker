@@ -3,6 +3,7 @@ import {
   AI_IMAGE_ART_STYLES,
   AI_IMAGE_MODEL_STYLES,
   aiImagePromptToJsonSchema,
+  cleanImagePrompt,
   imageArtStyleGuidance,
   imageModelStyleGuidance,
   parseAiImagePrompt,
@@ -44,6 +45,14 @@ describe("imageModelStyleGuidance", () => {
     expect(imageModelStyleGuidance("pony")).toMatch(/score_9/);
     expect(imageModelStyleGuidance("sd")).not.toMatch(/score_9/);
   });
+
+  it("gives Anima its tag order, @ artist prefix and spaces instead of underscores", () => {
+    const anima = imageModelStyleGuidance("anima");
+    expect(anima).toMatch(/masterpiece, best quality, score_7/);
+    expect(anima).toMatch(/"@"/);
+    expect(anima).toMatch(/"long hair", not "long_hair"/);
+    expect(anima).toMatch(/never invent artists/);
+  });
 });
 
 describe("imageArtStyleGuidance", () => {
@@ -61,5 +70,15 @@ describe("imageArtStyleGuidance", () => {
     const realistic = imageArtStyleGuidance("realistic");
     expect(realistic).toMatch(/camera|lens|skin texture/);
     expect(realistic.toLowerCase()).toContain("anime");
+  });
+});
+
+describe("cleanImagePrompt", () => {
+  it("turns underscores into spaces for Anima but keeps score tags intact", () => {
+    expect(cleanImagePrompt("anima", "score_7, long_hair, green_eyes, 1girl")).toBe("score_7, long hair, green eyes, 1girl");
+  });
+
+  it("leaves other styles untouched", () => {
+    expect(cleanImagePrompt("pony", "score_9, long_hair")).toBe("score_9, long_hair");
   });
 });

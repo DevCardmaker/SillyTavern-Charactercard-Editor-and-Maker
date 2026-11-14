@@ -20,7 +20,7 @@ export function parseAiImagePrompt(raw: unknown): ParseAiImagePromptResult {
 /** Image-generation models genuinely differ in what prompt shape they respond best to — this is
  * hardcoded community/vendor knowledge the LLM shouldn't have to guess, not something inferred
  * from the character description. */
-export const AI_IMAGE_MODEL_STYLES = ["general", "qwen", "zimage", "krea2", "sd", "pony"] as const;
+export const AI_IMAGE_MODEL_STYLES = ["general", "qwen", "zimage", "krea2", "sd", "pony", "anima"] as const;
 
 export type AiImageModelStyle = (typeof AI_IMAGE_MODEL_STYLES)[number];
 
@@ -31,6 +31,7 @@ const STYLE_LABELS: Record<AiImageModelStyle, string> = {
   krea2: "Krea 2 / FLUX",
   sd: "Stable Diffusion (SD1.5/SDXL)",
   pony: "Pony Diffusion",
+  anima: "Anima",
 };
 
 export function imageModelStyleLabel(style: AiImageModelStyle): string {
@@ -47,10 +48,19 @@ const STYLE_GUIDANCE: Record<AiImageModelStyle, string> = {
     "Krea 2 / FLUX models prefer a natural-language, cinematically descriptive prompt (like a short scene description) over a tag list.",
   sd: "Classic Stable Diffusion checkpoints (SD1.5/SDXL) work best with a comma-separated list of keywords/tags, most important first. Weighting syntax like (word:1.2) is common where needed.",
   pony: 'Pony Diffusion expects a specific structure: start with quality score tags ("score_9, score_8_up, score_7_up"), followed by comma-separated booru tags, optionally a source tag like "source_anime".',
+  anima:
+    'Anima is an anime model trained on Danbooru tags. Write comma-separated Danbooru tags in this order: quality tags "masterpiece, best quality, score_7", a period tag like "newest", one rating tag that fits the image ("safe", "sensitive", "nsfw" or "explicit"), the subject count ("1girl", "1boy", "2girls", …), then character and series tags only for an existing, well-known character, then the remaining appearance, clothing, pose, expression and background tags. Write tags in lowercase with spaces instead of underscores ("long hair", not "long_hair"); only score tags keep their underscore. Artist tags start with "@", but only add one if the instruction names an artist; never invent artists. No weighting syntax like (word:1.2). After the tags you may add one short English sentence for composition or lighting that tags cannot express.',
 };
 
 export function imageModelStyleGuidance(style: AiImageModelStyle): string {
   return STYLE_GUIDANCE[style];
+}
+
+/** Local models still slip into Danbooru's underscore spelling now and then, which Anima wasn't
+ * trained on; fixed here instead of piling more rules onto the prompt. Score tags keep theirs. */
+export function cleanImagePrompt(style: AiImageModelStyle, prompt: string): string {
+  if (style !== "anima") return prompt;
+  return prompt.replace(/(?<!\bscore)_/g, " ");
 }
 
 /** A second, independent axis from `AiImageModelStyle`: the model-style guidance controls the

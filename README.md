@@ -40,7 +40,7 @@ Point the app at any OpenAI-compatible `/v1/chat/completions` endpoint — a loc
 - Iteratively refine individual card fields from a free-text instruction
 - Propose new lorebook entries from a description — including whole topics at once ("a family for this character", "a basic fantasy world"), kept brief and consistent with the entries already there
 - Fill in empty lorebook entries from their name and keys, or revise selected entries from an instruction, with an old/new preview before applying
-- Generate an avatar image-generation prompt, tuned to different image models (Stable Diffusion, Pony Diffusion, Qwen-Image, Z-Image, Krea 2/FLUX) and art styles
+- Generate an avatar image-generation prompt, tuned to different image models (Stable Diffusion, Pony Diffusion, Anima, Qwen-Image, Z-Image, Krea 2/FLUX) and art styles
 - **Test chat**: try out a character — or several as a group chat — in a sidebar next to the editor, using the cards as they are right now (unsaved edits included). Lorebook entries, persona and Character's Note are applied roughly the way SillyTavern does; nothing is saved
 - Check every currently open character together for contradictions (ages, relationships, names, timeline) — and fix them right there: the AI suggests small text edits across the affected cards, checked against the cards and shown for review before anything is applied
 - Generate a whole group of new, mutually consistent characters from a single prompt — or build them on existing cards: the family of one character, the missing members of a set, or people a card only mentions, optionally relating to your persona

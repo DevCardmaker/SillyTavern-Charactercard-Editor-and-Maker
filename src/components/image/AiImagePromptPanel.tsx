@@ -5,6 +5,7 @@ import {
   AI_IMAGE_MODEL_STYLES,
   type AiImageArtStyle,
   type AiImageModelStyle,
+  cleanImagePrompt,
   imageArtStyleLabel,
   imageModelStyleLabel,
 } from "../../schema/aiImagePrompt";
@@ -52,7 +53,7 @@ export function AiImagePromptPanel({ card, onClose }: Props) {
         { role: "system", content: buildImagePromptSystemPrompt(style, artStyle) },
         buildImagePromptUserTurn(instruction, card),
       ]);
-      setResult(prompt);
+      setResult(cleanImagePrompt(style, prompt));
     } catch (err) {
       setSendError(err instanceof Error ? err.message : String(err));
     } finally {
