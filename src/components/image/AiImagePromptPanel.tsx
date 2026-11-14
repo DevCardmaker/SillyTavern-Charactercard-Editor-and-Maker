@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { requestImagePrompt } from "../../io/aiClient";
 import { readStored, storeChoice } from "../../io/storedChoice";
 import {
+  AI_IMAGE_ART_STYLE_GROUPS,
   AI_IMAGE_ART_STYLES,
   AI_IMAGE_FRAMINGS,
   AI_IMAGE_MODEL_STYLES,
@@ -10,9 +11,11 @@ import {
   type AiImageFraming,
   type AiImageModelStyle,
   type AiImageRating,
+  applyImageArtStyle,
   applyImageFraming,
   applyImageRating,
   cleanImagePrompt,
+  imageArtStyleHint,
   imageArtStyleLabel,
   imageFramingLabel,
   imageModelStyleLabel,
@@ -58,6 +61,7 @@ export function AiImagePromptPanel({ card, onClose }: Props) {
     ensureConfigLoaded();
   }, [ensureConfigLoaded]);
 
+  const artStyleHint = imageArtStyleHint(style, artStyle);
   const providerReady = !!activeProfile?.baseUrl && !!activeProfile.model;
   const canSend = providerReady && instruction.trim() !== "" && !isSending;
 
@@ -72,7 +76,11 @@ export function AiImagePromptPanel({ card, onClose }: Props) {
         buildImagePromptUserTurn(instruction, card),
       ]);
       setResult({
-        prompt: applyImageFraming(style, framing, applyImageRating(style, rating, cleanImagePrompt(style, prompt))),
+        prompt: applyImageArtStyle(
+          style,
+          artStyle,
+          applyImageFraming(style, framing, applyImageRating(style, rating, cleanImagePrompt(style, prompt))),
+        ),
         negative: imageNegativePrompt(style, artStyle, rating, framing),
         size: imageSuggestedSize(style),
       });
@@ -131,14 +139,20 @@ export function AiImagePromptPanel({ card, onClose }: Props) {
                 storeChoice(ART_STYLE_KEY, value);
               }}
             >
-              {AI_IMAGE_ART_STYLES.map((s) => (
-                <option key={s} value={s}>
-                  {imageArtStyleLabel(s)}
-                </option>
+              <option value="none">{imageArtStyleLabel("none")}</option>
+              {AI_IMAGE_ART_STYLE_GROUPS.map((group) => (
+                <optgroup key={group.label} label={group.label}>
+                  {group.styles.map((s) => (
+                    <option key={s} value={s}>
+                      {imageArtStyleLabel(s)}
+                    </option>
+                  ))}
+                </optgroup>
               ))}
             </select>
           </label>
         </div>
+        {artStyleHint && <p className="field-hint">{artStyleHint}</p>}
         <div className="field-row">
           <label className="field">
             <span className="field-label">Rating</span>

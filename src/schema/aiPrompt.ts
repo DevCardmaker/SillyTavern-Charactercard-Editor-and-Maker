@@ -282,6 +282,7 @@ export function buildImagePromptSystemPrompt(
 ): string {
   return [
     promptText("image_prompt_intro"),
+    "Write the prompt in English, whatever language the character card and instruction use.",
     imageModelStyleGuidance(modelStyle),
     imageArtStyleGuidance(artStyle),
     imageRatingGuidance(rating),

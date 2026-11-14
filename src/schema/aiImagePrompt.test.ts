@@ -1,12 +1,16 @@
 import { describe, expect, it } from "vitest";
 import {
+  AI_IMAGE_ART_STYLE_GROUPS,
   AI_IMAGE_ART_STYLES,
   AI_IMAGE_MODEL_STYLES,
+  applyImageArtStyle,
   applyImageFraming,
   applyImageRating,
   aiImagePromptToJsonSchema,
   cleanImagePrompt,
   imageArtStyleGuidance,
+  imageArtStyleHint,
+  imageArtStyleLabel,
   imageModelStyleGuidance,
   imageNegativePrompt,
   imageSuggestedSize,
@@ -179,5 +183,81 @@ describe("applyImageFraming", () => {
   it("adds a guard against cropped feet to the full-body negative prompt", () => {
     expect(imageNegativePrompt("anima", "none", "auto", "full")).toMatch(/cropped, out of frame/);
     expect(imageNegativePrompt("anima", "none", "auto", "portrait")).not.toMatch(/cropped/);
+  });
+});
+
+describe("art style groups", () => {
+  it("list every style except 'none' exactly once", () => {
+    const grouped = AI_IMAGE_ART_STYLE_GROUPS.flatMap((g) => g.styles);
+    expect([...grouped].sort()).toEqual(AI_IMAGE_ART_STYLES.filter((s) => s !== "none").sort());
+  });
+
+  it("give every style a distinct label", () => {
+    const labels = AI_IMAGE_ART_STYLES.map(imageArtStyleLabel);
+    expect(new Set(labels).size).toBe(labels.length);
+  });
+});
+
+describe("imageArtStyleHint", () => {
+  it("warns about photo styles on Anima only", () => {
+    expect(imageArtStyleHint("anima", "polaroid")).toMatch(/anime model/);
+    expect(imageArtStyleHint("anima", "watercolor")).toBe("");
+    expect(imageArtStyleHint("qwen", "polaroid")).toBe("");
+  });
+});
+
+describe("applyImageArtStyle", () => {
+  it("puts the medium tags after the subject count and framing", () => {
+    expect(applyImageArtStyle("pony", "watercolor", "score_9, rating_safe, 1girl, solo, portrait, elf")).toBe(
+      "score_9, rating_safe, 1girl, solo, portrait, watercolor (medium), traditional media, elf",
+    );
+  });
+
+  it("drops copies the AI already wrote", () => {
+    expect(applyImageArtStyle("pony", "chibi", "score_9, 1girl, smile, chibi")).toBe("score_9, 1girl, chibi, smile");
+  });
+
+  it("strips a copied guidance lead-in but keeps tags with a colon", () => {
+    expect(applyImageArtStyle("sd", "semireal", "1girl, semi-realistic digital painting: highly detailed, re:zero")).toBe(
+      "1girl, highly detailed, re:zero",
+    );
+  });
+
+  it("leaves prose models and styles without tags alone", () => {
+    expect(applyImageArtStyle("qwen", "watercolor", "A watercolor elf.")).toBe("A watercolor elf.");
+    expect(applyImageArtStyle("sd", "semireal", "1girl, elf")).toBe("1girl, elf");
+    expect(applyImageArtStyle("anima", "none", "1girl, elf")).toBe("1girl, elf");
+  });
+});
+
+describe("applyImageArtStyle for Anima", () => {
+  it("adds tags and closes with the style sentence, after the AI's own sentence", () => {
+    expect(applyImageArtStyle("anima", "chibi", "score_7, safe, 1girl, elf, library. Warm evening light.")).toBe(
+      "score_7, safe, 1girl, chibi, elf, library. Warm evening light. A cute chibi drawing with a big head and a tiny super-deformed body.",
+    );
+  });
+
+  it("does not add the sentence twice", () => {
+    const once = applyImageArtStyle("anima", "watercolor", "1girl, elf");
+    expect(applyImageArtStyle("anima", "watercolor", once)).toBe(once);
+  });
+
+  it("has a sentence for every style except 'none'", () => {
+    for (const a of AI_IMAGE_ART_STYLES.filter((s) => s !== "none"))
+      expect(applyImageArtStyle("anima", a, "1girl")).toMatch(/\. [A-Z].*\.$/);
+  });
+});
+
+describe("art style negatives", () => {
+  it("never rule out the chosen look itself", () => {
+    expect(imageNegativePrompt("anima", "watercolor")).not.toMatch(/watercolor|traditional media/);
+    expect(imageNegativePrompt("anima", "noir")).not.toMatch(/monochrome|greyscale/);
+    expect(imageNegativePrompt("sd", "render3d")).not.toMatch(/3d render/);
+    expect(imageNegativePrompt("sd", "oil")).not.toMatch(/\bpainting\b/);
+  });
+
+  it("excludes drawn sources for Pony photo styles and leaves the mood styles open", () => {
+    expect(imageNegativePrompt("pony", "cinematic")).toMatch(/source_anime, source_cartoon/);
+    expect(imageNegativePrompt("pony", "cyberpunk")).not.toMatch(/source_/);
   });
 });

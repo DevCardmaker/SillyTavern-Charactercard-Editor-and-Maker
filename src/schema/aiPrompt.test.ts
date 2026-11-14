@@ -280,3 +280,9 @@ describe("buildImagePromptSystemPrompt framing", () => {
     expect(buildImagePromptSystemPrompt("qwen", "none", "auto", "cowboy")).toMatch(/Framing: a cowboy shot/);
   });
 });
+
+describe("buildImagePromptSystemPrompt language", () => {
+  it("asks for an English prompt, since most image models only understand English", () => {
+    expect(buildImagePromptSystemPrompt("krea2", "none")).toMatch(/in English/);
+  });
+});
