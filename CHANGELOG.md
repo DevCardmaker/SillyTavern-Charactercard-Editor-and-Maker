@@ -2,7 +2,7 @@
 
 All notable changes to this project are documented here. The project follows [Semantic Versioning](https://semver.org/): new features raise the minor version, fixes the patch version.
 
-## [Unreleased]
+## [1.11.0] – 2026-11-14
 
 ### Added
 - **Generate image prompt…**: new model style **Anima**. The prompt comes as Danbooru tags in the order Anima expects (quality, period, rating, subject count, character, other tags), with spaces instead of underscores, plus an optional sentence for composition or lighting.
