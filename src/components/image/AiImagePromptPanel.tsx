@@ -8,6 +8,7 @@ import {
   cleanImagePrompt,
   imageArtStyleLabel,
   imageModelStyleLabel,
+  imageNegativePrompt,
 } from "../../schema/aiImagePrompt";
 import { buildImagePromptSystemPrompt, buildImagePromptUserTurn } from "../../schema/aiPrompt";
 import type { NormalizedCard } from "../../schema/normalize";
@@ -31,8 +32,8 @@ export function AiImagePromptPanel({ card, onClose }: Props) {
   const [style, setStyle] = useState<AiImageModelStyle>("general");
   const [artStyle, setArtStyle] = useState<AiImageArtStyle>("none");
   const [instruction, setInstruction] = useState("");
-  const [result, setResult] = useState<string | null>(null);
-  const [copyStatus, setCopyStatus] = useState<"idle" | "copied">("idle");
+  const [result, setResult] = useState<{ prompt: string; negative: string } | null>(null);
+  const [copied, setCopied] = useState<"prompt" | "negative" | null>(null);
   const [isSending, setIsSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
 
@@ -47,13 +48,13 @@ export function AiImagePromptPanel({ card, onClose }: Props) {
     if (!activeProfile || !canSend) return;
     setIsSending(true);
     setSendError(null);
-    setCopyStatus("idle");
+    setCopied(null);
     try {
       const prompt = await requestImagePrompt(activeProfile, [
         { role: "system", content: buildImagePromptSystemPrompt(style, artStyle) },
         buildImagePromptUserTurn(instruction, card),
       ]);
-      setResult(cleanImagePrompt(style, prompt));
+      setResult({ prompt: cleanImagePrompt(style, prompt), negative: imageNegativePrompt(style, artStyle) });
     } catch (err) {
       setSendError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -61,11 +62,11 @@ export function AiImagePromptPanel({ card, onClose }: Props) {
     }
   }
 
-  async function handleCopy() {
+  async function handleCopy(which: "prompt" | "negative") {
     if (!result) return;
     try {
-      await navigator.clipboard.writeText(result);
-      setCopyStatus("copied");
+      await navigator.clipboard.writeText(result[which]);
+      setCopied(which);
     } catch {
       // Clipboard permissions can be flaky in a webview — the textarea below stays selectable
       // as a manual fallback, so this failure doesn't need its own error banner.
@@ -108,10 +109,20 @@ export function AiImagePromptPanel({ card, onClose }: Props) {
 
         {result && (
           <div className="ai-assist-draft">
-            <textarea className="field-textarea field-monospace" value={result} readOnly rows={6} />
-            <button type="button" className="secondary" onClick={handleCopy}>
-              {copyStatus === "copied" ? "Copied ✓" : "Copy"}
+            <span className="ai-assist-draft-label">Prompt</span>
+            <textarea className="field-textarea field-monospace" value={result.prompt} readOnly rows={6} />
+            <button type="button" className="secondary" onClick={() => handleCopy("prompt")}>
+              {copied === "prompt" ? "Copied ✓" : "Copy"}
             </button>
+            <span className="ai-assist-draft-label">Negative prompt</span>
+            <textarea className="field-textarea field-monospace" value={result.negative} readOnly rows={3} />
+            <button type="button" className="secondary" onClick={() => handleCopy("negative")}>
+              {copied === "negative" ? "Copied ✓" : "Copy"}
+            </button>
+            <p className="field-hint">
+              The negative prompt only has an effect with CFG above 1. Turbo, Lightning and Rapid models run at CFG 1 and
+              ignore it.
+            </p>
           </div>
         )}
 

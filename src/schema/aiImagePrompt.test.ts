@@ -6,6 +6,7 @@ import {
   cleanImagePrompt,
   imageArtStyleGuidance,
   imageModelStyleGuidance,
+  imageNegativePrompt,
   parseAiImagePrompt,
 } from "./aiImagePrompt";
 
@@ -80,5 +81,27 @@ describe("cleanImagePrompt", () => {
 
   it("leaves other styles untouched", () => {
     expect(cleanImagePrompt("pony", "score_9, long_hair")).toBe("score_9, long_hair");
+  });
+});
+
+describe("imageNegativePrompt", () => {
+  it("returns non-empty negatives for every model and art style combination", () => {
+    for (const m of AI_IMAGE_MODEL_STYLES)
+      for (const a of AI_IMAGE_ART_STYLES) expect(imageNegativePrompt(m, a).length).toBeGreaterThan(0);
+  });
+
+  it("uses Anima's own low score tags", () => {
+    expect(imageNegativePrompt("anima", "none")).toMatch(/^worst quality, low quality, score_1, score_2, score_3/);
+  });
+
+  it("excludes the look the art style rules out", () => {
+    expect(imageNegativePrompt("sd", "realistic")).toMatch(/anime, cartoon/);
+    expect(imageNegativePrompt("sd", "anime")).toMatch(/photorealistic/);
+    expect(imageNegativePrompt("sd", "none")).not.toMatch(/anime|photorealistic/);
+  });
+
+  it("adds Pony source tags only for Pony", () => {
+    expect(imageNegativePrompt("pony", "realistic")).toMatch(/source_anime/);
+    expect(imageNegativePrompt("sd", "realistic")).not.toMatch(/source_/);
   });
 });

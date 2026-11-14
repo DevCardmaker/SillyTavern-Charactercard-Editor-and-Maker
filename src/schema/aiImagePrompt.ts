@@ -94,3 +94,38 @@ const ART_STYLE_GUIDANCE: Record<AiImageArtStyle, string> = {
 export function imageArtStyleGuidance(style: AiImageArtStyle): string {
   return ART_STYLE_GUIDANCE[style];
 }
+
+/** Negative prompts are model knowledge, not character knowledge: mostly each model family's own
+ * low-quality tags, plus a guard against the look the chosen art style rules out. Hardcoded like
+ * the guidance above instead of asking the LLM. */
+const NEGATIVE_BASE: Record<AiImageModelStyle, string> = {
+  general: "low quality, worst quality, blurry, jpeg artifacts, watermark, text, signature, bad anatomy, deformed hands, extra fingers",
+  qwen: "low quality, blurry, jpeg artifacts, watermark, text, signature, bad anatomy, deformed hands, extra fingers",
+  zimage: "low quality, blurry, jpeg artifacts, watermark, text, signature, bad anatomy, deformed hands, extra fingers",
+  krea2: "low quality, blurry, jpeg artifacts, watermark, text, signature, bad anatomy, deformed hands, extra fingers",
+  sd: "worst quality, low quality, normal quality, lowres, blurry, jpeg artifacts, watermark, text, signature, username, bad anatomy, bad hands, extra fingers, missing fingers, deformed",
+  pony: "score_4, score_5, score_6, worst quality, low quality, lowres, blurry, jpeg artifacts, watermark, signature, text, bad anatomy, bad hands, extra fingers",
+  anima: "worst quality, low quality, score_1, score_2, score_3, blurry, jpeg artifacts, sepia",
+};
+
+const NEGATIVE_ART: Record<AiImageArtStyle, string> = {
+  none: "",
+  realistic: "anime, cartoon, illustration, drawing, painting, 3d render, cgi, plastic skin, airbrushed skin",
+  anime: "photorealistic, realistic, photo, 3d render",
+  toon: "photorealistic, realistic, photo, anime",
+};
+
+/** Pony sorts its training data by source tags, so excluding the unwanted sources steers harder
+ * than plain words. */
+const PONY_NEGATIVE_ART: Record<AiImageArtStyle, string> = {
+  none: "",
+  realistic: "source_anime, source_cartoon, source_pony, source_furry",
+  anime: "source_pony, source_furry, source_cartoon",
+  toon: "source_pony, source_furry, source_anime",
+};
+
+export function imageNegativePrompt(modelStyle: AiImageModelStyle, artStyle: AiImageArtStyle): string {
+  const parts = [NEGATIVE_BASE[modelStyle], NEGATIVE_ART[artStyle]];
+  if (modelStyle === "pony") parts.push(PONY_NEGATIVE_ART[artStyle]);
+  return parts.filter(Boolean).join(", ");
+}

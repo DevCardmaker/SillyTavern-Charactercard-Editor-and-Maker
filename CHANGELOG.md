@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented here. The project follows [Semantic Versioning](https://semver.org/): new features raise the minor version, fixes the patch version.
 
+## [Unreleased]
+
+### Added
+- **Generate image prompt…**: a matching **negative prompt** with its own copy button. It is fixed per target model and art style (for example Anima's low score tags, or anime and drawing terms ruled out for a realistic photo), so it needs no extra AI call.
+
 ## [1.11.0] – 2026-11-14
 
 ### Added
