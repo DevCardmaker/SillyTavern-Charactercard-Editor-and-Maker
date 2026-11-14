@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { requestFieldPatch } from "../../io/aiClient";
+import { readStored, storeChoice } from "../../io/storedChoice";
 import { AI_FIELD_KEYS, type AiFieldKey, type AiFieldPatch, aiFieldLabel, isEmptyField } from "../../schema/aiAssist";
 import { buildSystemPrompt, buildUserTurn } from "../../schema/aiPrompt";
 import {
@@ -42,24 +43,6 @@ function displayValue(key: AiFieldKey, draft: AiFieldPatch): string {
 
 const LENGTH_KEY = "ai-assist-length";
 const POV_KEY = "ai-assist-pov";
-
-/** The last choice, if it's still a valid one. Storage can be unavailable: nothing depends on it. */
-function readStored<T extends string>(key: string, allowed: readonly T[]): T | "" {
-  try {
-    const value = localStorage.getItem(key) as T | null;
-    return value && allowed.includes(value) ? value : "";
-  } catch {
-    return "";
-  }
-}
-
-function storeChoice(key: string, value: string): void {
-  try {
-    localStorage.setItem(key, value);
-  } catch {
-    // Only a convenience: the choice applies for now either way.
-  }
-}
 
 /** Iterative AI assistant: refines a draft (separate from the live card) across as many messages
  * as the user wants, then commits it to the real card in one explicit step via `onChange`. Draft

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildImagePromptSystemPrompt,
   buildPersonaFitContext,
   buildPersonaSystemPrompt,
   buildUserTurn,
@@ -262,5 +263,13 @@ describe("integrating new members into reference cards", () => {
     const turn = buildIntegrateMembersUserTurn([{ ...card, name: "Lena" }], [{ ...card, name: "Petra" }]);
     expect(turn.content.indexOf("Lena")).toBeLessThan(turn.content.indexOf("New characters"));
     expect(turn.content.indexOf("Petra")).toBeGreaterThan(turn.content.indexOf("New characters"));
+  });
+});
+
+describe("buildImagePromptSystemPrompt rating", () => {
+  it("adds a rating line only when the user picked one", () => {
+    expect(buildImagePromptSystemPrompt("anima", "none")).not.toMatch(/safe for work|NSFW/);
+    expect(buildImagePromptSystemPrompt("anima", "none", "sfw")).toMatch(/safe for work/);
+    expect(buildImagePromptSystemPrompt("anima", "none", "nsfw")).toMatch(/NSFW/);
   });
 });

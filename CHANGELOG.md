@@ -6,6 +6,11 @@ All notable changes to this project are documented here. The project follows [Se
 
 ### Added
 - **Generate image prompt…**: a matching **negative prompt** with its own copy button. It is fixed per target model and art style (for example Anima's low score tags, or anime and drawing terms ruled out for a realistic photo), so it needs no extra AI call.
+- **Generate image prompt…**: a **Rating** choice (let the AI decide, SFW, NSFW). For Anima and Pony the chosen rating tag is set in code after the answer, so the AI can no longer pick a different one; the negative prompt follows the choice too.
+- **Generate image prompt…**: a suggested image size in 2:3, the shape of SillyTavern avatars (832 × 1216 for SDXL, Pony and Anima).
+
+### Changed
+- **Generate image prompt…** remembers the target model, art style and rating for next time.
 
 ## [1.11.0] – 2026-11-14
 

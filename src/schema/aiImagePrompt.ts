@@ -124,8 +124,91 @@ const PONY_NEGATIVE_ART: Record<AiImageArtStyle, string> = {
   toon: "source_pony, source_furry, source_anime",
 };
 
-export function imageNegativePrompt(modelStyle: AiImageModelStyle, artStyle: AiImageArtStyle): string {
+const TAG_STYLES: readonly AiImageModelStyle[] = ["sd", "pony", "anima"];
+
+export function imageNegativePrompt(
+  modelStyle: AiImageModelStyle,
+  artStyle: AiImageArtStyle,
+  rating: AiImageRating = "auto",
+): string {
   const parts = [NEGATIVE_BASE[modelStyle], NEGATIVE_ART[artStyle]];
   if (modelStyle === "pony") parts.push(PONY_NEGATIVE_ART[artStyle]);
+  if (rating === "sfw") parts.push(modelStyle === "pony" ? "nsfw, nude, rating_explicit, rating_questionable" : "nsfw, nude, explicit");
+  if (rating === "nsfw" && TAG_STYLES.includes(modelStyle)) parts.push("censored, mosaic censoring, bar censor");
   return parts.filter(Boolean).join(", ");
+}
+
+/** Who decides the rating: the LLM ("auto"), or the user, enforced in code afterwards because a
+ * local model picked "sensitive" for a harmless portrait in testing. */
+export const AI_IMAGE_RATINGS = ["auto", "sfw", "nsfw"] as const;
+
+export type AiImageRating = (typeof AI_IMAGE_RATINGS)[number];
+
+const RATING_LABELS: Record<AiImageRating, string> = {
+  auto: "Let the AI decide",
+  sfw: "SFW",
+  nsfw: "NSFW",
+};
+
+export function imageRatingLabel(rating: AiImageRating): string {
+  return RATING_LABELS[rating];
+}
+
+const RATING_GUIDANCE: Record<AiImageRating, string> = {
+  auto: "",
+  sfw: "The image must be safe for work: no nudity and no sexual content.",
+  nsfw: "The image is meant to be NSFW; nudity and sexual content are allowed where the instruction asks for them.",
+};
+
+export function imageRatingGuidance(rating: AiImageRating): string {
+  return RATING_GUIDANCE[rating];
+}
+
+/** Rating tags each tag-based model knows, and the one written for an explicit choice. */
+const RATING_TAGS: Partial<Record<AiImageModelStyle, { known: string[]; sfw: string; nsfw: string; after: RegExp }>> = {
+  anima: {
+    known: ["safe", "sensitive", "nsfw", "explicit"],
+    sfw: "safe",
+    nsfw: "explicit",
+    after: /^(masterpiece|best quality|good quality|normal quality|score_\d+(_up)?|newest|recent|mid|early|old)$/,
+  },
+  pony: {
+    known: ["rating_safe", "rating_questionable", "rating_explicit"],
+    sfw: "rating_safe",
+    nsfw: "rating_explicit",
+    after: /^(score_\d+(_up)?|source_\w+)$/,
+  },
+};
+
+/** Replaces whatever rating tag the LLM wrote with the chosen one, keeping its place; without
+ * one, it goes after the leading quality/score tags. */
+export function applyImageRating(style: AiImageModelStyle, rating: AiImageRating, prompt: string): string {
+  const tags = RATING_TAGS[style];
+  if (!tags || rating === "auto") return prompt;
+  const parts = prompt.split(",").map((p) => p.trim());
+  const first = parts.findIndex((p) => tags.known.includes(p));
+  const kept = parts.filter((p) => !tags.known.includes(p));
+  let at = first;
+  if (at < 0) {
+    at = 0;
+    while (at < kept.length && tags.after.test(kept[at])) at++;
+  }
+  kept.splice(at, 0, tags[rating]);
+  return kept.join(", ");
+}
+
+/** SillyTavern shows avatars at 2:3. SDXL-family models were trained on ~1 megapixel buckets, of
+ * which 832×1216 is the closest to 2:3; the newer models handle a little more. */
+const SUGGESTED_SIZE: Record<AiImageModelStyle, string> = {
+  general: "832 × 1216",
+  qwen: "896 × 1344",
+  zimage: "896 × 1344",
+  krea2: "896 × 1344",
+  sd: "832 × 1216",
+  pony: "832 × 1216",
+  anima: "832 × 1216",
+};
+
+export function imageSuggestedSize(style: AiImageModelStyle): string {
+  return SUGGESTED_SIZE[style];
 }

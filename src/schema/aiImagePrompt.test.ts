@@ -2,11 +2,13 @@ import { describe, expect, it } from "vitest";
 import {
   AI_IMAGE_ART_STYLES,
   AI_IMAGE_MODEL_STYLES,
+  applyImageRating,
   aiImagePromptToJsonSchema,
   cleanImagePrompt,
   imageArtStyleGuidance,
   imageModelStyleGuidance,
   imageNegativePrompt,
+  imageSuggestedSize,
   parseAiImagePrompt,
 } from "./aiImagePrompt";
 
@@ -103,5 +105,52 @@ describe("imageNegativePrompt", () => {
   it("adds Pony source tags only for Pony", () => {
     expect(imageNegativePrompt("pony", "realistic")).toMatch(/source_anime/);
     expect(imageNegativePrompt("sd", "realistic")).not.toMatch(/source_/);
+  });
+});
+
+describe("applyImageRating", () => {
+  it("replaces the rating tag the AI picked, keeping its place", () => {
+    expect(applyImageRating("anima", "sfw", "masterpiece, score_7, newest, sensitive, 1girl, elf")).toBe(
+      "masterpiece, score_7, newest, safe, 1girl, elf",
+    );
+  });
+
+  it("inserts a missing rating after the leading quality and period tags", () => {
+    expect(applyImageRating("anima", "nsfw", "masterpiece, best quality, score_7, newest, 1girl")).toBe(
+      "masterpiece, best quality, score_7, newest, explicit, 1girl",
+    );
+  });
+
+  it("removes duplicate rating tags", () => {
+    expect(applyImageRating("anima", "sfw", "score_7, safe, 1girl, nsfw")).toBe("score_7, safe, 1girl");
+  });
+
+  it("uses Pony's own rating tags after the score and source tags", () => {
+    expect(applyImageRating("pony", "sfw", "score_9, score_8_up, source_anime, 1girl")).toBe(
+      "score_9, score_8_up, source_anime, rating_safe, 1girl",
+    );
+  });
+
+  it("leaves the prompt alone for 'auto' and for prose models", () => {
+    expect(applyImageRating("anima", "auto", "score_7, sensitive, 1girl")).toBe("score_7, sensitive, 1girl");
+    expect(applyImageRating("qwen", "sfw", "A woman, smiling.")).toBe("A woman, smiling.");
+  });
+});
+
+describe("imageNegativePrompt with a rating", () => {
+  it("rules out nudity for SFW and censoring for NSFW on tag models", () => {
+    expect(imageNegativePrompt("anima", "none", "sfw")).toMatch(/nsfw, nude/);
+    expect(imageNegativePrompt("pony", "none", "sfw")).toMatch(/rating_explicit/);
+    expect(imageNegativePrompt("anima", "none", "nsfw")).toMatch(/censored/);
+    expect(imageNegativePrompt("qwen", "none", "nsfw")).not.toMatch(/censored/);
+  });
+});
+
+describe("imageSuggestedSize", () => {
+  it("suggests a 2:3 portrait size for every model", () => {
+    for (const m of AI_IMAGE_MODEL_STYLES) {
+      const [w, h] = imageSuggestedSize(m).split(" × ").map(Number);
+      expect(h / w).toBeCloseTo(1.5, 1);
+    }
   });
 });

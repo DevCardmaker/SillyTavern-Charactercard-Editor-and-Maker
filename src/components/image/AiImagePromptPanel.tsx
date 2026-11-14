@@ -1,19 +1,29 @@
 import { useEffect, useState } from "react";
 import { requestImagePrompt } from "../../io/aiClient";
+import { readStored, storeChoice } from "../../io/storedChoice";
 import {
   AI_IMAGE_ART_STYLES,
   AI_IMAGE_MODEL_STYLES,
+  AI_IMAGE_RATINGS,
   type AiImageArtStyle,
   type AiImageModelStyle,
+  type AiImageRating,
+  applyImageRating,
   cleanImagePrompt,
   imageArtStyleLabel,
   imageModelStyleLabel,
   imageNegativePrompt,
+  imageRatingLabel,
+  imageSuggestedSize,
 } from "../../schema/aiImagePrompt";
 import { buildImagePromptSystemPrompt, buildImagePromptUserTurn } from "../../schema/aiPrompt";
 import type { NormalizedCard } from "../../schema/normalize";
 import { useAiProviderConfigStore } from "../../state/aiProviderConfigStore";
 import { AiProviderSettings } from "../editor/AiProviderSettings";
+
+const STYLE_KEY = "image-prompt-style";
+const ART_STYLE_KEY = "image-prompt-art-style";
+const RATING_KEY = "image-prompt-rating";
 
 interface Props {
   card: NormalizedCard;
@@ -29,10 +39,11 @@ export function AiImagePromptPanel({ card, onClose }: Props) {
 
   const activeProfile = configFile?.profiles.find((p) => p.id === configFile.activeProfileId) ?? null;
 
-  const [style, setStyle] = useState<AiImageModelStyle>("general");
-  const [artStyle, setArtStyle] = useState<AiImageArtStyle>("none");
+  const [style, setStyle] = useState<AiImageModelStyle>(() => readStored(STYLE_KEY, AI_IMAGE_MODEL_STYLES) || "general");
+  const [artStyle, setArtStyle] = useState<AiImageArtStyle>(() => readStored(ART_STYLE_KEY, AI_IMAGE_ART_STYLES) || "none");
+  const [rating, setRating] = useState<AiImageRating>(() => readStored(RATING_KEY, AI_IMAGE_RATINGS) || "auto");
   const [instruction, setInstruction] = useState("");
-  const [result, setResult] = useState<{ prompt: string; negative: string } | null>(null);
+  const [result, setResult] = useState<{ prompt: string; negative: string; size: string } | null>(null);
   const [copied, setCopied] = useState<"prompt" | "negative" | null>(null);
   const [isSending, setIsSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
@@ -51,10 +62,14 @@ export function AiImagePromptPanel({ card, onClose }: Props) {
     setCopied(null);
     try {
       const prompt = await requestImagePrompt(activeProfile, [
-        { role: "system", content: buildImagePromptSystemPrompt(style, artStyle) },
+        { role: "system", content: buildImagePromptSystemPrompt(style, artStyle, rating) },
         buildImagePromptUserTurn(instruction, card),
       ]);
-      setResult({ prompt: cleanImagePrompt(style, prompt), negative: imageNegativePrompt(style, artStyle) });
+      setResult({
+        prompt: applyImageRating(style, rating, cleanImagePrompt(style, prompt)),
+        negative: imageNegativePrompt(style, artStyle, rating),
+        size: imageSuggestedSize(style),
+      });
     } catch (err) {
       setSendError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -83,7 +98,15 @@ export function AiImagePromptPanel({ card, onClose }: Props) {
         <div className="field-row">
           <label className="field">
             <span className="field-label">Target model</span>
-            <select className="field-input" value={style} onChange={(e) => setStyle(e.target.value as AiImageModelStyle)}>
+            <select
+              className="field-input"
+              value={style}
+              onChange={(e) => {
+                const value = e.target.value as AiImageModelStyle;
+                setStyle(value);
+                storeChoice(STYLE_KEY, value);
+              }}
+            >
               {AI_IMAGE_MODEL_STYLES.map((s) => (
                 <option key={s} value={s}>
                   {imageModelStyleLabel(s)}
@@ -96,11 +119,33 @@ export function AiImagePromptPanel({ card, onClose }: Props) {
             <select
               className="field-input"
               value={artStyle}
-              onChange={(e) => setArtStyle(e.target.value as AiImageArtStyle)}
+              onChange={(e) => {
+                const value = e.target.value as AiImageArtStyle;
+                setArtStyle(value);
+                storeChoice(ART_STYLE_KEY, value);
+              }}
             >
               {AI_IMAGE_ART_STYLES.map((s) => (
                 <option key={s} value={s}>
                   {imageArtStyleLabel(s)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="field">
+            <span className="field-label">Rating</span>
+            <select
+              className="field-input"
+              value={rating}
+              onChange={(e) => {
+                const value = e.target.value as AiImageRating;
+                setRating(value);
+                storeChoice(RATING_KEY, value);
+              }}
+            >
+              {AI_IMAGE_RATINGS.map((r) => (
+                <option key={r} value={r}>
+                  {imageRatingLabel(r)}
                 </option>
               ))}
             </select>
@@ -120,7 +165,7 @@ export function AiImagePromptPanel({ card, onClose }: Props) {
               {copied === "negative" ? "Copied ✓" : "Copy"}
             </button>
             <p className="field-hint">
-              The negative prompt only has an effect with CFG above 1. Turbo, Lightning and Rapid models run at CFG 1 and
+              Suggested size: {result.size} (2:3, like SillyTavern avatars). The negative prompt only has an effect with CFG above 1. Turbo, Lightning and Rapid models run at CFG 1 and
               ignore it.
             </p>
           </div>

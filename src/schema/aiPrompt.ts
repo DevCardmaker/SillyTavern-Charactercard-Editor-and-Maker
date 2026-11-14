@@ -1,5 +1,12 @@
 import { type AiFieldKey, aiFieldLabel, type AiFieldPatch } from "./aiAssist";
-import { type AiImageArtStyle, type AiImageModelStyle, imageArtStyleGuidance, imageModelStyleGuidance } from "./aiImagePrompt";
+import {
+  type AiImageArtStyle,
+  type AiImageModelStyle,
+  type AiImageRating,
+  imageArtStyleGuidance,
+  imageModelStyleGuidance,
+  imageRatingGuidance,
+} from "./aiImagePrompt";
 import type { AiLorebookEntryDraft } from "./aiLorebookAssist";
 import type { AiLorebookEditEntry } from "./aiLorebookEdit";
 import type { SplitLorebookEntry } from "./aiSplitGroup";
@@ -265,11 +272,16 @@ export function buildLorebookEditUserTurn(
 /** Static instructions for a single image-prompt-generation turn. The model-specific prompt
  * style (natural language vs. tag list vs. Pony's score-tag convention) is hardcoded knowledge
  * (see `imageModelStyleGuidance`), not something the LLM should have to infer. */
-export function buildImagePromptSystemPrompt(modelStyle: AiImageModelStyle, artStyle: AiImageArtStyle): string {
+export function buildImagePromptSystemPrompt(
+  modelStyle: AiImageModelStyle,
+  artStyle: AiImageArtStyle,
+  rating: AiImageRating = "auto",
+): string {
   return [
     promptText("image_prompt_intro"),
     imageModelStyleGuidance(modelStyle),
     imageArtStyleGuidance(artStyle),
+    imageRatingGuidance(rating),
     'Respond only with a JSON object of the form { "prompt": "..." }.',
     "Give no explanations, no prose outside the JSON, and no extra fields.",
     "Details about the character and the user's instruction follow in the next message.",
