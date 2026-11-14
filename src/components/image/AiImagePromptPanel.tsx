@@ -3,14 +3,18 @@ import { requestImagePrompt } from "../../io/aiClient";
 import { readStored, storeChoice } from "../../io/storedChoice";
 import {
   AI_IMAGE_ART_STYLES,
+  AI_IMAGE_FRAMINGS,
   AI_IMAGE_MODEL_STYLES,
   AI_IMAGE_RATINGS,
   type AiImageArtStyle,
+  type AiImageFraming,
   type AiImageModelStyle,
   type AiImageRating,
+  applyImageFraming,
   applyImageRating,
   cleanImagePrompt,
   imageArtStyleLabel,
+  imageFramingLabel,
   imageModelStyleLabel,
   imageNegativePrompt,
   imageRatingLabel,
@@ -24,6 +28,7 @@ import { AiProviderSettings } from "../editor/AiProviderSettings";
 const STYLE_KEY = "image-prompt-style";
 const ART_STYLE_KEY = "image-prompt-art-style";
 const RATING_KEY = "image-prompt-rating";
+const FRAMING_KEY = "image-prompt-framing";
 
 interface Props {
   card: NormalizedCard;
@@ -42,6 +47,7 @@ export function AiImagePromptPanel({ card, onClose }: Props) {
   const [style, setStyle] = useState<AiImageModelStyle>(() => readStored(STYLE_KEY, AI_IMAGE_MODEL_STYLES) || "general");
   const [artStyle, setArtStyle] = useState<AiImageArtStyle>(() => readStored(ART_STYLE_KEY, AI_IMAGE_ART_STYLES) || "none");
   const [rating, setRating] = useState<AiImageRating>(() => readStored(RATING_KEY, AI_IMAGE_RATINGS) || "auto");
+  const [framing, setFraming] = useState<AiImageFraming>(() => readStored(FRAMING_KEY, AI_IMAGE_FRAMINGS) || "auto");
   const [instruction, setInstruction] = useState("");
   const [result, setResult] = useState<{ prompt: string; negative: string; size: string } | null>(null);
   const [copied, setCopied] = useState<"prompt" | "negative" | null>(null);
@@ -62,12 +68,12 @@ export function AiImagePromptPanel({ card, onClose }: Props) {
     setCopied(null);
     try {
       const prompt = await requestImagePrompt(activeProfile, [
-        { role: "system", content: buildImagePromptSystemPrompt(style, artStyle, rating) },
+        { role: "system", content: buildImagePromptSystemPrompt(style, artStyle, rating, framing) },
         buildImagePromptUserTurn(instruction, card),
       ]);
       setResult({
-        prompt: applyImageRating(style, rating, cleanImagePrompt(style, prompt)),
-        negative: imageNegativePrompt(style, artStyle, rating),
+        prompt: applyImageFraming(style, framing, applyImageRating(style, rating, cleanImagePrompt(style, prompt))),
+        negative: imageNegativePrompt(style, artStyle, rating, framing),
         size: imageSuggestedSize(style),
       });
     } catch (err) {
@@ -132,6 +138,8 @@ export function AiImagePromptPanel({ card, onClose }: Props) {
               ))}
             </select>
           </label>
+        </div>
+        <div className="field-row">
           <label className="field">
             <span className="field-label">Rating</span>
             <select
@@ -146,6 +154,24 @@ export function AiImagePromptPanel({ card, onClose }: Props) {
               {AI_IMAGE_RATINGS.map((r) => (
                 <option key={r} value={r}>
                   {imageRatingLabel(r)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="field">
+            <span className="field-label">Framing</span>
+            <select
+              className="field-input"
+              value={framing}
+              onChange={(e) => {
+                const value = e.target.value as AiImageFraming;
+                setFraming(value);
+                storeChoice(FRAMING_KEY, value);
+              }}
+            >
+              {AI_IMAGE_FRAMINGS.map((f) => (
+                <option key={f} value={f}>
+                  {imageFramingLabel(f)}
                 </option>
               ))}
             </select>

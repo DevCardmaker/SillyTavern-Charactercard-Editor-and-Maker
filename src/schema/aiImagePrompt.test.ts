@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   AI_IMAGE_ART_STYLES,
   AI_IMAGE_MODEL_STYLES,
+  applyImageFraming,
   applyImageRating,
   aiImagePromptToJsonSchema,
   cleanImagePrompt,
@@ -152,5 +153,31 @@ describe("imageSuggestedSize", () => {
       const [w, h] = imageSuggestedSize(m).split(" × ").map(Number);
       expect(h / w).toBeCloseTo(1.5, 1);
     }
+  });
+});
+
+describe("applyImageFraming", () => {
+  it("puts the framing tag after the subject count", () => {
+    expect(applyImageFraming("anima", "cowboy", "masterpiece, score_7, newest, safe, 1girl, solo, elf")).toBe(
+      "masterpiece, score_7, newest, safe, 1girl, solo, cowboy shot, elf",
+    );
+  });
+
+  it("replaces conflicting framing tags the AI wrote", () => {
+    expect(applyImageFraming("anima", "portrait", "score_7, 1girl, full body, elf, upper body")).toBe(
+      "score_7, 1girl, portrait, elf",
+    );
+  });
+
+  it("works for Pony and SD, but leaves prose models and 'auto' alone", () => {
+    expect(applyImageFraming("pony", "full", "score_9, rating_safe, 1girl")).toBe("score_9, rating_safe, 1girl, full body");
+    expect(applyImageFraming("sd", "upper", "1girl, smile")).toBe("1girl, upper body, smile");
+    expect(applyImageFraming("qwen", "full", "A woman, smiling.")).toBe("A woman, smiling.");
+    expect(applyImageFraming("anima", "auto", "1girl, full body")).toBe("1girl, full body");
+  });
+
+  it("adds a guard against cropped feet to the full-body negative prompt", () => {
+    expect(imageNegativePrompt("anima", "none", "auto", "full")).toMatch(/cropped, out of frame/);
+    expect(imageNegativePrompt("anima", "none", "auto", "portrait")).not.toMatch(/cropped/);
   });
 });

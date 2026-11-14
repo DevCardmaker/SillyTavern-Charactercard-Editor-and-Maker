@@ -1,9 +1,11 @@
 import { type AiFieldKey, aiFieldLabel, type AiFieldPatch } from "./aiAssist";
 import {
   type AiImageArtStyle,
+  type AiImageFraming,
   type AiImageModelStyle,
   type AiImageRating,
   imageArtStyleGuidance,
+  imageFramingGuidance,
   imageModelStyleGuidance,
   imageRatingGuidance,
 } from "./aiImagePrompt";
@@ -276,12 +278,14 @@ export function buildImagePromptSystemPrompt(
   modelStyle: AiImageModelStyle,
   artStyle: AiImageArtStyle,
   rating: AiImageRating = "auto",
+  framing: AiImageFraming = "auto",
 ): string {
   return [
     promptText("image_prompt_intro"),
     imageModelStyleGuidance(modelStyle),
     imageArtStyleGuidance(artStyle),
     imageRatingGuidance(rating),
+    imageFramingGuidance(framing),
     'Respond only with a JSON object of the form { "prompt": "..." }.',
     "Give no explanations, no prose outside the JSON, and no extra fields.",
     "Details about the character and the user's instruction follow in the next message.",

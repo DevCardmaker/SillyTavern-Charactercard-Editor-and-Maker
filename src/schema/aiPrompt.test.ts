@@ -273,3 +273,10 @@ describe("buildImagePromptSystemPrompt rating", () => {
     expect(buildImagePromptSystemPrompt("anima", "none", "nsfw")).toMatch(/NSFW/);
   });
 });
+
+describe("buildImagePromptSystemPrompt framing", () => {
+  it("adds a framing line only when one is picked", () => {
+    expect(buildImagePromptSystemPrompt("qwen", "none")).not.toMatch(/Framing:/);
+    expect(buildImagePromptSystemPrompt("qwen", "none", "auto", "cowboy")).toMatch(/Framing: a cowboy shot/);
+  });
+});

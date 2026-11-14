@@ -130,11 +130,13 @@ export function imageNegativePrompt(
   modelStyle: AiImageModelStyle,
   artStyle: AiImageArtStyle,
   rating: AiImageRating = "auto",
+  framing: AiImageFraming = "auto",
 ): string {
   const parts = [NEGATIVE_BASE[modelStyle], NEGATIVE_ART[artStyle]];
   if (modelStyle === "pony") parts.push(PONY_NEGATIVE_ART[artStyle]);
   if (rating === "sfw") parts.push(modelStyle === "pony" ? "nsfw, nude, rating_explicit, rating_questionable" : "nsfw, nude, explicit");
   if (rating === "nsfw" && TAG_STYLES.includes(modelStyle)) parts.push("censored, mosaic censoring, bar censor");
+  if (framing === "full") parts.push("cropped, out of frame");
   return parts.filter(Boolean).join(", ");
 }
 
@@ -211,4 +213,65 @@ const SUGGESTED_SIZE: Record<AiImageModelStyle, string> = {
 
 export function imageSuggestedSize(style: AiImageModelStyle): string {
   return SUGGESTED_SIZE[style];
+}
+
+/** How much of the character is in the picture. Tag models get the matching Danbooru tag set in
+ * code, like the rating; the others only get the instruction. */
+export const AI_IMAGE_FRAMINGS = ["auto", "portrait", "upper", "cowboy", "full"] as const;
+
+export type AiImageFraming = (typeof AI_IMAGE_FRAMINGS)[number];
+
+const FRAMING_LABELS: Record<AiImageFraming, string> = {
+  auto: "From instruction",
+  portrait: "Portrait",
+  upper: "Upper body",
+  cowboy: "Cowboy shot (to mid-thigh)",
+  full: "Full body",
+};
+
+export function imageFramingLabel(framing: AiImageFraming): string {
+  return FRAMING_LABELS[framing];
+}
+
+const FRAMING_GUIDANCE: Record<AiImageFraming, string> = {
+  auto: "",
+  portrait: "Framing: a close-up portrait, head and shoulders.",
+  upper: "Framing: upper body, from the waist up.",
+  cowboy: "Framing: a cowboy shot, from the head down to mid-thigh.",
+  full: "Framing: full body, the whole figure from head to feet is visible.",
+};
+
+export function imageFramingGuidance(framing: AiImageFraming): string {
+  return FRAMING_GUIDANCE[framing];
+}
+
+const FRAMING_TAGS: Record<Exclude<AiImageFraming, "auto">, string> = {
+  portrait: "portrait",
+  upper: "upper body",
+  cowboy: "cowboy shot",
+  full: "full body",
+};
+
+const KNOWN_FRAMING_TAGS = ["portrait", "close-up", "upper body", "cowboy shot", "full body", "lower body"];
+const SUBJECT_COUNT = /^(\d\+?(girl|boy|other)s?|solo|no humans)$/;
+const LEADING_TAGS =
+  /^(masterpiece|best quality|good quality|normal quality|score_\d+(_up)?|newest|recent|mid|early|old|safe|sensitive|nsfw|explicit|rating_\w+|source_\w+)$/;
+
+/** Swaps whatever framing tags the AI wrote for the chosen one. Without one it goes after the
+ * subject count ("1girl", "solo"), else after the leading quality and rating tags. */
+export function applyImageFraming(style: AiImageModelStyle, framing: AiImageFraming, prompt: string): string {
+  if (framing === "auto" || !TAG_STYLES.includes(style)) return prompt;
+  const parts = prompt.split(",").map((p) => p.trim());
+  const first = parts.findIndex((p) => KNOWN_FRAMING_TAGS.includes(p));
+  const kept = parts.filter((p) => !KNOWN_FRAMING_TAGS.includes(p));
+  let at = first;
+  if (at < 0) {
+    at = 0;
+    while (at < kept.length && LEADING_TAGS.test(kept[at])) at++;
+    let count = at;
+    while (count < kept.length && SUBJECT_COUNT.test(kept[count])) count++;
+    at = count;
+  }
+  kept.splice(at, 0, FRAMING_TAGS[framing]);
+  return kept.join(", ");
 }
