@@ -2,7 +2,7 @@
 
 All notable changes to this project are documented here. The project follows [Semantic Versioning](https://semver.org/): new features raise the minor version, fixes the patch version.
 
-## [Unreleased]
+## [1.13.0] – 2026-11-14
 
 ### Added
 - **Generate image prompt…**: a **Framing** choice: portrait, upper body, cowboy shot (to mid-thigh) or full body, or left to your instruction. For Anima, Pony and Stable Diffusion the matching tag is set in code and conflicting ones are removed; full body also keeps cropped feet out through the negative prompt. The choice is remembered.
