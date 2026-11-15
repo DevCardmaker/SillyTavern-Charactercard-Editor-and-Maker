@@ -47,7 +47,7 @@ const STYLE_GUIDANCE: Record<AiImageModelStyle, string> = {
   krea2:
     "Krea 2 / FLUX models prefer a natural-language, cinematically descriptive prompt (like a short scene description) over a tag list.",
   sd: "Classic Stable Diffusion checkpoints (SD1.5/SDXL) work best with a comma-separated list of keywords/tags, most important first. Weighting syntax like (word:1.2) is common where needed.",
-  pony: 'Pony Diffusion expects a specific structure: start with quality score tags ("score_9, score_8_up, score_7_up"), followed by comma-separated booru tags, optionally a source tag like "source_anime".',
+  pony: 'Pony Diffusion expects a specific structure: start with quality score tags ("score_9, score_8_up, score_7_up"), followed by comma-separated booru tags, optionally a source tag like "source_anime". Use about 20 to 30 tags, each one something visible in the image.',
   anima:
     'Anima is an anime model trained on Danbooru tags. Write comma-separated Danbooru tags in this order: quality tags "masterpiece, best quality, score_7", a period tag like "newest", one rating tag that fits the image ("safe", "sensitive", "nsfw" or "explicit"), the subject count ("1girl", "1boy", "2girls", …), then character and series tags only for an existing, well-known character, then the remaining appearance, clothing, pose, expression and background tags. Write tags in lowercase with spaces instead of underscores ("long hair", not "long_hair"); only score tags keep their underscore. Artist tags start with "@", but only add one if the instruction names an artist; never invent artists. No weighting syntax like (word:1.2). After the tags you may add one short English sentence for composition or lighting that tags cannot express.',
 };
@@ -59,8 +59,44 @@ export function imageModelStyleGuidance(style: AiImageModelStyle): string {
 /** Local models still slip into Danbooru's underscore spelling now and then, which Anima wasn't
  * trained on; fixed here instead of piling more rules onto the prompt. Score tags keep theirs. */
 export function cleanImagePrompt(style: AiImageModelStyle, prompt: string): string {
+  if (style === "pony") return cleanPonyPrompt(prompt);
   if (style !== "anima") return prompt;
   return prompt.replace(/(?<!\bscore)_/g, " ");
+}
+
+const PONY_SCORE_TAGS = ["score_9", "score_8_up", "score_7_up"];
+const PONY_SOURCES = ["source_anime", "source_cartoon", "source_furry", "source_pony"];
+/** The rating guidance turned into fake tags; "nudity" in the positive prompt even works against an
+ * SFW choice. The real rating tag comes from `applyImageRating`. */
+const PONY_RATING_JUNK = ["sfw", "nsfw", "safe for work", "not safe for work", "no nudity", "no sexual content"];
+/** Content tags kept after the score/source/rating tags: about two CLIP chunks of 75 tokens.
+ * Cydonia wrote 60+ for Pony, the tail mostly abstract moods ("cultured", "wise", "bookworm"). */
+export const PONY_MAX_TAGS = 35;
+
+/** Cydonia rambles on Pony: dropped score_9, repeated tags, invented "source_illustration" and
+ * trailed off into abstract words. Fixed in code: the score prefix is always the full one, only
+ * real source tags stay (behind it), duplicates and rating words posing as tags go (underscore and
+ * space count as the same), and the list is cut after `PONY_MAX_TAGS` content tags — the
+ * important ones come first. */
+function cleanPonyPrompt(prompt: string): string {
+  const seen = new Set<string>();
+  const sources: string[] = [];
+  const rest: string[] = [];
+  for (const raw of prompt.split(",")) {
+    const tag = raw.trim();
+    const key = tag.toLowerCase().replace(/_/g, " ");
+    if (!tag || seen.has(key) || PONY_RATING_JUNK.includes(key)) continue;
+    seen.add(key);
+    if (/^score_\d/.test(tag)) continue;
+    if (tag.startsWith("source_")) {
+      if (PONY_SOURCES.includes(tag)) sources.push(tag);
+      continue;
+    }
+    rest.push(tag);
+  }
+  let content = 0;
+  const kept = rest.filter((tag) => /^rating_/.test(tag) || ++content <= PONY_MAX_TAGS);
+  return [...PONY_SCORE_TAGS, ...sources, ...kept].join(", ");
 }
 
 /** A second, independent axis from `AiImageModelStyle`: the model-style guidance controls the

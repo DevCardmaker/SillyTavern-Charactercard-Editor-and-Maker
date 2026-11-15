@@ -8,6 +8,7 @@ import {
   applyImageRating,
   aiImagePromptToJsonSchema,
   cleanImagePrompt,
+  PONY_MAX_TAGS,
   imageArtStyleGuidance,
   imageArtStyleHint,
   imageArtStyleLabel,
@@ -86,8 +87,40 @@ describe("cleanImagePrompt", () => {
     expect(cleanImagePrompt("anima", "score_7, long_hair, green_eyes, 1girl")).toBe("score_7, long hair, green eyes, 1girl");
   });
 
-  it("leaves other styles untouched", () => {
-    expect(cleanImagePrompt("pony", "score_9, long_hair")).toBe("score_9, long_hair");
+  it("leaves prose styles untouched", () => {
+    expect(cleanImagePrompt("qwen", "A woman, long_hair")).toBe("A woman, long_hair");
+  });
+
+  it("gives Pony the full score prefix, also when the AI dropped score_9", () => {
+    expect(cleanImagePrompt("pony", "score_8_up, score_7_up, rating_safe, 1girl, score_7_up")).toBe(
+      "score_9, score_8_up, score_7_up, rating_safe, 1girl",
+    );
+  });
+
+  it("keeps only real Pony source tags, right after the scores", () => {
+    expect(cleanImagePrompt("pony", "score_9, 1girl, source_illustration, elf, source_anime")).toBe(
+      "score_9, score_8_up, score_7_up, source_anime, 1girl, elf",
+    );
+  });
+
+  it("drops Pony duplicates, counting underscore and space as the same", () => {
+    expect(cleanImagePrompt("pony", "1girl, long_hair, graceful, long hair, graceful")).toBe(
+      "score_9, score_8_up, score_7_up, 1girl, long_hair, graceful",
+    );
+  });
+
+  it("drops rating words the AI wrote as Pony tags", () => {
+    expect(cleanImagePrompt("pony", "score_9, 1girl, safe_for_work, no_nudity, no_sexual_content, no humans")).toBe(
+      "score_9, score_8_up, score_7_up, 1girl, no humans",
+    );
+  });
+
+  it("cuts Pony prompts after the content tag limit but keeps the rating", () => {
+    const tags = Array.from({ length: 60 }, (_, i) => `tag${i}`);
+    const out = cleanImagePrompt("pony", ["score_9", ...tags.slice(0, 50), "rating_safe", ...tags.slice(50)].join(", ")).split(", ");
+    expect(out).toContain("rating_safe");
+    expect(out).toContain(`tag${PONY_MAX_TAGS - 1}`);
+    expect(out).not.toContain(`tag${PONY_MAX_TAGS}`);
   });
 });
 
