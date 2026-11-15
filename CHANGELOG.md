@@ -2,7 +2,7 @@
 
 All notable changes to this project are documented here. The project follows [Semantic Versioning](https://semver.org/): new features raise the minor version, fixes the patch version.
 
-## [Unreleased]
+## [1.15.0] – 2026-11-15
 
 ### Fixed
 - **Generate image prompt…** for **Pony Diffusion**: local models like Cydonia wrote 60 and more tags, repeated some, dropped `score_9` and invented source tags. Now the full score prefix is always set, only real source tags stay, duplicates and rating words posing as tags (`safe_for_work`, `no_nudity`) are removed, and the list is cut after 35 content tags. The AI is also asked for about 20 to 30 visible things.
