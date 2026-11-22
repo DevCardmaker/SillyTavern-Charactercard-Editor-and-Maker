@@ -124,3 +124,18 @@ describe("recursionMap", () => {
     expect(map.loops).toEqual([]);
   });
 });
+
+describe("matchKey shortcuts give the same answers as the plain rules", () => {
+  it("whole words of word characters, with and without case", () => {
+    expect(matchKey("Twilight met Rainbow_Dash at 9am.", "rainbow_dash", false, true)).toBe(true);
+    expect(matchKey("Twilight met Rainbow_Dashes.", "rainbow_dash", false, true)).toBe(false);
+    expect(matchKey("Anna's cat", "anna", false, true)).toBe(true);
+    expect(matchKey("Annabelle", "anna", false, true)).toBe(false);
+    expect(matchKey("Anna", "anna", true, true)).toBe(false);
+    expect(matchKey("Böse Anna", "böse", false, true)).toBe(true);
+  });
+
+  it("a /g regex key gives the same answer every time", () => {
+    expect([1, 2, 3].map(() => matchKey("the old lighthouse", "/light/g", false, true))).toEqual([true, true, true]);
+  });
+});

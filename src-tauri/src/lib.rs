@@ -83,12 +83,17 @@ struct DownloadResult {
 /// Downloads a file from the internet (a card PNG linked directly), through the proxy if one is set.
 #[tauri::command]
 async fn http_download(url: String, proxy: Option<String>) -> Result<DownloadResult, String> {
+    /// Cards and lorebooks are a few MB at most; anything far bigger is the wrong link.
+    const MAX_BYTES: usize = 64 * 1024 * 1024;
     let client = client_builder(proxy.as_deref())?
         .timeout(Duration::from_secs(120))
         .user_agent("Mozilla/5.0 (compatible; SillyTavern-Card-Editor)")
         .build()
         .map_err(|e| format!("HTTP client could not be created: {e}"))?;
-    let response = client.get(&url).send().await.map_err(|e| format!("Download failed: {e}"))?;
+    let mut response = client.get(&url).send().await.map_err(|e| format!("Download failed: {e}"))?;
+    if response.content_length().is_some_and(|n| n as usize > MAX_BYTES) {
+        return Err("The file is far too big for a character card or lorebook.".into());
+    }
     let status = response.status().as_u16();
     let content_type = response
         .headers()
@@ -101,7 +106,14 @@ async fn http_download(url: String, proxy: Option<String>) -> Result<DownloadRes
         .get(reqwest::header::CONTENT_DISPOSITION)
         .and_then(|v| v.to_str().ok())
         .map(|v| v.to_string());
-    let body = response.bytes().await.map_err(|e| format!("Download failed: {e}"))?.to_vec();
+    // Read in chunks so an answer without a size can't run on forever.
+    let mut body = Vec::new();
+    while let Some(chunk) = response.chunk().await.map_err(|e| format!("Download failed: {e}"))? {
+        body.extend_from_slice(&chunk);
+        if body.len() > MAX_BYTES {
+            return Err("The file is far too big for a character card or lorebook.".into());
+        }
+    }
     Ok(DownloadResult { status, content_type, content_disposition, body })
 }
 

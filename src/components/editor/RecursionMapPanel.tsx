@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Lorebook } from "../../schema/lorebook";
-import { DEFAULT_KEY_TEST_SETTINGS, recursionMap, type KeyTestSettings, type RecursionLink } from "../../schema/lorebookKeyTest";
+import { DEFAULT_KEY_TEST_SETTINGS, recursionMap, type KeyTestSettings, type RecursionLink, type RecursionMap } from "../../schema/lorebookKeyTest";
 
 interface Props {
   book: Lorebook;
@@ -22,8 +22,29 @@ export function RecursionMapPanel({ book, onClose }: Props) {
   const [settings, setSettings] = useState<KeyTestSettings>(DEFAULT_KEY_TEST_SETTINGS);
   const [hover, setHover] = useState<number | null>(null);
   const [filter, setFilter] = useState("");
-  const map = useMemo(() => recursionMap(book, settings), [book, settings]);
-  const active = map.links.filter((l) => !l.blockedBy);
+  const [map, setMap] = useState<RecursionMap | null>(null);
+
+  // Worked out in a background thread: a lorebook with thousands of keys takes seconds.
+  useEffect(() => {
+    setMap(null);
+    let worker: Worker | null = null;
+    try {
+      worker = new Worker(new URL("../../workers/recursionWorker.ts", import.meta.url), { type: "module" });
+    } catch {
+      worker = null;
+    }
+    if (!worker) {
+      setMap(recursionMap(book, settings));
+      return;
+    }
+    worker.onmessage = (event: MessageEvent<{ map: RecursionMap }>) => setMap(event.data.map);
+    worker.onerror = () => setMap(recursionMap(book, settings));
+    worker.postMessage({ id: 1, book, settings });
+    return () => worker?.terminate();
+  }, [book, settings]);
+
+  const links = map?.links ?? [];
+  const active = links.filter((l) => !l.blockedBy);
 
   // The picture: the entries with the most links, on a circle.
   const nodes = useMemo(() => {
@@ -47,10 +68,10 @@ export function RecursionMapPanel({ book, onClose }: Props) {
       return [index, { x: size / 2 + radius * Math.cos(angle), y: size / 2 + radius * Math.sin(angle), angle }];
     }),
   );
-  const inLoop = new Set(map.loops.flat());
+  const inLoop = new Set((map?.loops ?? []).flat());
 
   const needle = filter.trim().toLocaleLowerCase();
-  const listed = map.links.filter(
+  const listed = links.filter(
     (l) =>
       !needle ||
       entryLabel(book, l.from).toLocaleLowerCase().includes(needle) ||
@@ -104,7 +125,9 @@ export function RecursionMapPanel({ book, onClose }: Props) {
           </label>
         </div>
 
-        {map.links.length === 0 ? (
+        {!map ? (
+          <p className="field-hint">Working out the links{book.entries.length > 150 ? ` between ${book.entries.length} entries — this takes a few seconds` : ""}…</p>
+        ) : map.links.length === 0 ? (
           <p>No entry's text contains another entry's key — nothing is brought in through recursion.</p>
         ) : (
           <div className="rmap-layout">

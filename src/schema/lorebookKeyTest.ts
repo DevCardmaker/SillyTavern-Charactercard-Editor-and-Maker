@@ -62,15 +62,53 @@ function escapeRegex(text: string): string {
   return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+// A big lorebook (hundreds of entries, thousands of keys) checks every key against every entry's
+// text — millions of checks for the recursion map. Each key is turned into a ready check once, and
+// each text is lower-cased and split into words once; the answers stay exactly SillyTavern's.
+type KeyCheck =
+  | { kind: "regex"; regex: RegExp }
+  | { kind: "word"; needle: string; caseSensitive: boolean }
+  | { kind: "substring"; needle: string; caseSensitive: boolean }
+  | { kind: "wholeWord"; needle: string; regex: RegExp; caseSensitive: boolean };
+
+// One map per setting combination, so a lookup needs no new string.
+const keyChecks = [new Map<string, KeyCheck>(), new Map<string, KeyCheck>(), new Map<string, KeyCheck>(), new Map<string, KeyCheck>()];
+const lowerCased = new Map<string, string>();
+const wordSets = new Map<string, Set<string>>();
+
+function cached<K, V>(map: Map<K, V>, key: K, make: () => V, limit = 20000): V {
+  const hit = map.get(key);
+  if (hit !== undefined) return hit;
+  if (map.size >= limit) map.clear();
+  const value = make();
+  map.set(key, value);
+  return value;
+}
+
+function keyCheck(key: string, caseSensitive: boolean, matchWholeWords: boolean): KeyCheck {
+  return cached(keyChecks[(caseSensitive ? 2 : 0) + (matchWholeWords ? 1 : 0)], key, (): KeyCheck => {
+    const regex = parseRegexKey(key);
+    if (regex) return { kind: "regex", regex };
+    const needle = caseSensitive ? key : key.toLowerCase();
+    if (!matchWholeWords || needle.split(/\s+/).length > 1) return { kind: "substring", needle, caseSensitive };
+    // Word characters only ([A-Za-z0-9_]): a whole-word match is exactly "one of the text's words".
+    if (/^\w+$/.test(needle)) return { kind: "word", needle, caseSensitive };
+    return { kind: "wholeWord", needle, caseSensitive, regex: new RegExp(`(?:^|\\W)(${escapeRegex(needle)})(?:$|\\W)`) };
+  });
+}
+
 /** Port of SillyTavern's `WorldInfoBuffer.matchKeys`. */
 export function matchKey(haystack: string, key: string, caseSensitive: boolean, matchWholeWords: boolean): boolean {
-  const regex = parseRegexKey(key);
-  if (regex) return regex.test(haystack);
-
-  const text = caseSensitive ? haystack : haystack.toLowerCase();
-  const needle = caseSensitive ? key : key.toLowerCase();
-  if (!matchWholeWords || needle.split(/\s+/).length > 1) return text.includes(needle);
-  return new RegExp(`(?:^|\\W)(${escapeRegex(needle)})(?:$|\\W)`).test(text);
+  const check = keyCheck(key, caseSensitive, matchWholeWords);
+  if (check.kind === "regex") {
+    // A /g or /y regex remembers where it stopped; start over like a fresh one would.
+    check.regex.lastIndex = 0;
+    return check.regex.test(haystack);
+  }
+  const text = check.caseSensitive ? haystack : cached(lowerCased, haystack, () => haystack.toLowerCase(), 2000);
+  if (check.kind === "word") return cached(wordSets, text, () => new Set(text.split(/\W+/)), 2000).has(check.needle);
+  if (!text.includes(check.needle)) return false;
+  return check.kind === "substring" || check.regex.test(text);
 }
 
 /** The first primary key that matches, or undefined — secondary keys and selective logic
@@ -197,11 +235,38 @@ export interface RecursionMap {
  * are always in anyway, so nothing leads to them; disabled entries take no part. */
 export function recursionMap(book: Lorebook, settings: KeyTestSettings): RecursionMap {
   const links: RecursionLink[] = [];
+  // Index: which entries a single word can trigger. An entry with any other kind of primary key
+  // (several words, a regex, special characters) is checked against every text instead. A target
+  // is only checked in full (matchEntry, secondary keys included) when one of its keys can match.
+  const byWord = new Map<string, number[]>();
+  const always: number[] = [];
+  book.entries.forEach((target, to) => {
+    if (!target.enabled || target.constant) return;
+    const caseSensitive = target.case_sensitive ?? optBool(target, "caseSensitive", "case_sensitive") ?? settings.caseSensitive;
+    const wholeWords = optBool(target, "matchWholeWords", "match_whole_words") ?? settings.matchWholeWords;
+    const checks = target.keys.filter((k) => k.trim()).map((k) => keyCheck(k.trim(), caseSensitive, wholeWords));
+    if (checks.some((c) => c.kind !== "word")) {
+      always.push(to);
+      return;
+    }
+    for (const c of checks) {
+      if (c.kind !== "word") continue;
+      const slot = `${c.caseSensitive ? "1" : "0"}${c.needle}`;
+      const list = byWord.get(slot);
+      if (list) list.push(to);
+      else byWord.set(slot, [to]);
+    }
+  });
+
   book.entries.forEach((source, from) => {
     if (!source.enabled || !source.content.trim()) return;
     const prevents = optBool(source, "preventRecursion", "prevent_recursion") === true;
-    book.entries.forEach((target, to) => {
-      if (to === from || !target.enabled || target.constant) return;
+    const candidates = new Set(always);
+    for (const word of new Set(source.content.split(/\W+/))) byWord.get(`1${word}`)?.forEach((t) => candidates.add(t));
+    for (const word of new Set(source.content.toLowerCase().split(/\W+/))) byWord.get(`0${word}`)?.forEach((t) => candidates.add(t));
+    [...candidates].sort((a, b) => a - b).forEach((to) => {
+      const target = book.entries[to];
+      if (to === from) return;
       const key = matchEntry(target, source.content, settings);
       if (!key) return;
       const excluded = optBool(target, "excludeRecursion", "exclude_recursion") === true;

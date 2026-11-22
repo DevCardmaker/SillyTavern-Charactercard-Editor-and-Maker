@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Lorebook } from "../../schema/lorebook";
 import { type Activation, DEFAULT_KEY_TEST_SETTINGS, type KeyTestSettings, testKeys } from "../../schema/lorebookKeyTest";
 
@@ -13,7 +13,13 @@ export function LorebookKeyTestPanel({ book, onClose }: Props) {
   const [text, setText] = useState("");
   const [settings, setSettings] = useState<KeyTestSettings>(DEFAULT_KEY_TEST_SETTINGS);
 
-  const result = useMemo(() => testKeys(book, text, settings), [book, text, settings]);
+  // Waits a moment after typing: a lorebook with thousands of keys takes a while to check.
+  const [checkedText, setCheckedText] = useState(text);
+  useEffect(() => {
+    const timer = setTimeout(() => setCheckedText(text), 250);
+    return () => clearTimeout(timer);
+  }, [text]);
+  const result = useMemo(() => testKeys(book, checkedText, settings), [book, checkedText, settings]);
   const label = (index: number) => {
     const entry = book.entries[index];
     return entry.comment || entry.keys.join(", ") || `Entry ${index + 1}`;

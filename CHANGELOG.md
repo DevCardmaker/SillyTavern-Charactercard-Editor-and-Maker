@@ -17,6 +17,9 @@ All notable changes to this project are documented here. The project follows [Se
 - The recent cards and recent groups lists keep **20** entries instead of 5, now that they have a tab of their own.
 
 ### Changed
+- **Much faster key checks on big lorebooks**: the key tester and the recursion map no longer rebuild the lower-cased text and the search pattern for every single check, and the map only checks entries one of whose words appears in a text. A 565-entry lorebook with 18,500 keys went from 38 seconds to 4 for the map and from 7 seconds to 1 for a key test — with exactly the same results. The recursion map works in the background and says so; the key tester waits a moment after typing.
+- Closed lorebook entries only build their editor when opened, which keeps big lorebooks light.
+- Direct downloads stop at 64 MB — far more than any card, so a wrong link can't fill the memory.
 - **Lorebooks, Personas and Presets in the new layout**: their open files are listed in the left sidebar like the open cards, and each mode has the same header as the characters — name and file, Save, its menus, the AI profile and Settings. The old rows of buttons and tabs are gone.
 - **Sending to SillyTavern remembers its target across restarts**: a saved card or persona that came from SillyTavern (or was sent there) overwrites the same character next time, even after closing the editor. The links are kept in the app's own folder, not in the cards.
 

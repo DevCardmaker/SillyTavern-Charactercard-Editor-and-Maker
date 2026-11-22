@@ -21,9 +21,18 @@ export function LorebookEntryEditor({ entry, defaultOpen = true, onChange, onRem
   );
   // Uncontrolled on purpose: a controlled `open` would snap back on every keystroke re-render.
   const [initiallyOpen] = useState(defaultOpen);
+  // A closed <details> still renders its body; with hundreds of entries (each with a text field,
+  // quick actions and colours) that's a lot. The body is only built once the entry is opened.
+  const [hasOpened, setHasOpened] = useState(defaultOpen);
 
   return (
-    <details className="lorebook-entry" open={initiallyOpen}>
+    <details
+      className="lorebook-entry"
+      open={initiallyOpen}
+      onToggle={(e) => {
+        if ((e.currentTarget as HTMLDetailsElement).open) setHasOpened(true);
+      }}
+    >
       <summary>
         {entry.comment || entry.keys.join(", ") || "(new entry)"}
         {sharedKeys && (
@@ -36,6 +45,7 @@ export function LorebookEntryEditor({ entry, defaultOpen = true, onChange, onRem
         </button>
       </summary>
 
+      {hasOpened && (
       <div className="lorebook-entry-body">
         <label className="field-inline">
           <input type="checkbox" checked={entry.enabled} onChange={(e) => onChange({ enabled: e.target.checked })} />
@@ -128,6 +138,7 @@ export function LorebookEntryEditor({ entry, defaultOpen = true, onChange, onRem
           </select>
         </label>
       </div>
+      )}
     </details>
   );
 }
