@@ -10,6 +10,8 @@ All notable changes to this project are documented here. The project follows [Se
 - The code checks each answer before showing it: macros like {{char}} and {{user}} must survive (a character name the model wrote instead of {{char}} is turned back), Shorten must really shorten, Lengthen really lengthen, and the language must stay the same. Otherwise the AI gets one more try, and a remaining problem is shown above the preview.
 - **Context** tab in the right sidebar: which parts of the card (and which persona) the AI sees as background for quick actions and brainstorming, with the tokens each part costs. Name, Description, Personality and Scenario by default.
 - **Brainstorm** tab: talk with the AI about the open card — ideas, weaknesses, questions. It never changes the card. One conversation per card, kept until the program closes; nothing is saved.
+- **Settings** menu in the header: AI providers, prompts and your own quick actions in one window. Every AI window now shows a single line with the profile in use and a "Change…" link instead of the old "Provider & prompt settings" block.
+- **AI profile switcher** in the header (and at the top of the other modes): always shows which model answers, and switches in one click.
 - **Delete snapshots**: a ✕ next to every entry in the Snapshots tab removes that backup file, after asking.
 - New prompt sections for all of this in the prompts file (`inline_*`, `brainstorm`).
 

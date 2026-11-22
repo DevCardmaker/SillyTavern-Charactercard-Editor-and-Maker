@@ -1,12 +1,39 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { testConnection } from "../../io/aiClient";
 import { useAiProviderConfigStore } from "../../state/aiProviderConfigStore";
-import { PromptsSettings } from "./PromptsSettings";
+import { useSettingsDialogStore } from "../../state/settingsDialogStore";
 
-/** Provider profile selection/management + connection test, shared by every AI-assist panel.
- * Self-contained via `useAiProviderConfigStore` — no props, so any panel can drop it in without
- * threading profile state through. */
+/** One line in every AI panel: which provider profile is used, and a way to change it. The profiles
+ * themselves are edited under Settings → AI providers. */
 export function AiProviderSettings() {
+  const configFile = useAiProviderConfigStore((s) => s.file);
+  const ensureLoaded = useAiProviderConfigStore((s) => s.ensureLoaded);
+  const openSettings = useSettingsDialogStore((s) => s.open);
+  useEffect(() => {
+    void ensureLoaded();
+  }, [ensureLoaded]);
+  const active = configFile?.profiles.find((p) => p.id === configFile.activeProfileId) ?? null;
+  const ready = !!active?.baseUrl && !!active.model;
+
+  return (
+    <div className={ready ? "ai-provider-line" : "ai-provider-line missing"}>
+      {ready ? (
+        <span>
+          AI: <strong>{active.label}</strong> <span className="field-hint">({active.model})</span>
+        </span>
+      ) : (
+        <span className="field-warning">⚠ No AI provider set up yet.</span>
+      )}
+      <button type="button" className="link-button" onClick={() => openSettings("ai")}>
+        {ready ? "Change…" : "Set one up…"}
+      </button>
+    </div>
+  );
+}
+
+/** Provider profile selection/management + connection test — the "AI providers" page of the
+ * settings. Self-contained via `useAiProviderConfigStore`. */
+export function AiProviderProfilesEditor() {
   const configFile = useAiProviderConfigStore((s) => s.file);
   const setActiveProfile = useAiProviderConfigStore((s) => s.setActiveProfile);
   const addProfile = useAiProviderConfigStore((s) => s.addProfile);
@@ -41,8 +68,7 @@ export function AiProviderSettings() {
   }
 
   return (
-    <details className="ai-assist-settings" open={!activeProfile}>
-      <summary>Provider &amp; prompt settings</summary>
+    <div className="ai-assist-settings">
       <div className="ai-assist-settings-fields">
         <div className="ai-assist-profile-bar">
           <select
@@ -181,7 +207,6 @@ export function AiProviderSettings() {
           <p className="field-hint">No profile selected. Create a new profile.</p>
         )}
       </div>
-      <PromptsSettings />
-    </details>
+    </div>
   );
 }

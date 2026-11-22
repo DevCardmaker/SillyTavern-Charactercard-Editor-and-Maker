@@ -76,7 +76,7 @@ export async function activeAiProfileOrThrow(): Promise<AiProviderProfile> {
   const file = useAiProviderConfigStore.getState().file;
   const profile = file?.profiles.find((p) => p.id === file.activeProfileId) ?? null;
   if (!profile?.baseUrl || !profile.model) {
-    throw new Error("No AI provider set up yet — set one up in the AI Assistant tab first.");
+    throw new Error("No AI provider set up yet — set one up under Settings → AI providers.");
   }
   return profile;
 }

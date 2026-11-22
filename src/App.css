@@ -2250,3 +2250,136 @@ button.secondary.active {
 .ai-textarea > .field-textarea {
   order: 1;
 }
+
+/* Settings window */
+
+.settings-modal {
+  width: min(980px, 94vw);
+  height: 85vh;
+}
+
+.settings-layout {
+  display: flex;
+  gap: 1.25rem;
+  flex: 1;
+  min-height: 0;
+}
+
+.settings-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  width: 12rem;
+  flex-shrink: 0;
+  border-right: 1px solid var(--border);
+  padding-right: 0.75rem;
+}
+
+.settings-nav h3 {
+  margin: 0 0 0.6rem;
+}
+
+.settings-nav-item {
+  text-align: left;
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.settings-nav-item:hover {
+  color: var(--text);
+  background: var(--bg-input);
+}
+
+.settings-nav-item.active {
+  color: var(--text);
+  background: var(--bg-input);
+  font-weight: 600;
+}
+
+.settings-page {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding-right: 0.25rem;
+}
+
+.settings-page h3 {
+  margin: 0;
+}
+
+.settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.settings-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+/* Model switcher + global bar */
+
+.model-switcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0 0 0 0.5rem;
+  background: var(--bg-input);
+}
+
+.model-switcher-label {
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.model-switcher select {
+  background: transparent;
+  border: none;
+  color: var(--text);
+  padding: 0.3rem 0.4rem;
+  max-width: 11rem;
+}
+
+.global-bar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.75rem;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border);
+}
+
+/* One line in every AI panel: which profile is used */
+
+.ai-provider-line {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.9rem;
+}
+
+.settings-page .ai-assist-field-checkbox {
+  flex-direction: row;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.settings-page .ai-assist-field-checkbox input {
+  margin-top: 0.2rem;
+  width: auto;
+}

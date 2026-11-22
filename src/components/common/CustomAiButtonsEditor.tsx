@@ -3,13 +3,15 @@ import type { CustomAiButton } from "../../io/customAiButtons";
 import { useCustomAiButtonsStore } from "../../state/customAiButtonsStore";
 
 /** Add, change and remove your own quick actions: a button label and the instruction it sends. They
- * appear under "More" above every text field. */
-export function CustomAiButtonsDialog({ onClose }: { onClose: () => void }) {
+ * appear under "More" above every text field. A page of the settings. */
+export function CustomAiButtonsEditor() {
   const stored = useCustomAiButtonsStore((s) => s.buttons);
   const ensureLoaded = useCustomAiButtonsStore((s) => s.ensureLoaded);
   const save = useCustomAiButtonsStore((s) => s.save);
   const [draft, setDraft] = useState<CustomAiButton[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+  const [dirty, setDirty] = useState(false);
 
   useEffect(() => {
     void ensureLoaded();
@@ -19,23 +21,26 @@ export function CustomAiButtonsDialog({ onClose }: { onClose: () => void }) {
   }, [stored, draft]);
 
   function update(index: number, patch: Partial<CustomAiButton>) {
+    setSaved(false);
+    setDirty(true);
     setDraft((d) => d && d.map((b, i) => (i === index ? { ...b, ...patch } : b)));
   }
 
-  async function handleSave() {
-    if (!draft) return;
-    try {
-      await save(draft);
-      onClose();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    }
-  }
+  // Saved shortly after each change, like every other setting — closing the window loses nothing.
+  // Empty rows stay in the list here but aren't written to the file.
+  useEffect(() => {
+    if (!draft || !dirty) return;
+    const timer = setTimeout(() => {
+      save(draft)
+        .then(() => setSaved(true))
+        .catch((err: unknown) => setError(err instanceof Error ? err.message : String(err)));
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [draft, dirty, save]);
+
 
   return (
-    <div className="modal-overlay">
-      <div className="modal ai-assist-modal">
-        <h3>My quick actions</h3>
+    <div className="settings-section">
         <p className="field-hint">
           Each button sends its instruction together with the text (or the selected part) and shows the result for review.
           They appear under “More” above every text field. Example: “Rewrite as dialogue in {"{{char}}"}'s voice.”
@@ -61,7 +66,11 @@ export function CustomAiButtonsDialog({ onClose }: { onClose: () => void }) {
               type="button"
               className="secondary"
               title="Remove this button"
-              onClick={() => setDraft((d) => d && d.filter((_, j) => j !== i))}
+              onClick={() => {
+                setSaved(false);
+                setDirty(true);
+                setDraft((d) => d && d.filter((_, j) => j !== i));
+              }}
             >
               ✕
             </button>
@@ -79,16 +88,7 @@ export function CustomAiButtonsDialog({ onClose }: { onClose: () => void }) {
           </button>
         </div>
         {error && <p className="field-error">{error}</p>}
-        <div className="modal-actions">
-          <span className="field-hint">Buttons without a label or instruction are left out.</span>
-          <button type="button" className="secondary" onClick={onClose}>
-            Cancel
-          </button>
-          <button type="button" onClick={() => void handleSave()} disabled={!draft}>
-            Save
-          </button>
-        </div>
-      </div>
+        <p className="field-hint">{saved ? "Saved." : "Saved automatically. Buttons without a label or instruction are left out."}</p>
     </div>
   );
 }

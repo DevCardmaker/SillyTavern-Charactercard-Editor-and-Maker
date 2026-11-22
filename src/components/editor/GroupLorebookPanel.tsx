@@ -36,7 +36,7 @@ export function GroupLorebookPanel({ onClose }: Props) {
     started.current = true;
     if (!activeProfile?.baseUrl || !activeProfile.model) {
       setProgress(null);
-      setError("No AI provider set up yet — configure one in the AI Assistant first.");
+      setError("No AI provider set up yet — set one up under Settings → AI providers.");
       return;
     }
     void run(activeProfile);

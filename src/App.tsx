@@ -10,7 +10,9 @@ import { MetadataTab } from "./components/editor/MetadataTab";
 import { PromptsTab } from "./components/editor/PromptsTab";
 import type { TabProps } from "./components/editor/types";
 import { RecentCardsList } from "./components/editor/RecentCardsList";
+import { GlobalBar } from "./components/layout/GlobalTools";
 import { HeaderBar } from "./components/layout/HeaderBar";
+import { SettingsDialog } from "./components/settings/SettingsDialog";
 import { RecentGroupsSection } from "./components/layout/RecentPanel";
 import { LeftSidebar, type AppMode } from "./components/layout/LeftSidebar";
 import { RightSidebar, type ToolId } from "./components/layout/RightSidebar";
@@ -185,6 +187,7 @@ function App() {
   return (
     <div className="app">
       <TextContextMenu onError={setError} />
+      <SettingsDialog />
       {isDragOver && (
         <div className="drop-overlay">
           <p>
@@ -207,6 +210,7 @@ function App() {
         )}
 
         <div className="workspace-main">
+          {mode !== "characters" && <GlobalBar />}
           {mode === "characters" && (
             <HeaderBar
               onError={setError}

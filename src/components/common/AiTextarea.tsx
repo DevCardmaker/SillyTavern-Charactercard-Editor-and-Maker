@@ -18,8 +18,8 @@ import { aiContextNow } from "../../state/aiContextNow";
 import { activeAiProfileOrThrow } from "../../state/aiProviderConfigStore";
 import { useCardStore } from "../../state/cardStore";
 import { useCustomAiButtonsStore } from "../../state/customAiButtonsStore";
+import { useSettingsDialogStore } from "../../state/settingsDialogStore";
 import { MenuButton, type MenuItem } from "../layout/MenuButton";
-import { CustomAiButtonsDialog } from "./CustomAiButtonsDialog";
 import { insertIntoField } from "./TextContextMenu";
 
 export interface AiFieldInfo {
@@ -75,7 +75,7 @@ function InlineAiBar({ field, info }: { field: React.RefObject<HTMLTextAreaEleme
   const [error, setError] = useState<string | null>(null);
   const [customOpen, setCustomOpen] = useState(false);
   const [customText, setCustomText] = useState("");
-  const [manageOpen, setManageOpen] = useState(false);
+  const openSettings = useSettingsDialogStore((s) => s.open);
   const customButtons = useCustomAiButtonsStore((s) => s.buttons);
   const ensureButtonsLoaded = useCustomAiButtonsStore((s) => s.ensureLoaded);
 
@@ -163,10 +163,10 @@ function InlineAiBar({ field, info }: { field: React.RefObject<HTMLTextAreaEleme
       : []),
     "separator",
     { label: "Custom instruction…", onSelect: () => setCustomOpen(true) },
-    { label: "Manage my buttons…", onSelect: () => setManageOpen(true) },
+    { label: "Manage my buttons…", onSelect: () => openSettings("buttons") },
   ];
 
-  const active = !!busy || !!preview || !!error || customOpen || manageOpen;
+  const active = !!busy || !!preview || !!error || customOpen;
 
   return (
     <div className={active ? "inline-ai active" : "inline-ai"}>
@@ -232,7 +232,6 @@ function InlineAiBar({ field, info }: { field: React.RefObject<HTMLTextAreaEleme
         />
       )}
 
-      {manageOpen && <CustomAiButtonsDialog onClose={() => setManageOpen(false)} />}
     </div>
   );
 }

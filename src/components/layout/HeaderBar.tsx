@@ -13,6 +13,7 @@ import { ImageToCardsPanel } from "../editor/ImageToCardsPanel";
 import { MergeCardsPanel } from "../editor/MergeCardsPanel";
 import { StoryToCardsPanel } from "../editor/StoryToCardsPanel";
 import { TranslateCardPanel } from "../editor/TranslateCardPanel";
+import { ModelSwitcher, SettingsMenu } from "./GlobalTools";
 import { MenuButton } from "./MenuButton";
 import type { ToolId } from "./RightSidebar";
 
@@ -166,6 +167,7 @@ export function HeaderBar({ onError, onShowLorebooks, onOpenTool, isLeftOpen, is
       </div>
 
       <div className="header-actions">
+        <ModelSwitcher />
         <button type="button" onClick={() => saveCard("save").catch(report)} disabled={!card} title="Ctrl+S">
           Save
         </button>
@@ -263,6 +265,7 @@ export function HeaderBar({ onError, onShowLorebooks, onOpenTool, isLeftOpen, is
             },
           ]}
         />
+        <SettingsMenu />
       </div>
 
       <button

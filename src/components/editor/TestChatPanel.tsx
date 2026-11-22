@@ -94,7 +94,7 @@ export function TestChatPanel({ onClose }: Props) {
   async function reply(speakerId: string, history: TestChatMessage[]) {
     if (!count) return;
     if (!activeProfile?.baseUrl || !activeProfile.model) {
-      setError("No AI provider set up yet — configure one in the AI Assistant first.");
+      setError("No AI provider set up yet — set one up under Settings → AI providers.");
       return;
     }
     // Re-read the store: the reply should use the cards exactly as they are right now.

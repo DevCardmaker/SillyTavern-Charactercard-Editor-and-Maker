@@ -87,7 +87,7 @@ Release builds for both platforms are made by the GitHub Actions workflow in `.g
 
 ### Finding your way around
 
-The header shows the open card, "Save" and four menus: **File** (open, save, group folder), **Create** (new cards with the AI: Create Group, From Story, From Image), **Group** (everything that works on all open cards together) and **Card** (split or translate the open card). The left sidebar switches between Characters, Lorebooks, Personas and Presets and lists the open cards. The "Recent" tab in the right sidebar (and the start screen) lists recent groups and recent cards. A group is recorded whenever you open a folder of cards or use "Save Group…"; clicking it reopens all of its cards at once. The right sidebar holds the tools for the open card. Drag a sidebar's inner edge to resize it; hide it with its arrow button and bring it back from the thin strip that remains.
+The header shows the open card, the AI profile in use (switch it right there), "Save" and five menus: **File** (open, save, group folder), **Create** (new cards with the AI: Create Group, From Story, From Image), **Group** (everything that works on all open cards together), **Card** (split or translate the open card) and **Settings** (AI providers, prompts, your own quick actions). In the other modes the AI profile and Settings sit in a slim bar at the top. The left sidebar switches between Characters, Lorebooks, Personas and Presets and lists the open cards. The "Recent" tab in the right sidebar (and the start screen) lists recent groups and recent cards. A group is recorded whenever you open a folder of cards or use "Save Group…"; clicking it reopens all of its cards at once. The right sidebar holds the tools for the open card. Drag a sidebar's inner edge to resize it; hide it with its arrow button and bring it back from the thin strip that remains.
 
 ### Quick actions and brainstorming
 
@@ -95,7 +95,7 @@ Click into a card text field and a row of quick actions appears above it: Enhanc
 
 ### Using the AI assistant
 
-Open the "AI Assistant" tab in the right sidebar (or any other AI feature) and set up a provider under its settings: a base URL, an optional API key, and a model name. This works with a local model server just as well as a cloud API — nothing is sent anywhere unless you configure a provider yourself. All AI features use the provider profile that is currently selected there.
+Open **Settings → AI providers…** in the header and create a profile: a base URL, an optional API key, and a model name. This works with a local model server just as well as a cloud API — nothing is sent anywhere unless you configure a provider yourself. All AI features use the selected profile; the "AI" box in the header shows which one that is and switches between profiles in one click, and every AI window names it too.
 
 AI suggestions are never written into a card unseen: field edits, lorebook entries, group profiles and consistency fixes are all shown for review first, and most of them can be edited before you apply them.
 
@@ -139,7 +139,7 @@ Every save over an existing file keeps the previous state in a `backups` folder 
 
 ### Changing the prompts
 
-Under "Provider & prompt settings" in any AI window, "Create prompts file" writes all built-in instructions into `prompts.txt` and opens it in your text editor. Change a section, save, and click "Reload prompts". Sections you delete fall back to the built-in text; `(none)` switches one off; `{metric_units}` and similar placeholders insert another section, so a shared rule is changed in one place. The reply format (JSON fields) is fixed in the app so a typo can't break a feature. "Show last prompt" shows exactly what the last AI request sent.
+Under **Settings → Prompts…**, "Create prompts file" writes all built-in instructions into `prompts.txt` and opens it in your text editor. Change a section, save, and click "Reload prompts". Sections you delete fall back to the built-in text; `(none)` switches one off; `{metric_units}` and similar placeholders insert another section, so a shared rule is changed in one place. The reply format (JSON fields) is fixed in the app so a typo can't break a feature. "Show last prompt" shows exactly what the last AI request sent.
 
 ## Changelog
 
