@@ -30,6 +30,7 @@ A desktop editor for [SillyTavern](https://github.com/SillyTavern/SillyTavern) c
 - "Save as Copy…" to export the current card to another path/format without changing what "Save" points at
 
 **Working with several characters at once**
+- A **SillyTavern connection**: list its characters, groups and personas, open them here, send them back (overwriting keeps the chats, with a snapshot first), copy and delete, and create groups there from the open cards
 - Multiple characters open simultaneously — build a whole group (a family, a class, an NPC roster) in one sitting
 - A shared "group folder" for saving a session's cards together, plus one-click bulk save/open for a whole folder
 - A per-tab autosave snapshot as a safety net while switching between many open characters
@@ -92,6 +93,12 @@ The header shows the open card, the AI profile in use (switch it right there), "
 ### Quick actions and brainstorming
 
 Click into a card text field and a row of quick actions appears above it: Enhance, Rephrase, Shorten, Lengthen, Fix and Less AI slop, with Vivid, Emotion, a custom instruction and your own buttons under "More". Select a part of the text to work on just that part; without a selection the whole field is used. The result is shown with removed and added words marked — Accept, Reject or Retry. The "Context" tab in the right sidebar sets what the AI knows about the character while doing this; fewer parts leave more room on a small model. The "Brainstorm" tab is a chat about the open card that never changes it.
+
+### Working with SillyTavern
+
+Under **Settings → SillyTavern…** enter the address you open SillyTavern with (for example `http://127.0.0.1:8000`) and click "Test connection". From another computer, SillyTavern must allow it (`listen` and `whitelist` in its `config.yaml`); a login is only needed with `basicAuthMode`. Multi-user accounts aren't supported yet.
+
+The **SillyTavern** page in the left sidebar lists its characters, groups and personas. "Open" brings a character or persona into the editor; "Send to SillyTavern…" (File menu, the Personas toolbar or the SillyTavern page) sends it back — over the one it came from, over one with the same name, or as a new one. Overwriting a character keeps its chats, its favourite star and the chat SillyTavern opens, and SillyTavern's previous version is kept as a snapshot of the card first — for a card that was never saved, in the app's own folder, listed in the Snapshots tab all the same. "Create Group in SillyTavern…" (Group menu) sends the open cards and makes them a group there, in the order you choose. Sending a persona changes SillyTavern's settings file, so a settings snapshot is made first; if SillyTavern is open in a browser, reload it there afterwards.
 
 ### Using the AI assistant
 

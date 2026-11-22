@@ -8,6 +8,7 @@ import { combineWarnings, emptyNameWarning, unbalancedMacroWarning } from "../..
 import { useCardStore } from "../../state/cardStore";
 import { CardStoreContext } from "../../state/cardStoreContext";
 import { usePersonaStore } from "../../state/personaStore";
+import { useStDialogStore } from "../../state/stDialogStore";
 import { TextAreaField, TextField } from "../common/FormField";
 import { AiAssistPanel } from "../editor/AiAssistPanel";
 import { CardHistoryPanel } from "../editor/CardHistoryPanel";
@@ -123,6 +124,18 @@ export function PersonaWorkspace({ onError }: Props) {
         {isHistoryOpen && <CardHistoryPanel store={usePersonaStore} onClose={() => setIsHistoryOpen(false)} />}
         <button type="button" className="secondary" onClick={handleOpenAiAssist}>
           AI Assistant…
+        </button>
+        <button
+          type="button"
+          className="secondary"
+          disabled={!persona}
+          title="Send this persona to SillyTavern — over the one it came from, or as a new persona"
+          onClick={() => {
+            const id = usePersonaStore.getState().activeId;
+            if (id) useStDialogStore.getState().openSend("persona", id);
+          }}
+        >
+          Send to SillyTavern…
         </button>
         {persona && (
           <div className="toolbar-title">

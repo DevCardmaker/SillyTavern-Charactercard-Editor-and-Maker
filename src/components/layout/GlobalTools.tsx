@@ -46,6 +46,7 @@ export function SettingsMenu() {
       items={[
         { label: "AI providers…", onSelect: () => openSettings("ai") },
         { label: "Prompts…", onSelect: () => openSettings("prompts") },
+        { label: "SillyTavern…", onSelect: () => openSettings("sillytavern") },
         { label: "My quick actions…", onSelect: () => openSettings("buttons") },
       ]}
     />

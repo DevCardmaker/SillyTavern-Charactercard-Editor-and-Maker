@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useTotalTokenCount } from "../../hooks/useTokenCount";
 import { openCardFile, openFolderAsTabs, saveCard, saveCardAsCopy, saveGroupToFolder } from "../../io/fileIO";
 import { useCardStore } from "../../state/cardStore";
+import { useStDialogStore } from "../../state/stDialogStore";
 import { AiConsistencyCheckPanel } from "../editor/AiConsistencyCheckPanel";
 import { AiGroupGeneratePanel } from "../editor/AiGroupGeneratePanel";
 import { AiGroupScenePanel } from "../editor/AiGroupScenePanel";
@@ -54,6 +55,9 @@ export function HeaderBar({ onError, onShowLorebooks, onOpenTool, isLeftOpen, is
   const openCount = useCardStore((s) => s.characters.length);
   const totalTokenCount = useTotalTokenCount(card);
   const [dialog, setDialog] = useState<DialogId | null>(null);
+  const activeId = useCardStore((s) => s.activeId);
+  const openStSend = useStDialogStore((s) => s.openSend);
+  const openStGroup = useStDialogStore((s) => s.openCreateGroup);
   const [isSavingGroup, setIsSavingGroup] = useState(false);
 
   const avatarUrl = useMemo(
@@ -191,6 +195,13 @@ export function HeaderBar({ onError, onShowLorebooks, onOpenTool, isLeftOpen, is
             },
             "separator",
             {
+              label: "Send to SillyTavern…",
+              disabled: !card,
+              title: "Send this card to SillyTavern — over the one it came from, or as a new character",
+              onSelect: () => activeId && openStSend("card", activeId),
+            },
+            "separator",
+            {
               label: "Choose Group Folder…",
               title: groupFolder ? `Shared save folder: ${groupFolder}` : "Choose a shared folder for new cards in this group",
               onSelect: () => handleChooseGroupFolder().catch(report),
@@ -238,6 +249,12 @@ export function HeaderBar({ onError, onShowLorebooks, onOpenTool, isLeftOpen, is
               disabled: openCount < 2,
               title: needsTwo ?? "Give every open character lorebook entries describing the other members (and open personas)",
               onSelect: () => setDialog("groupLorebook"),
+            },
+            {
+              label: "Create Group in SillyTavern…",
+              disabled: openCount < 2,
+              title: needsTwo ?? "Send the open cards to SillyTavern and make them a group there, in an order you choose",
+              onSelect: openStGroup,
             },
             {
               label: "Merge into One Card…",

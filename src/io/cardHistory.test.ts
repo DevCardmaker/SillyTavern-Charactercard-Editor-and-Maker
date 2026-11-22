@@ -10,6 +10,11 @@ vi.mock("@tauri-apps/api/core", () => ({
     throw new Error(`unmocked command: ${cmd}`);
   },
 }));
+let configDir = "";
+vi.mock("@tauri-apps/api/path", () => ({
+  appConfigDir: async () => configDir,
+  join: async (...parts: string[]) => path.join(...parts),
+}));
 vi.mock("@tauri-apps/plugin-dialog", () => ({ save: async () => null, open: async () => null, confirm: async () => true }));
 
 const { describeVersion, listCardVersions, namedSnapshotReason, parseVersionFileName, readCardVersion, sameImage } =
@@ -67,6 +72,7 @@ describe("parseVersionFileName", () => {
 
 describe("listCardVersions", () => {
   it("is empty without a file or a backups folder", async () => {
+    configDir = path.join(dir, "no-config");
     expect(await listCardVersions(null, "Anna")).toEqual([]);
     expect(await listCardVersions(path.join(dir, "Anna.png"), "Anna")).toEqual([]);
   });
@@ -85,6 +91,23 @@ describe("listCardVersions", () => {
     expect(versions.map((v) => v.time.getMonth())).toEqual([2, 1, 0]);
     expect(versions[1].reason).toBe("before-condense");
     expect(versions[0].path).toBe(`${dir}/backups/file.2026-03-01T10-00-00.png`);
+  });
+});
+
+describe("listCardVersions for a card that was never saved", () => {
+  it("finds its snapshots in the app's config folder by the card's name", async () => {
+    configDir = path.join(dir, "config");
+    fs.mkdirSync(path.join(configDir, "backups"), { recursive: true });
+    for (const name of [
+      "Anna.before-sillytavern.2026-11-22T13-00-00.png",
+      "Anna.snapshot-Draft.2026-11-22T14-00-00.json",
+      "Ben.before-sillytavern.2026-11-22T15-00-00.png",
+    ]) {
+      fs.writeFileSync(path.join(configDir, "backups", name), "");
+    }
+    const versions = await listCardVersions(null, "Anna");
+    expect(versions.map((v) => describeVersion(v.reason).label)).toEqual(["Draft", "before sillytavern"]);
+    expect(await listCardVersions(null, "")).toEqual([]);
   });
 });
 

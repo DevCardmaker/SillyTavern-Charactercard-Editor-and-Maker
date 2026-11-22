@@ -1,3 +1,5 @@
+mod sillytavern;
+
 use std::fs;
 use std::time::Duration;
 
@@ -224,7 +226,8 @@ pub fn run() {
             write_binary_file,
             list_dir_files,
             delete_file,
-            ai_chat_completion
+            ai_chat_completion,
+            sillytavern::st_request
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

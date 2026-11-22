@@ -8,6 +8,7 @@ import { asPersona, isPersona } from "../schema/persona";
 import { type CardStore, type FileFormat, useCardStore } from "../state/cardStore";
 import { usePersonaStore } from "../state/personaStore";
 import { useRecentCardsStore } from "../state/recentCardsStore";
+import { useSnapshotSignal } from "../state/snapshotSignal";
 import { confirmAction } from "./confirmDiscard";
 import { listDirFiles, readBinary, writeBinary } from "./rawFile";
 
@@ -65,6 +66,33 @@ export async function writeSnapshotBackup(
     ? `${splitDirAndFile(currentFilePath).dir}backups/${fileName}`
     : await join(await appConfigDir(), "backups", fileName);
   await writeBinary(path, buildCardBytes(card, format, avatarPng));
+  useSnapshotSignal.getState().bump();
+  return path;
+}
+
+/** The card as a file to hand on (e.g. to SillyTavern): a PNG card when it has a picture, JSON otherwise. */
+export function cardFileForExport(card: NormalizedCard, avatarPng: Uint8Array | null): { bytes: Uint8Array; format: FileFormat } {
+  const format: FileFormat = avatarPng ? "png" : "json";
+  return { bytes: buildCardBytes(card, format, avatarPng), format };
+}
+
+/** Keeps a file someone else had (e.g. SillyTavern's version of a character, before it is
+ * overwritten) as a snapshot of the card: in the card's `backups/` folder, so it shows up in the
+ * Snapshots tab, or in the app's config folder for a card that was never saved. */
+export async function writeSnapshotBytes(
+  cardName: string,
+  currentFilePath: string | null,
+  reason: string,
+  bytes: Uint8Array,
+  format: FileFormat,
+): Promise<string> {
+  const baseName = (cardName || "card").replace(/[\\/:*?"<>|]/g, "_");
+  const fileName = `${baseName}.${reason}.${timestampForFilename(new Date())}.${format}`;
+  const path = currentFilePath
+    ? `${splitDirAndFile(currentFilePath).dir}backups/${fileName}`
+    : await join(await appConfigDir(), "backups", fileName);
+  await writeBinary(path, bytes);
+  useSnapshotSignal.getState().bump();
   return path;
 }
 

@@ -13,6 +13,8 @@ import { RecentCardsList } from "./components/editor/RecentCardsList";
 import { GlobalBar } from "./components/layout/GlobalTools";
 import { HeaderBar } from "./components/layout/HeaderBar";
 import { SettingsDialog } from "./components/settings/SettingsDialog";
+import { SillyTavernWorkspace } from "./components/sillytavern/SillyTavernWorkspace";
+import { StDialogs } from "./components/sillytavern/StDialogs";
 import { RecentGroupsSection } from "./components/layout/RecentPanel";
 import { LeftSidebar, type AppMode } from "./components/layout/LeftSidebar";
 import { RightSidebar, type ToolId } from "./components/layout/RightSidebar";
@@ -188,6 +190,7 @@ function App() {
     <div className="app">
       <TextContextMenu onError={setError} />
       <SettingsDialog />
+      <StDialogs />
       {isDragOver && (
         <div className="drop-overlay">
           <p>
@@ -238,6 +241,8 @@ function App() {
             <PersonaWorkspace onError={setError} />
           ) : mode === "presets" ? (
             <PresetWorkspace onError={setError} />
+          ) : mode === "sillytavern" ? (
+            <SillyTavernWorkspace onError={setError} onShowMode={setMode} />
           ) : !card ? (
             <div className="empty-state">
               <p>No card loaded. Create a new card or open an existing one.</p>

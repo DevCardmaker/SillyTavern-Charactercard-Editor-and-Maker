@@ -4,6 +4,7 @@ import { confirmAction } from "../../io/confirmDiscard";
 import { writeSnapshotBackup } from "../../io/fileIO";
 import { deleteFile } from "../../io/rawFile";
 import { useCardStore } from "../../state/cardStore";
+import { useSnapshotSignal } from "../../state/snapshotSignal";
 import { CardHistoryPanel } from "./CardHistoryPanel";
 
 /** Sidebar list of the open card's older versions: every save leaves one, and snapshots saved here by
@@ -14,6 +15,7 @@ export function SnapshotsPanel() {
   const filePath = useCardStore((s) => s.currentFilePath);
   const isDirty = useCardStore((s) => s.isDirty);
   const activeId = useCardStore((s) => s.activeId);
+  const snapshotVersion = useSnapshotSignal((s) => s.version);
   const [versions, setVersions] = useState<CardVersion[] | null>(null);
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
@@ -35,7 +37,8 @@ export function SnapshotsPanel() {
   useEffect(() => {
     if (!isDirty) return refresh();
   }, [isDirty, activeId, refresh]);
-  useEffect(() => refresh(), [refresh]);
+  // Also when a snapshot was written elsewhere (e.g. before sending to SillyTavern).
+  useEffect(() => refresh(), [refresh, snapshotVersion]);
 
   async function handleSaveSnapshot() {
     if (!card) return;
@@ -59,7 +62,7 @@ export function SnapshotsPanel() {
     setError(null);
     try {
       await deleteFile(version.path);
-      refresh();
+      useSnapshotSignal.getState().bump();
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     }
@@ -69,12 +72,13 @@ export function SnapshotsPanel() {
 
   return (
     <div className="snapshots-panel">
-      {!filePath ? (
+      {!filePath && (
         <p className="field-hint">
-          Save the card once — from then on every save keeps the previous state here, and you can save snapshots by name.
+          This card isn't saved yet, so its snapshots are kept in the app's own folder under the card's name — rename the card and
+          they no longer match.
         </p>
-      ) : (
-        <>
+      )}
+      <>
           <form
             className="snapshot-new"
             onSubmit={(e) => {
@@ -119,8 +123,7 @@ export function SnapshotsPanel() {
               })}
             </ul>
           )}
-        </>
-      )}
+      </>
       {comparePath && (
         <CardHistoryPanel store={useCardStore} initialPath={comparePath} onClose={() => setComparePath(null)} />
       )}

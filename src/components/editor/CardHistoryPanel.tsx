@@ -171,11 +171,11 @@ export function CardHistoryPanel({ store, onClose, initialPath }: Props) {
           )}
         </div>
 
-        {!filePath ? (
-          <p className="field-hint">This card hasn't been saved yet, so it has no older versions.</p>
-        ) : versions?.length === 0 ? (
+        {versions?.length === 0 ? (
           <p className="field-hint">
-            No older versions yet. Each time you save over this file, the previous state is kept as a version.
+            {filePath
+              ? "No older versions yet. Each time you save over this file, the previous state is kept as a version."
+              : "No snapshots of this card yet. It hasn't been saved, so only snapshots made by name or before sending it to SillyTavern are kept."}
           </p>
         ) : (
           <div className="history-layout">

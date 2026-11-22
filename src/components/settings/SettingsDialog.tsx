@@ -3,6 +3,7 @@ import { useSettingsDialogStore, type SettingsSection } from "../../state/settin
 import { CustomAiButtonsEditor } from "../common/CustomAiButtonsEditor";
 import { AiProviderProfilesEditor } from "../editor/AiProviderSettings";
 import { PromptsSettings } from "../editor/PromptsSettings";
+import { StSettingsEditor } from "./StSettingsEditor";
 
 const SECTIONS: { id: SettingsSection; label: string; about: string }[] = [
   {
@@ -15,6 +16,11 @@ const SECTIONS: { id: SettingsSection; label: string; about: string }[] = [
     id: "prompts",
     label: "Prompts",
     about: "Every instruction the AI gets, editable in a plain text file — and what was sent last.",
+  },
+  {
+    id: "sillytavern",
+    label: "SillyTavern",
+    about: "Connect to your SillyTavern to open its characters, groups and personas here and send yours there.",
   },
   {
     id: "buttons",
@@ -65,6 +71,7 @@ export function SettingsDialog() {
             {section === "ai" && <AiProviderProfilesEditor />}
             {section === "prompts" && <PromptsSettings />}
             {section === "buttons" && <CustomAiButtonsEditor />}
+            {section === "sillytavern" && <StSettingsEditor />}
           </div>
         </div>
         <div className="modal-actions">

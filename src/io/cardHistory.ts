@@ -2,6 +2,7 @@ import { extractCardJson } from "../png/characterCard";
 import { readPngChunks } from "../png/pngChunks";
 import type { NormalizedCard } from "../schema/normalize";
 import { CardParseError, parseCardJson, parseCardJsonLeniently } from "../schema/parse";
+import { appConfigDir, join } from "@tauri-apps/api/path";
 import { splitDirAndFile } from "./fileIO";
 import { listDirFiles, readBinary } from "./rawFile";
 
@@ -38,13 +39,26 @@ export function parseVersionFileName(fileName: string, baseNames: string[]): Omi
   return null;
 }
 
-/** Newest first. Empty if the card has no file yet or there's no `backups/` folder. */
+/** Newest first. A saved card's versions are in the `backups/` folder next to it; a card that was
+ * never saved (e.g. opened from SillyTavern) keeps its snapshots in the app's config folder, found
+ * by the card's name. Empty if there are none. */
 export async function listCardVersions(filePath: string | null, cardName: string): Promise<CardVersion[]> {
-  if (!filePath) return [];
-  const { dir, file } = splitDirAndFile(filePath);
-  const fileBase = file.replace(/\.[^.]+$/, "");
   const cardBase = cardName.replace(/[\\/:*?"<>|]/g, "_");
-  const backupDir = `${dir}backups/`;
+  let backupDir: string;
+  let baseNames: string[];
+  if (filePath) {
+    const { dir, file } = splitDirAndFile(filePath);
+    backupDir = `${dir}backups/`;
+    baseNames = [file.replace(/\.[^.]+$/, ""), cardBase];
+  } else {
+    if (!cardBase.trim()) return [];
+    try {
+      backupDir = `${await join(await appConfigDir(), "backups")}/`;
+    } catch {
+      return [];
+    }
+    baseNames = [cardBase];
+  }
 
   let names: string[];
   try {
@@ -54,7 +68,7 @@ export async function listCardVersions(filePath: string | null, cardName: string
   }
   const versions: CardVersion[] = [];
   for (const name of names) {
-    const parsed = parseVersionFileName(name, [fileBase, cardBase]);
+    const parsed = parseVersionFileName(name, baseNames);
     if (parsed) versions.push({ ...parsed, path: `${backupDir}${name}` });
   }
   return versions.sort((a, b) => b.time.getTime() - a.time.getTime());
