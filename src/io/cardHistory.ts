@@ -60,6 +60,23 @@ export async function listCardVersions(filePath: string | null, cardName: string
   return versions.sort((a, b) => b.time.getTime() - a.time.getTime());
 }
 
+/** Reason prefix of a snapshot the user saved by hand; the rest is the name they gave it. */
+export const NAMED_SNAPSHOT_PREFIX = "snapshot-";
+
+/** Turns a snapshot name into the part of a file name between the card name and the time stamp:
+ * no dots (they separate those parts) and nothing a file system rejects. */
+export function namedSnapshotReason(name: string): string {
+  const cleaned = name.replace(/[.\\/:*?"<>|]/g, " ").replace(/\s+/g, " ").trim().slice(0, 60);
+  return `${NAMED_SNAPSHOT_PREFIX}${cleaned || "snapshot"}`;
+}
+
+/** How a version is labelled in lists: a hand-saved snapshot by its name, a normal save as such. */
+export function describeVersion(reason: string | null): { label: string; named: boolean } {
+  if (!reason) return { label: "Saved", named: false };
+  if (reason.startsWith(NAMED_SNAPSHOT_PREFIX)) return { label: reason.slice(NAMED_SNAPSHOT_PREFIX.length), named: true };
+  return { label: reason.replace(/-/g, " "), named: false };
+}
+
 export async function readCardVersion(path: string): Promise<CardVersionData> {
   const bytes = await readBinary(path);
   const isPng = /\.png$/i.test(path);

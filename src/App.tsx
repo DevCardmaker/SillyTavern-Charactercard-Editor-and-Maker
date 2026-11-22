@@ -2,18 +2,19 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { useEffect, useRef, useState } from "react";
 import { TextContextMenu } from "./components/common/TextContextMenu";
-import { AvatarPanel } from "./components/image/AvatarPanel";
-import { AiAssistPanel } from "./components/editor/AiAssistPanel";
+import { AvatarTab } from "./components/editor/AvatarTab";
 import { BasicTab } from "./components/editor/BasicTab";
-import { CharacterTabBar } from "./components/editor/CharacterTabBar";
 import { GreetingsTab } from "./components/editor/GreetingsTab";
 import { LorebookTab } from "./components/editor/LorebookTab";
 import { MetadataTab } from "./components/editor/MetadataTab";
 import { PromptsTab } from "./components/editor/PromptsTab";
-import { TestChatPanel } from "./components/editor/TestChatPanel";
-import { Toolbar } from "./components/editor/Toolbar";
 import type { TabProps } from "./components/editor/types";
 import { RecentCardsList } from "./components/editor/RecentCardsList";
+import { HeaderBar } from "./components/layout/HeaderBar";
+import { RecentGroupsSection } from "./components/layout/RecentPanel";
+import { LeftSidebar, type AppMode } from "./components/layout/LeftSidebar";
+import { RightSidebar, type ToolId } from "./components/layout/RightSidebar";
+import { Sidebar, SidebarRail } from "./components/layout/Sidebar";
 import { LorebookWorkspace } from "./components/lorebook/LorebookWorkspace";
 import { PersonaWorkspace } from "./components/persona/PersonaWorkspace";
 import { PresetWorkspace } from "./components/preset/PresetWorkspace";
@@ -21,6 +22,7 @@ import { confirmDiscardChanges } from "./io/confirmDiscard";
 import { openCardAtPath } from "./io/fileIO";
 import { openLorebookPaths } from "./io/lorebookIO";
 import { openPresetPaths } from "./io/stPresetIO";
+import { readStored, storeChoice } from "./io/storedChoice";
 import { useCardStore } from "./state/cardStore";
 import { useLorebookStore } from "./state/lorebookStore";
 import { usePersonaStore } from "./state/personaStore";
@@ -30,6 +32,7 @@ import "./App.css";
 
 const TABS: { id: string; label: string; Component: (props: TabProps) => React.JSX.Element }[] = [
   { id: "basic", label: "Basic", Component: BasicTab },
+  { id: "avatar", label: "Avatar", Component: AvatarTab },
   { id: "prompts", label: "Prompts", Component: PromptsTab },
   { id: "greetings", label: "Greetings", Component: GreetingsTab },
   { id: "lorebook", label: "Lorebook", Component: LorebookTab },
@@ -44,23 +47,44 @@ function App() {
   const [activeTab, setActiveTab] = useState(TABS[0].id);
   const [error, setError] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
-  const [isAiAssistOpen, setIsAiAssistOpen] = useState(false);
-  const [isTestChatOpen, setIsTestChatOpen] = useState(false);
-  // Characters vs. standalone Lorebooks. Both stores live on regardless, so switching never loses
-  // open tabs or unsaved work on the other side. The ref is for the once-registered Tauri
+  // Characters vs. standalone Lorebooks/Personas/Presets. All stores live on regardless, so switching
+  // never loses open tabs or unsaved work elsewhere. The ref is for the once-registered Tauri
   // listeners below, which would otherwise only ever see the initial mode.
-  const [mode, setMode] = useState<"characters" | "lorebooks" | "personas" | "presets">("characters");
+  const [mode, setMode] = useState<AppMode>("characters");
+  const [isLeftOpen, setIsLeftOpen] = useState(() => readStored("sidebar-left", ["open", "closed"]) !== "closed");
+  const [isRightOpen, setIsRightOpen] = useState(() => readStored("sidebar-right", ["open", "closed"]) === "open");
+  const [activeTool, setActiveTool] = useState<ToolId>("snapshots");
+  const [openedTools, setOpenedTools] = useState<ToolId[]>(() => (isRightOpen ? ["snapshots"] : []));
   const modeRef = useRef(mode);
   modeRef.current = mode;
   const activeLorebook = useLorebookStore((s) => s.lorebooks.find((l) => l.id === s.activeId) ?? null);
-  const anyLorebookDirty = useLorebookStore((s) => s.lorebooks.some((l) => l.isDirty));
-  const anyPersonaDirty = usePersonaStore((s) => s.characters.some((c) => c.isDirty));
   const personaPath = usePersonaStore((s) => s.currentFilePath);
   const personaDirty = usePersonaStore((s) => s.isDirty);
   const activePreset = useStPresetStore((s) => s.presets.find((p) => p.id === s.activeId) ?? null);
-  const anyPresetDirty = useStPresetStore((s) => s.presets.some((p) => p.isDirty));
 
   const ActiveTab = TABS.find((t) => t.id === activeTab)?.Component ?? BasicTab;
+
+  function setLeftOpen(open: boolean) {
+    setIsLeftOpen(open);
+    storeChoice("sidebar-left", open ? "open" : "closed");
+  }
+
+  function setRightOpen(open: boolean) {
+    setIsRightOpen(open);
+    storeChoice("sidebar-right", open ? "open" : "closed");
+  }
+
+  function openTool(tool: ToolId) {
+    setActiveTool(tool);
+    setOpenedTools((tools) => (tools.includes(tool) ? tools : [...tools, tool]));
+    setRightOpen(true);
+  }
+
+  /** A tool's own Close button ends it (a test chat is gone) and hides the sidebar. */
+  function closeTool(tool: ToolId) {
+    setOpenedTools((tools) => tools.filter((t) => t !== tool));
+    setRightOpen(false);
+  }
 
   // The user's prompts file (if any) replaces built-in prompt sections from the first AI request on.
   useEffect(() => {
@@ -173,103 +197,99 @@ function App() {
         </div>
       )}
 
-      <nav className="mode-switch">
-        <button
-          type="button"
-          className={mode === "characters" ? "mode-button active" : "mode-button"}
-          onClick={() => setMode("characters")}
-        >
-          Characters
-        </button>
-        <button
-          type="button"
-          className={mode === "lorebooks" ? "mode-button active" : "mode-button"}
-          onClick={() => setMode("lorebooks")}
-        >
-          Lorebooks
-          {anyLorebookDirty && <span className="dirty-indicator" title="Unsaved changes"> ●</span>}
-        </button>
-        <button
-          type="button"
-          className={mode === "personas" ? "mode-button active" : "mode-button"}
-          onClick={() => setMode("personas")}
-        >
-          Personas
-          {anyPersonaDirty && <span className="dirty-indicator" title="Unsaved changes"> ●</span>}
-        </button>
-        <button
-          type="button"
-          className={mode === "presets" ? "mode-button active" : "mode-button"}
-          onClick={() => setMode("presets")}
-        >
-          Presets
-          {anyPresetDirty && <span className="dirty-indicator" title="Unsaved changes"> ●</span>}
-        </button>
-      </nav>
+      <div className="workspace">
+        {isLeftOpen ? (
+          <Sidebar side="left" storageKey="sidebar-left-width" defaultWidth={220} minWidth={160} maxWidth={420}>
+            <LeftSidebar mode={mode} onModeChange={setMode} onError={setError} onHide={() => setLeftOpen(false)} />
+          </Sidebar>
+        ) : (
+          <SidebarRail side="left" title="Show the sidebar" onOpen={() => setLeftOpen(true)} />
+        )}
 
-      {mode === "characters" && (
-        <>
-          <Toolbar
-            onError={setError}
-            onOpenAiAssist={() => setIsAiAssistOpen(true)}
-            isTestChatOpen={isTestChatOpen}
-            onToggleTestChat={() => setIsTestChatOpen((open) => !open)}
-            onShowLorebooks={() => setMode("lorebooks")}
-          />
-          <CharacterTabBar onError={setError} />
-        </>
-      )}
-
-      {mode === "characters" && isAiAssistOpen && card && (
-        <AiAssistPanel card={card} onChange={updateCard} onClose={() => setIsAiAssistOpen(false)} />
-      )}
-
-      {error && (
-        <div className="error-banner">
-          {error}
-          <button type="button" className="secondary" onClick={() => setError(null)}>
-            ✕
-          </button>
-        </div>
-      )}
-
-      {mode === "lorebooks" ? (
-        <LorebookWorkspace onError={setError} />
-      ) : mode === "personas" ? (
-        <PersonaWorkspace onError={setError} />
-      ) : mode === "presets" ? (
-        <PresetWorkspace onError={setError} />
-      ) : !card ? (
-        <div className="empty-state">
-          <p>No card loaded. Create a new card or open an existing one.</p>
-          <RecentCardsList onError={setError} />
-        </div>
-      ) : (
-        <div className="editor-layout">
-          <AvatarPanel />
-          <div className="editor-main">
-            <nav className="tab-bar">
-              {TABS.map((tab) => (
-                <button
-                  key={tab.id}
-                  type="button"
-                  className={tab.id === activeTab ? "tab-button active" : "tab-button"}
-                  onClick={() => setActiveTab(tab.id)}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </nav>
-            <ActiveTab
-              card={card}
-              onChange={updateCard}
+        <div className="workspace-main">
+          {mode === "characters" && (
+            <HeaderBar
               onError={setError}
               onShowLorebooks={() => setMode("lorebooks")}
+              onOpenTool={openTool}
+              isLeftOpen={isLeftOpen}
+              isRightOpen={isRightOpen && !!card}
+              onToggleLeft={() => setLeftOpen(!isLeftOpen)}
+              onToggleRight={() => (isRightOpen ? setRightOpen(false) : openTool(activeTool))}
             />
-          </div>
-          {isTestChatOpen && <TestChatPanel onClose={() => setIsTestChatOpen(false)} />}
+          )}
+
+          {error && (
+            <div className="error-banner">
+              {error}
+              <button type="button" className="secondary" onClick={() => setError(null)}>
+                ✕
+              </button>
+            </div>
+          )}
+
+          {mode === "lorebooks" ? (
+            <LorebookWorkspace onError={setError} />
+          ) : mode === "personas" ? (
+            <PersonaWorkspace onError={setError} />
+          ) : mode === "presets" ? (
+            <PresetWorkspace onError={setError} />
+          ) : !card ? (
+            <div className="empty-state">
+              <p>No card loaded. Create a new card or open an existing one.</p>
+              <RecentCardsList onError={setError} />
+              <div className="empty-state-groups">
+                <RecentGroupsSection onError={setError} />
+              </div>
+            </div>
+          ) : (
+            <div className="editor-main">
+              <nav className="tab-bar">
+                {TABS.map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    className={tab.id === activeTab ? "tab-button active" : "tab-button"}
+                    onClick={() => setActiveTab(tab.id)}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </nav>
+              <ActiveTab
+                card={card}
+                onChange={updateCard}
+                onError={setError}
+                onShowLorebooks={() => setMode("lorebooks")}
+              />
+            </div>
+          )}
         </div>
-      )}
+
+        {/* Stays mounted while hidden or in another mode, so a running test chat survives. */}
+        {card && (
+          <Sidebar
+            side="right"
+            storageKey="sidebar-right-width"
+            defaultWidth={420}
+            minWidth={300}
+            maxWidth={900}
+            hidden={!isRightOpen || mode !== "characters"}
+          >
+            <RightSidebar
+              active={activeTool}
+              opened={openedTools}
+              onSelect={openTool}
+              onCloseTool={closeTool}
+              onHide={() => setRightOpen(false)}
+              onError={setError}
+            />
+          </Sidebar>
+        )}
+        {card && mode === "characters" && !isRightOpen && (
+          <SidebarRail side="right" title="Show the tools sidebar" onOpen={() => openTool(activeTool)} />
+        )}
+      </div>
     </div>
   );
 }

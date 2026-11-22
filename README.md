@@ -7,6 +7,7 @@ A desktop editor for [SillyTavern](https://github.com/SillyTavern/SillyTavern) c
 ## Features
 
 **Core editing**
+- A clear layout: the open cards in a sidebar on the left, the card's fields in the middle, and tools (snapshots, test chat, AI Assistant, context budget, key tester, recent cards and groups) in a sidebar on the right — both sidebars can be resized or hidden
 - Open and save character cards as PNG (with the card embedded as a chunk) or standalone `.json`, spec V2 and V3
 - Avatar image handling with cropping
 - Lorebook (World Info) editor, with import/export as a standalone file
@@ -16,7 +17,7 @@ A desktop editor for [SillyTavern](https://github.com/SillyTavern/SillyTavern) c
 - A **key tester** that shows which lorebook entries SillyTavern would insert for a piece of chat text, and why — plus search across entries and a warning for keys shared between entries
 - A **Personas** mode for SillyTavern user personas (name, description, avatar), saved as cards for SillyTavern's "Convert to Persona"
 - A **Presets** mode for SillyTavern Chat Completion presets: switch, reorder and edit their prompts, without AI and without touching anything else in the file
-- A **version history**: compare a card with its older versions and bring back all of it or single sections
+- **Snapshots**: every save keeps the previous version, and you can save a snapshot by name at any point; compare any of them with the card and bring back all of it or single sections
 - A hint at the name field for names AI models overuse
 - A **context budget** view: what a card sends with every message, what only at the start of a chat, and how much room is left for the chat history
 - The **Character's Note** (per-character Author's Note) with depth and role
@@ -25,11 +26,11 @@ A desktop editor for [SillyTavern](https://github.com/SillyTavern/SillyTavern) c
 - Live token counter for the main text fields
 - Inline warnings for common authoring mistakes (unbalanced `{{macro}}` braces, empty name, empty first message, a lorebook entry with no keys)
 - Lenient recovery for cards that fail strict validation, backing up the original file first
-- Auto-backup before every overwrite, drag-and-drop to open a file, a recent-files list with thumbnails, and keyboard shortcuts (Ctrl+N/O/S)
+- Auto-backup before every overwrite, drag-and-drop to open a file, lists of recent cards and recent groups (reopen a whole group in one click), and keyboard shortcuts (Ctrl+N/O/S)
 - "Save as Copy…" to export the current card to another path/format without changing what "Save" points at
 
 **Working with several characters at once**
-- Multiple character tabs open simultaneously — build a whole group (a family, a class, an NPC roster) in one sitting
+- Multiple characters open simultaneously — build a whole group (a family, a class, an NPC roster) in one sitting
 - A shared "group folder" for saving a session's cards together, plus one-click bulk save/open for a whole folder
 - A per-tab autosave snapshot as a safety net while switching between many open characters
 - **Group lorebook**: one click gives every open character lorebook entries describing the *other* members — SillyTavern group chats only send the replying character's own card
@@ -82,9 +83,13 @@ npm run tauri build   # on Windows: NSIS installer (configured in src-tauri/taur
 
 Release builds for both platforms are made by the GitHub Actions workflow in `.github/workflows/build.yml`: pushing a `vX.Y.Z` tag creates a draft release with the matching CHANGELOG section and all bundles attached.
 
+### Finding your way around
+
+The header shows the open card, "Save" and four menus: **File** (open, save, group folder), **Create** (new cards with the AI: Create Group, From Story, From Image), **Group** (everything that works on all open cards together) and **Card** (split or translate the open card). The left sidebar switches between Characters, Lorebooks, Personas and Presets and lists the open cards. The "Recent" tab in the right sidebar (and the start screen) lists recent groups and recent cards. A group is recorded whenever you open a folder of cards or use "Save Group…"; clicking it reopens all of its cards at once. The right sidebar holds the tools for the open card. Drag a sidebar's inner edge to resize it; hide it with its arrow button and bring it back from the thin strip that remains.
+
 ### Using the AI assistant
 
-Open "AI Assistant…" (or any other AI-powered button) and set up a provider under its settings: a base URL, an optional API key, and a model name. This works with a local model server just as well as a cloud API — nothing is sent anywhere unless you configure a provider yourself. All AI features use the provider profile that is currently selected there.
+Open the "AI Assistant" tab in the right sidebar (or any other AI feature) and set up a provider under its settings: a base URL, an optional API key, and a model name. This works with a local model server just as well as a cloud API — nothing is sent anywhere unless you configure a provider yourself. All AI features use the provider profile that is currently selected there.
 
 AI suggestions are never written into a card unseen: field edits, lorebook entries, group profiles and consistency fixes are all shown for review first, and most of them can be edited before you apply them.
 
@@ -92,7 +97,7 @@ In the AI Assistant, "Select empty" ticks only the fields a card is still missin
 
 ### Trying out characters
 
-"Test Chat" in the toolbar opens a chat next to the editor. With one card open, you chat with that character; with several cards open, tick who takes part and it becomes a group chat — press Enter to let them take turns, or click a name to pick who replies. Replies always use the cards as they are at that moment, unsaved edits included, so you can change a field and hit "Regenerate" to see the difference. Pick an open persona to play as yourself. The chat is never saved; closing the sidebar ends it.
+The "Test chat" tab in the right sidebar opens a chat next to the editor. With one card open, you chat with that character; with several cards open, tick who takes part and it becomes a group chat — press Enter to let them take turns, or click a name to pick who replies. Replies always use the cards as they are at that moment, unsaved edits included, so you can change a field and hit "Regenerate" to see the difference. Pick an open persona to play as yourself. The chat is never saved, but it keeps running while you look at another tab or another card; its ✕ button ends it.
 
 The prompt follows SillyTavern's structure closely (system prompt, lorebook, description, personality, scenario, persona, example dialogue, Character's Note, post-history instructions; in a group only the replying character's card), but it can't reproduce every SillyTavern setting — treat it as a quick check, not an exact preview.
 
@@ -102,7 +107,7 @@ The prompt follows SillyTavern's structure closely (system prompt, lorebook, des
 
 ### Splitting, merging and translating cards
 
-"Split Card…" first lists the people in the open card and its lorebook; tick who should get a card of their own, then each one is extracted separately — redo any single one if it came out too short. "Merge into one card…" (with two or more cards open) copies each character into a section of one group card; choose whether to shorten them, and whether scenario and first message come from one of the cards or are written new. "Translate…" takes any language name you type. Both split/merge and translate create new tabs — the original cards are never changed.
+"Split Card…" first lists the people in the open card and its lorebook; tick who should get a card of their own, then each one is extracted separately — redo any single one if it came out too short. "Merge into One Card…" (with two or more cards open) copies each character into a section of one group card; choose whether to shorten them, and whether scenario and first message come from one of the cards or are written new. "Translate…" takes any language name you type. Split, merge and translate all open new cards — the original cards are never changed.
 
 Local models work best with these step-by-step features: each request is a small task, and the editor checks every result (lost macros, missing numbers, untranslated or shortened text) before using it.
 
@@ -124,7 +129,7 @@ SillyTavern keeps the preset in use in memory. After saving over its file, reloa
 
 ### Going back to an older version
 
-Every save over an existing file keeps the previous state in a `backups` folder next to it. "History…" lists those versions and shows what differs from the card right now. "Restore" brings back one section, "Restore whole version" all of them, and "Undo restore" takes the last restore back. Only the open card changes; the file does when you save.
+Every save over an existing file keeps the previous state in a `backups` folder next to it. The "Snapshots" tab in the right sidebar lists those versions; "Save snapshot" adds one of the card as it is right now, unsaved edits and picture included, under a name of your choice. Click any of them to see what differs from the card right now. "Restore" brings back one section, "Restore whole version" all of them, and "Undo restore" takes the last restore back. Only the open card changes; the file does when you save.
 
 ### Changing the prompts
 

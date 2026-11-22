@@ -12,7 +12,8 @@ vi.mock("@tauri-apps/api/core", () => ({
 }));
 vi.mock("@tauri-apps/plugin-dialog", () => ({ save: async () => null, open: async () => null, confirm: async () => true }));
 
-const { listCardVersions, parseVersionFileName, readCardVersion, sameImage } = await import("./cardHistory");
+const { describeVersion, listCardVersions, namedSnapshotReason, parseVersionFileName, readCardVersion, sameImage } =
+  await import("./cardHistory");
 const { embedCardJson } = await import("../png/characterCard");
 const { buildMinimalPng } = await import("../png/testFixtures");
 
@@ -119,5 +120,25 @@ describe("sameImage", () => {
   it("treats a missing image as different from one that exists", () => {
     expect(sameImage(null, buildMinimalPng())).toBe(false);
     expect(sameImage(null, null)).toBe(true);
+  });
+});
+
+describe("named snapshots", () => {
+  it("keeps the name readable but drops what would break the file name", () => {
+    expect(namedSnapshotReason("Before rewrite v1.2: draft")).toBe("snapshot-Before rewrite v1 2 draft");
+    expect(namedSnapshotReason("a/b\\c*?")).toBe("snapshot-a b c");
+    expect(namedSnapshotReason("   ")).toBe("snapshot-snapshot");
+  });
+
+  it("is found again as a version of the card, under its name", () => {
+    const reason = namedSnapshotReason("Before the big rewrite");
+    const parsed = parseVersionFileName(`Anna.${reason}.2026-11-22T11-30-00.png`, ["Anna"]);
+    expect(parsed?.reason).toBe(reason);
+    expect(describeVersion(parsed?.reason ?? null)).toEqual({ label: "Before the big rewrite", named: true });
+  });
+
+  it("labels plain saves and automatic copies", () => {
+    expect(describeVersion(null)).toEqual({ label: "Saved", named: false });
+    expect(describeVersion("before-condense")).toEqual({ label: "before condense", named: false });
   });
 });

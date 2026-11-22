@@ -40,36 +40,6 @@ body {
   height: 100vh;
 }
 
-/* Mode switch (Characters / Lorebooks) — topmost strip, above each mode's own toolbar. */
-
-.mode-switch {
-  display: flex;
-  gap: 0.25rem;
-  padding: 0.4rem 0.75rem 0;
-  background: var(--bg);
-  border-bottom: 1px solid var(--border);
-}
-
-.mode-button {
-  background: transparent;
-  border: none;
-  color: var(--text-dim);
-  padding: 0.4rem 1rem;
-  border-radius: 6px 6px 0 0;
-  cursor: pointer;
-  font-size: 0.95rem;
-}
-
-.mode-button:hover {
-  color: var(--text);
-}
-
-.mode-button.active {
-  background: var(--bg-panel);
-  color: var(--text);
-  font-weight: 600;
-}
-
 /* Toolbar */
 
 .toolbar {
@@ -89,10 +59,6 @@ body {
 
 .dirty-indicator {
   color: var(--accent);
-}
-
-.total-token-count {
-  opacity: 0.7;
 }
 
 .error-banner {
@@ -320,22 +286,6 @@ body {
 }
 
 .character-tab-add:hover {
-  color: var(--text);
-  border-color: var(--accent);
-}
-
-.character-tab-group-folder {
-  margin-left: auto;
-  background: transparent;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  color: var(--text-dim);
-  padding: 0.35rem 0.6rem;
-  cursor: pointer;
-  font-size: 0.85rem;
-}
-
-.character-tab-group-folder:hover {
   color: var(--text);
   border-color: var(--accent);
 }
@@ -1390,33 +1340,11 @@ button.secondary.active {
 /* Test chat — sidebar to the right of the editor, a throwaway chat with the open character(s). */
 
 .test-chat-panel {
-  position: relative;
-  flex-shrink: 0;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  padding: 0.75rem;
-  border-left: 1px solid var(--border);
-  background: var(--bg-panel);
+  flex: 1;
   min-height: 0;
-}
-
-/* Grab strip over the left border for resizing the sidebar. */
-.test-chat-resizer {
-  position: absolute;
-  left: -3px;
-  top: 0;
-  bottom: 0;
-  width: 6px;
-  cursor: col-resize;
-  touch-action: none;
-  z-index: 1;
-}
-
-.test-chat-resizer:hover,
-.test-chat-resizer:active {
-  background: var(--accent);
-  opacity: 0.5;
 }
 
 .test-chat-header {
@@ -1529,4 +1457,552 @@ button.secondary.active {
   color: var(--text-dim);
   text-decoration: line-through;
   font-size: 0.9rem;
+}
+
+/* Workspace: left sidebar | header + content | right sidebar */
+
+.workspace {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.workspace-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.sidebar {
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--bg-panel);
+}
+
+.sidebar[hidden] {
+  display: none;
+}
+
+.sidebar-left {
+  border-right: 1px solid var(--border);
+}
+
+.sidebar-right {
+  border-left: 1px solid var(--border);
+}
+
+/* Grab strip over the inner border for resizing. */
+.sidebar-resizer {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  cursor: col-resize;
+  touch-action: none;
+  z-index: 2;
+}
+
+.sidebar-left .sidebar-resizer {
+  right: -3px;
+}
+
+.sidebar-right .sidebar-resizer {
+  left: -3px;
+}
+
+.sidebar-resizer:hover,
+.sidebar-resizer:active {
+  background: var(--accent);
+  opacity: 0.5;
+}
+
+.sidebar-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.25rem;
+  padding: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.sidebar-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem;
+}
+
+.sidebar-small-button {
+  padding: 0.1rem 0.45rem;
+  line-height: 1.2;
+}
+
+.sidebar-hide {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.sidebar-hint {
+  margin: 0.25rem 0.25rem;
+}
+
+.sidebar-rail {
+  flex-shrink: 0;
+  width: 1.4rem;
+  display: flex;
+  justify-content: center;
+  padding-top: 0.5rem;
+  background: var(--bg-panel);
+}
+
+.sidebar-rail-left {
+  border-right: 1px solid var(--border);
+}
+
+.sidebar-rail-right {
+  border-left: 1px solid var(--border);
+}
+
+.sidebar-rail-button {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 1.1rem;
+  padding: 0.2rem;
+}
+
+.sidebar-rail-button:hover {
+  color: var(--text);
+}
+
+.mode-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.mode-list-button {
+  text-align: left;
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  padding: 0.35rem 0.6rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+.mode-list-button:hover {
+  color: var(--text);
+  background: var(--bg-input);
+}
+
+.mode-list-button.active {
+  background: var(--bg-input);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.sidebar-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.25rem 0.25rem 0.4rem;
+}
+
+.card-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.card-list-item {
+  display: flex;
+  align-items: center;
+  border-radius: 6px;
+}
+
+.card-list-item:hover {
+  background: var(--bg-input);
+}
+
+.card-list-item.active {
+  background: var(--bg-input);
+  outline: 1px solid var(--border-strong);
+}
+
+.card-list-select {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  padding: 0.3rem 0.4rem;
+  cursor: pointer;
+  text-align: left;
+}
+
+.card-list-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card-list-thumb {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.card-list-thumb-empty {
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+
+.card-list-close {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 0.2rem 0.45rem;
+  visibility: hidden;
+}
+
+.card-list-item:hover .card-list-close,
+.card-list-item.active .card-list-close {
+  visibility: visible;
+}
+
+.card-list-close:hover {
+  color: var(--danger);
+}
+
+/* Header bar (characters mode) */
+
+.header-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 0.75rem;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border);
+}
+
+.header-card {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.header-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.header-avatar-empty {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+}
+
+.header-card-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.header-card-name,
+.header-card-meta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.header-card-meta {
+  color: var(--text-dim);
+  font-size: 0.8rem;
+}
+
+.header-tokens {
+  margin-left: 0.25rem;
+  font-size: 0.8rem;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.sidebar-toggle {
+  padding: 0.25rem 0.5rem;
+  flex-shrink: 0;
+}
+
+.sidebar-toggle.active {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* Drop-down menus */
+
+.menu {
+  position: relative;
+}
+
+.menu-button.active {
+  border-color: var(--accent);
+}
+
+.menu-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  /* The menus sit at the right end of the header, so they open leftwards. */
+  right: 0;
+  z-index: 50;
+  min-width: 15rem;
+  display: flex;
+  flex-direction: column;
+  padding: 0.3rem;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+}
+
+.menu-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  text-align: left;
+  padding: 0.4rem 0.6rem;
+  border-radius: 5px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.menu-item:hover:not(:disabled) {
+  background: var(--bg-input);
+}
+
+.menu-item:disabled {
+  color: var(--text-dim);
+  opacity: 0.6;
+  cursor: default;
+}
+
+.menu-shortcut {
+  color: var(--text-dim);
+  font-size: 0.85em;
+}
+
+.menu-separator {
+  height: 1px;
+  margin: 0.3rem 0.2rem;
+  background: var(--border);
+}
+
+/* Right sidebar: tool tabs; the former dialogs are laid out inline here. */
+
+.tool-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.tool-tab {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-dim);
+  padding: 0.25rem 0.55rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.88rem;
+}
+
+.tool-tab:hover {
+  color: var(--text);
+}
+
+.tool-tab.active {
+  color: var(--text);
+  background: var(--bg-input);
+  border-color: var(--border-strong);
+}
+
+.side-panel-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  padding: 0.6rem;
+}
+
+.side-panel-body[hidden] {
+  display: none;
+}
+
+/* Only the panel's own frame, not dialogs it opens in turn (those stay real dialogs). */
+.side-panel-body > .modal-overlay {
+  position: static;
+  inset: auto;
+  background: none;
+  display: flex;
+  flex-direction: column;
+  /* Stretch to the sidebar's width instead of centring at the content's natural width. */
+  align-items: stretch;
+  justify-content: flex-start;
+  z-index: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.side-panel-body > .modal-overlay > .modal {
+  width: auto;
+  max-width: none;
+  max-height: none;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Avatar tab */
+
+.avatar-tab .avatar-panel {
+  width: auto;
+  align-items: flex-start;
+  border-right: none;
+  background: transparent;
+  padding: 0;
+}
+
+.avatar-tab .avatar-preview {
+  width: 320px;
+  height: 480px;
+}
+
+.avatar-tab .avatar-preview img {
+  object-fit: contain;
+}
+
+/* Snapshots */
+
+.snapshots-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.snapshot-new {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.snapshot-new input {
+  flex: 1;
+  min-width: 0;
+}
+
+.snapshot-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.snapshot-item {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  padding: 0.4rem 0.6rem;
+  cursor: pointer;
+  text-align: left;
+}
+
+.snapshot-item:hover {
+  border-color: var(--accent);
+}
+
+.snapshot-label.named {
+  font-weight: 600;
+}
+
+/* Rows of inputs wrap in the narrow sidebar instead of scrolling sideways. */
+.side-panel-body .field-row {
+  flex-wrap: wrap;
+}
+
+.side-panel-body .field-row > * {
+  min-width: 0;
+}
+
+.sidebar-section + .sidebar-section {
+  margin-top: 0.9rem;
+}
+
+.group-list-select {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.05rem;
+}
+
+.group-list-members {
+  color: var(--text-dim);
+  font-size: 0.78rem;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recent-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.empty-state-groups {
+  width: min(28rem, 90%);
+  margin-top: 1rem;
+  text-align: left;
 }

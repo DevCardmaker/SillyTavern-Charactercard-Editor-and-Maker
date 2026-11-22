@@ -51,13 +51,20 @@ export async function backupExistingFile(path: string): Promise<void> {
  * (e.g. AI condensing), independent of whether the card has been saved yet: next to the card in
  * its `backups/` folder, or in the app's config folder for a card that was never saved. Returns
  * the backup's path. `reason` ends up in the filename. */
-export async function writeSnapshotBackup(card: NormalizedCard, currentFilePath: string | null, reason: string): Promise<string> {
+export async function writeSnapshotBackup(
+  card: NormalizedCard,
+  currentFilePath: string | null,
+  reason: string,
+  /** With an image the snapshot is a PNG card, so it keeps the picture too. */
+  avatarPng: Uint8Array | null = null,
+): Promise<string> {
   const baseName = (card.name || "card").replace(/[\\/:*?"<>|]/g, "_");
-  const fileName = `${baseName}.${reason}.${timestampForFilename(new Date())}.json`;
+  const format: FileFormat = avatarPng ? "png" : "json";
+  const fileName = `${baseName}.${reason}.${timestampForFilename(new Date())}.${format}`;
   const path = currentFilePath
     ? `${splitDirAndFile(currentFilePath).dir}backups/${fileName}`
     : await join(await appConfigDir(), "backups", fileName);
-  await writeBinary(path, buildCardBytes(card, "json", null));
+  await writeBinary(path, buildCardBytes(card, format, avatarPng));
   return path;
 }
 
@@ -122,7 +129,9 @@ async function recordIfCharacter(store: CardStore, path: string): Promise<void> 
   if (store === useCardStore) await useRecentCardsStore.getState().recordOpened(path);
 }
 
-async function loadCardFromPath(path: string, store: CardStore = useCardStore): Promise<void> {
+/** `recordRecent` is off when several cards are opened at once: they go into the list of recent
+ * groups as one entry instead of pushing every other card out of the recent cards. */
+async function loadCardFromPath(path: string, store: CardStore = useCardStore, recordRecent = true): Promise<void> {
   const bytes = await readBinary(path);
   const format = detectFormat(path);
 
@@ -154,7 +163,7 @@ async function loadCardFromPath(path: string, store: CardStore = useCardStore): 
   // Any card opened as a persona becomes one (e.g. turning an existing character into a persona).
   if (store === usePersonaStore) card = asPersona(card);
   store.getState().loadCard(card, avatarPng, path, format);
-  await recordIfCharacter(store, path);
+  if (recordRecent) await recordIfCharacter(store, path);
 }
 
 /** Opens a PNG or JSON character card via a native file dialog and loads it into the store. */
@@ -186,16 +195,37 @@ export async function openFolderAsTabs(): Promise<{ opened: number; failed: stri
 
   const cardFileNames = (await listDirFiles(dir)).filter((name) => /\.(png|json)$/i.test(name)).sort();
 
-  let opened = 0;
+  const openedPaths: string[] = [];
   const failed: string[] = [];
   for (const name of cardFileNames) {
     try {
-      await loadCardFromPath(await join(dir, name));
-      opened++;
+      const path = await join(dir, name);
+      await loadCardFromPath(path, useCardStore, false);
+      openedPaths.push(path);
     } catch {
       failed.push(name);
     }
   }
+  await useRecentCardsStore.getState().recordGroup(openedPaths);
+  return { opened: openedPaths.length, failed };
+}
+
+/** Reopens a recent group: every card that isn't open already, each as its own card. Files that
+ * are gone or no longer load are reported by name. */
+export async function openCardGroup(paths: string[]): Promise<{ opened: number; failed: string[] }> {
+  const alreadyOpen = new Set(useCardStore.getState().characters.map((c) => c.currentFilePath));
+  let opened = 0;
+  const failed: string[] = [];
+  for (const path of paths) {
+    if (alreadyOpen.has(path)) continue;
+    try {
+      await loadCardFromPath(path, useCardStore, false);
+      opened++;
+    } catch {
+      failed.push(path.split(/[\\/]/).pop() ?? path);
+    }
+  }
+  if (failed.length < paths.length) await useRecentCardsStore.getState().recordGroup(paths);
   return { opened, failed };
 }
 
@@ -216,7 +246,7 @@ export async function saveGroupToFolder(folder: string): Promise<{ saved: number
   const { characters } = useCardStore.getState();
   const usedNames = new Set<string>();
 
-  let saved = 0;
+  const savedPaths: string[] = [];
   let skippedEmpty = 0;
   const failed: string[] = [];
   for (const slot of characters) {
@@ -250,14 +280,14 @@ export async function saveGroupToFolder(folder: string): Promise<{ saved: number
       await backupExistingFile(path);
       await writeBinary(path, buildCardBytes(slot.card, format, slot.avatarPng));
       useCardStore.getState().markSlotSaved(slot.id, path, format);
-      await useRecentCardsStore.getState().recordOpened(path);
-      saved++;
+      savedPaths.push(path);
     } catch {
       failed.push(slot.card.name);
     }
   }
 
-  return { saved, skippedEmpty, failed };
+  await useRecentCardsStore.getState().recordGroup(savedPaths);
+  return { saved: savedPaths.length, skippedEmpty, failed };
 }
 
 /** "Save" (overwrite the current file, same format) or "Save As..." (new path, format chosen via

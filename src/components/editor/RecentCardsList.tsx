@@ -7,7 +7,7 @@ interface Props {
   onError: (message: string) => void;
 }
 
-function fileName(path: string): string {
+export function fileName(path: string): string {
   return path.split(/[\\/]/).pop() ?? path;
 }
 
@@ -15,13 +15,10 @@ function isPngPath(path: string): boolean {
   return /\.png$/i.test(path);
 }
 
-/** Shown in the empty state (no card loaded yet) — the last opened/saved cards as clickable
- * thumbnails. Only .png cards have an embedded avatar to show (a .json card's `avatarPng` is
- * always null, see loadCardFromPath) — those fall back to a plain document icon. Loading a
- * thumbnail also doubles as an existence check for every entry (json included): anything that
- * fails to read (moved/deleted since it was recorded) is dropped from the list once the whole
- * batch has been checked, rather than being pre-validated some other way. */
-export function RecentCardsList({ onError }: Props) {
+/** The recent cards with a thumbnail for each .png one (a .json card has no picture). Reading the
+ * thumbnails doubles as an existence check: entries whose file is gone are dropped from the list
+ * once the whole batch has been checked. */
+export function useRecentCardThumbnails(): { recent: string[] | null; thumbnails: Record<string, string> } {
   const recent = useRecentCardsStore((s) => s.recent);
   const ensureLoaded = useRecentCardsStore((s) => s.ensureLoaded);
   const removeStale = useRecentCardsStore((s) => s.removeStale);
@@ -59,6 +56,14 @@ export function RecentCardsList({ onError }: Props) {
       objectUrls.forEach((url) => URL.revokeObjectURL(url));
     };
   }, [recent, removeStale]);
+
+  return { recent, thumbnails };
+}
+
+/** Shown in the empty state (no card loaded yet) — the last opened/saved cards as large clickable
+ * thumbnails. The left sidebar shows the same list in small. */
+export function RecentCardsList({ onError }: Props) {
+  const { recent, thumbnails } = useRecentCardThumbnails();
 
   if (!recent || recent.length === 0) return null;
 

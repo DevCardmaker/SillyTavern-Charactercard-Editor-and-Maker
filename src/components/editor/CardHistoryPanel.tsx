@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { listCardVersions, readCardVersion, sameImage, type CardVersion, type CardVersionData } from "../../io/cardHistory";
+import { describeVersion, listCardVersions, readCardVersion, sameImage, type CardVersion, type CardVersionData } from "../../io/cardHistory";
 import { compareCards, restoreAllPatch, type CardChange } from "../../schema/cardDiff";
 import type { NormalizedCard } from "../../schema/normalize";
 import { wordDiff } from "../../schema/textDiff";
@@ -8,6 +8,8 @@ import type { CardStore } from "../../state/cardStore";
 interface Props {
   store: CardStore;
   onClose: () => void;
+  /** Version to show first (a snapshot picked in the sidebar); the newest one otherwise. */
+  initialPath?: string;
 }
 
 /** Unchanged stretches longer than this fold away, keeping a little of each end for orientation. */
@@ -71,7 +73,7 @@ function PngPreview({ png, alt }: { png: Uint8Array | null; alt: string }) {
 
 /** Older versions of the open card, from its backups: what differs from the card as it is now, and
  * bringing back all of it or single sections. A restore only changes the open card, not the file. */
-export function CardHistoryPanel({ store, onClose }: Props) {
+export function CardHistoryPanel({ store, onClose, initialPath }: Props) {
   const card = store((s) => s.card);
   const avatarPng = store((s) => s.avatarPng);
   const filePath = store((s) => s.currentFilePath);
@@ -89,7 +91,7 @@ export function CardHistoryPanel({ store, onClose }: Props) {
     void listCardVersions(filePath, card?.name ?? "").then((found) => {
       if (cancelled) return;
       setVersions(found);
-      setSelected(found[0] ?? null);
+      setSelected(found.find((v) => v.path === initialPath) ?? found[0] ?? null);
     });
     return () => {
       cancelled = true;
@@ -186,7 +188,7 @@ export function CardHistoryPanel({ store, onClose }: Props) {
                     onClick={() => setSelected(version)}
                   >
                     {version.time.toLocaleString()}
-                    {version.reason && <span className="field-hint"> {version.reason.replace(/-/g, " ")}</span>}
+                    {version.reason && <span className="field-hint"> {describeVersion(version.reason).label}</span>}
                   </button>
                 </li>
               ))}
