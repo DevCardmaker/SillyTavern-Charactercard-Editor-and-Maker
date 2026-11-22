@@ -12,6 +12,7 @@ import { AiRelocatePanel } from "../editor/AiRelocatePanel";
 import { AiSplitGroupPanel } from "../editor/AiSplitGroupPanel";
 import { GroupLorebookPanel } from "../editor/GroupLorebookPanel";
 import { GroupxExportDialog } from "../editor/GroupxExportDialog";
+import { FindReplaceDialog } from "../editor/FindReplaceDialog";
 import { openGroupx, pickGroupxFile } from "../../io/groupxIO";
 import { ImageToCardsPanel } from "../editor/ImageToCardsPanel";
 import { MergeCardsPanel } from "../editor/MergeCardsPanel";
@@ -43,7 +44,8 @@ type DialogId =
   | "merge"
   | "split"
   | "translate"
-  | "groupx";
+  | "groupx"
+  | "find";
 
 /** The characters mode's top bar: which card is open, Save, and the menus that replace the old row
  * of buttons. Dialogs that create new cards open from here; tools for the open card live in the
@@ -130,6 +132,9 @@ export function HeaderBar({ onError, onShowLorebooks, onOpenTool, isLeftOpen, is
       } else if (key === "s") {
         e.preventDefault();
         saveCard("save").catch(report);
+      } else if (key === "h" && useCardStore.getState().card) {
+        e.preventDefault();
+        setDialog("find");
       }
     }
     window.addEventListener("keydown", onKeyDown);
@@ -296,8 +301,16 @@ export function HeaderBar({ onError, onShowLorebooks, onOpenTool, isLeftOpen, is
         />
         <MenuButton
           label="Card"
-          title="Turn the open card into new cards"
+          title="Work on the open card as a whole"
           items={[
+            {
+              label: "Find & Replace…",
+              shortcut: "Ctrl+H",
+              disabled: !card,
+              title: "Replace a name with {{char}} or {{user}}, or rename the character everywhere",
+              onSelect: () => setDialog("find"),
+            },
+            "separator",
             {
               label: "Split Card…",
               disabled: !card,
@@ -338,6 +351,7 @@ export function HeaderBar({ onError, onShowLorebooks, onOpenTool, isLeftOpen, is
       {dialog === "split" && <AiSplitGroupPanel onClose={() => setDialog(null)} />}
       {dialog === "translate" && <TranslateCardPanel onClose={() => setDialog(null)} />}
       {dialog === "groupx" && <GroupxExportDialog onClose={() => setDialog(null)} />}
+      {dialog === "find" && <FindReplaceDialog onClose={() => setDialog(null)} />}
     </header>
   );
 }

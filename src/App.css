@@ -2778,3 +2778,56 @@ button.secondary.active {
 .wiki-list .link-button {
   margin-left: 0.6rem;
 }
+
+/* Find & replace */
+
+.find-dialog {
+  width: min(820px, 94vw);
+  max-height: 88vh;
+}
+
+.find-quick {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.find-quick button {
+  padding: 0.2rem 0.6rem;
+  font-size: 0.85rem;
+}
+
+.find-results {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.find-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.find-snippet {
+  margin: 0.15rem 0 0 1.6rem;
+  font-size: 0.88rem;
+  color: var(--text-dim);
+  white-space: pre-wrap;
+}
+
+.find-snippet mark {
+  background: rgba(224, 96, 122, 0.3);
+  color: #ffb3c1;
+  text-decoration: line-through;
+}
+
+.find-snippet ins {
+  background: rgba(96, 200, 130, 0.22);
+  color: #b8f5c8;
+  text-decoration: none;
+}

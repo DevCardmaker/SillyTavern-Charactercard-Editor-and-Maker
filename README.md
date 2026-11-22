@@ -68,6 +68,7 @@ Point the app at any OpenAI-compatible `/v1/chat/completions` endpoint — a loc
 - **Group Greeting**: one opening scene for a group chat, written by the AI and split into one group greeting per character
 - **Translate** a card into any language, part by part with checks — names are written in the new language's script, lorebook keys are translated too
 - Edit a whole group at once, e.g. move every open character to a new setting while keeping who they are
+- **Find & Replace** across the whole card and its lorebook, with a preview of every place — e.g. to turn a name the AI wrote back into {{char}} / {{user}}, or to rename a character everywhere
 - Condense long fields section by section to save prompt tokens without changing the character (one field or all at once, compared side by side, with a backup first)
 - Write personas, optionally fitted to the world of one or several open characters
 - Optional per-profile temperature, max tokens, and parallel requests for faster bulk operations with cloud providers
