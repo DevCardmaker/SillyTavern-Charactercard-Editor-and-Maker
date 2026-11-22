@@ -7,7 +7,7 @@ A desktop editor for [SillyTavern](https://github.com/SillyTavern/SillyTavern) c
 ## Features
 
 **Core editing**
-- A clear layout: the open cards in a sidebar on the left, the card's fields in the middle, and tools (snapshots, test chat, AI Assistant, context budget, key tester, recent cards and groups) in a sidebar on the right — both sidebars can be resized or hidden
+- A clear layout: the open cards in a sidebar on the left, the card's fields in the middle, and tools (snapshots, test chat, AI Assistant, brainstorm chat, AI context, context budget, key tester, recent cards and groups) in a sidebar on the right — both sidebars can be resized or hidden
 - Open and save character cards as PNG (with the card embedded as a chunk) or standalone `.json`, spec V2 and V3
 - Avatar image handling with cropping
 - Lorebook (World Info) editor, with import/export as a standalone file
@@ -39,6 +39,8 @@ A desktop editor for [SillyTavern](https://github.com/SillyTavern/SillyTavern) c
 Point the app at any OpenAI-compatible `/v1/chat/completions` endpoint — a local server (llama.cpp, LM Studio, text-generation-webui, ...) or a cloud provider you supply your own API key for. Every AI feature is opt-in; the editor works fully without configuring one.
 - Multiple saved provider profiles (switch between a local model and one or more cloud APIs) with a one-click connection test
 - Iteratively refine individual card fields from a free-text instruction
+- **Quick actions** above every text field (Enhance, Shorten, Less AI slop, Fix, your own buttons …) on the selection or the whole field, always shown for review first
+- **Brainstorm** with the AI about a card in a side chat that never changes it, and choose exactly which parts of the card the AI sees
 - Propose new lorebook entries from a description — including whole topics at once ("a family for this character", "a basic fantasy world"), kept brief and consistent with the entries already there
 - Fill in empty lorebook entries from their name and keys, or revise selected entries from an instruction, with an old/new preview before applying
 - Generate an avatar image-generation prompt, tuned to different image models (Stable Diffusion, Pony Diffusion, Anima, Qwen-Image, Z-Image, Krea 2/FLUX) and 27 art styles (photo, painting, stylized, mood), with a matching negative prompt, an optional SFW/NSFW rating, a framing choice (portrait to full body) and a suggested 2:3 image size
@@ -86,6 +88,10 @@ Release builds for both platforms are made by the GitHub Actions workflow in `.g
 ### Finding your way around
 
 The header shows the open card, "Save" and four menus: **File** (open, save, group folder), **Create** (new cards with the AI: Create Group, From Story, From Image), **Group** (everything that works on all open cards together) and **Card** (split or translate the open card). The left sidebar switches between Characters, Lorebooks, Personas and Presets and lists the open cards. The "Recent" tab in the right sidebar (and the start screen) lists recent groups and recent cards. A group is recorded whenever you open a folder of cards or use "Save Group…"; clicking it reopens all of its cards at once. The right sidebar holds the tools for the open card. Drag a sidebar's inner edge to resize it; hide it with its arrow button and bring it back from the thin strip that remains.
+
+### Quick actions and brainstorming
+
+Click into a card text field and a row of quick actions appears above it: Enhance, Rephrase, Shorten, Lengthen, Fix and Less AI slop, with Vivid, Emotion, a custom instruction and your own buttons under "More". Select a part of the text to work on just that part; without a selection the whole field is used. The result is shown with removed and added words marked — Accept, Reject or Retry. The "Context" tab in the right sidebar sets what the AI knows about the character while doing this; fewer parts leave more room on a small model. The "Brainstorm" tab is a chat about the open card that never changes it.
 
 ### Using the AI assistant
 

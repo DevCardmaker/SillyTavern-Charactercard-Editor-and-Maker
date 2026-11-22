@@ -68,3 +68,15 @@ export const useAiProviderConfigStore = create<AiProviderConfigState>((set, get)
     await saveAiProviderConfig(next);
   },
 }));
+
+/** The selected provider profile, loading the config first if needed. Throws a readable error when
+ * none is set up, for features that only need "the current model". */
+export async function activeAiProfileOrThrow(): Promise<AiProviderProfile> {
+  await useAiProviderConfigStore.getState().ensureLoaded();
+  const file = useAiProviderConfigStore.getState().file;
+  const profile = file?.profiles.find((p) => p.id === file.activeProfileId) ?? null;
+  if (!profile?.baseUrl || !profile.model) {
+    throw new Error("No AI provider set up yet — set one up in the AI Assistant tab first.");
+  }
+  return profile;
+}

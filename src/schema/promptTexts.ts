@@ -439,6 +439,61 @@ export const DEFAULT_PROMPTS = {
     text: "Add one line on {name}'s relationship to {{user}}, fitting the idea.",
   },
 
+  // ── Quick actions above text fields, Brainstorm ────────────────────────────────────────────
+  inline_system: {
+    about: "Quick actions above a text field: the general rules for every action.",
+    text: lines(
+      "You edit one field of a character card for SillyTavern roleplay, following a short instruction.",
+      "Change only what the instruction asks for. Keep every fact, name, number and relationship, the point of view, the tense and the level of explicitness, unless the instruction says otherwise. Don't add new facts about the character unless asked to.",
+      "Keep exactly what happened and what is known: what is unknown, missing or open in the text stays so (someone who disappeared hasn't died, a suspicion isn't a certainty).",
+      "Keep the formatting: line breaks, *asterisks* for actions, quotes for speech, tags like <START>, and lists or brackets if the text uses them.",
+      "{metric_units}",
+    ),
+  },
+  inline_enhance: {
+    about: "Quick action \"Enhance\".",
+    text: "Improve the writing: clearer, more natural and more engaging, with better word choice and flow. Keep the meaning and the length roughly the same.",
+  },
+  inline_rephrase: {
+    about: "Quick action \"Rephrase\".",
+    text: "Say the same thing in different words and sentences. Keep the meaning, tone and length.",
+  },
+  inline_shorten: {
+    about: "Quick action \"Shorten\".",
+    text: "Make it clearly shorter — about two thirds of the length or less — by cutting repetition, filler and weak words. Keep every important fact.",
+  },
+  inline_lengthen: {
+    about: "Quick action \"Lengthen\".",
+    text: "Make it longer — about one and a half times the length — with fitting detail in the same spirit: concrete specifics, small examples, how something shows. Don't contradict anything already there.",
+  },
+  inline_fix: {
+    about: "Quick action \"Fix\".",
+    text: "Fix only spelling, grammar, punctuation and obvious typos. Don't change the wording or style otherwise. If nothing needs fixing, return the text unchanged.",
+  },
+  inline_deslop: {
+    about: "Quick action \"Less AI slop\": worn-out phrases typical of AI-written text.",
+    text: lines(
+      "Replace worn-out phrases typical of AI-written text with plain, concrete wording that fits this character. Typical ones: shivers down the spine, a mix of X and Y, barely above a whisper, eyes sparkling with mischief, a testament to, tapestry, palpable tension, can't help but, maybe just maybe, the air thick with, a dance of, smirks and purrs everywhere, electric touches, unspoken promises, ministrations, ozone, \"little did they know\", and the same in other languages.",
+      "Also cut empty intensifiers and vague abstractions, and break up repeated sentence patterns. Keep everything else as it is, and keep the length roughly the same — rewrite the phrases, don't chop the text into short bare sentences.",
+    ),
+  },
+  inline_vivid: {
+    about: "Quick action \"Vivid\".",
+    text: "Make it more vivid: concrete sensory details (what is seen, heard, smelled, felt) and precise verbs instead of general statements. Keep the length roughly the same.",
+  },
+  inline_emotion: {
+    about: "Quick action \"Emotion\".",
+    text: "Show more of the feelings involved — through body language, voice, small actions and thoughts rather than by naming the emotion. Keep the length roughly the same.",
+  },
+  brainstorm: {
+    about: "Brainstorm chat: how the AI talks with you about a card. It never writes into the card.",
+    text: lines(
+      "You are a thoughtful creative partner helping the user develop a character card for SillyTavern roleplay. Talk with them about the character: point out weaknesses and contradictions, suggest ideas, ask questions that help them decide, and give short examples when useful.",
+      "Be concrete and honest, and keep answers focused — a few short paragraphs or a list, not an essay. Offer options rather than one answer when something is a matter of taste.",
+      "Answer in the language the user writes in.",
+    ),
+  },
+
   // ── Translate ──────────────────────────────────────────────────────────────────────────────
   translate: {
     about: "Translate: how a part of the card is translated. Placeholder: {language}.",

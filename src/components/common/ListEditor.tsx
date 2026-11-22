@@ -1,3 +1,5 @@
+import { AiTextarea } from "./AiTextarea";
+
 interface ListEditorProps {
   label: string;
   items: string[];
@@ -5,12 +7,14 @@ interface ListEditorProps {
   placeholder?: string;
   multiline?: boolean;
   getItemWarning?: (item: string, index: number) => string | undefined;
+  /** AI quick actions above each multi-line item; the label names the field in the request. */
+  aiLabel?: string;
 }
 
 /** Editable list of strings (alternate greetings, tags, lorebook keys, ...) with add/remove and
  * reorder. Kept intentionally simple — up/down buttons instead of drag & drop, since that's
  * enough for the handful of entries these lists realistically hold. */
-export function ListEditor({ label, items, onChange, placeholder, multiline, getItemWarning }: ListEditorProps) {
+export function ListEditor({ label, items, onChange, placeholder, multiline, getItemWarning, aiLabel }: ListEditorProps) {
   function update(index: number, value: string) {
     const next = [...items];
     next[index] = value;
@@ -44,13 +48,25 @@ export function ListEditor({ label, items, onChange, placeholder, multiline, get
         return (
           <div className="list-editor-row-group" key={index}>
             <div className="list-editor-row">
-              <InputTag
-                className={multiline ? "field-textarea" : "field-input"}
-                value={item}
-                placeholder={placeholder}
-                rows={multiline ? 3 : undefined}
-                onChange={(e) => update(index, e.target.value)}
-              />
+              {multiline && aiLabel ? (
+                <div className="list-editor-ai-item">
+                  <AiTextarea
+                    value={item}
+                    placeholder={placeholder}
+                    rows={3}
+                    onChange={(value) => update(index, value)}
+                    ai={{ label: `${aiLabel} ${index + 1}` }}
+                  />
+                </div>
+              ) : (
+                <InputTag
+                  className={multiline ? "field-textarea" : "field-input"}
+                  value={item}
+                  placeholder={placeholder}
+                  rows={multiline ? 3 : undefined}
+                  onChange={(e) => update(index, e.target.value)}
+                />
+              )}
               <div className="list-editor-actions">
                 <button type="button" onClick={() => move(index, -1)} disabled={index === 0} title="Move up">
                   ↑

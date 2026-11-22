@@ -13,6 +13,7 @@ export function PromptsTab({ card, onChange }: TabProps) {
         label="System prompt"
         value={card.system_prompt}
         onChange={(system_prompt) => onChange({ system_prompt })}
+        ai={{ label: "System prompt", contextKey: "system_prompt" }}
         hint="Overrides the app's default system prompt, if set"
         warning={unbalancedMacroWarning(card.system_prompt)}
       />
@@ -20,6 +21,7 @@ export function PromptsTab({ card, onChange }: TabProps) {
         field="post_history_instructions"
         label="Post-History-Instructions"
         value={card.post_history_instructions}
+        ai={{ label: "Post-History Instructions" }}
         onChange={(post_history_instructions) => onChange({ post_history_instructions })}
         hint="Inserted after the chat history (jailbreak/reminder)"
         warning={unbalancedMacroWarning(card.post_history_instructions)}
@@ -28,6 +30,7 @@ export function PromptsTab({ card, onChange }: TabProps) {
         label="Character's note"
         value={note.prompt}
         onChange={(prompt) => onChange(characterNotePatch(card, { prompt }))}
+        ai={{ label: "Character's note" }}
         rows={3}
         hint="SillyTavern inserts this a few messages above the latest one — keeps the character on track in long chats. Keep it short; it's sent with every message."
         showTokenCount
@@ -64,6 +67,7 @@ export function PromptsTab({ card, onChange }: TabProps) {
         label="Creator notes"
         value={card.creator_notes}
         onChange={(creator_notes) => onChange({ creator_notes })}
+        ai={{ label: "Creator notes", contextKey: "creator_notes" }}
         rows={6}
         hint="For reference only, not sent to the model"
       />

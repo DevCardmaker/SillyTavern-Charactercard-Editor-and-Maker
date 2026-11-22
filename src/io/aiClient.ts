@@ -90,6 +90,15 @@ async function callChatCompletion(
   if (jsonSchema && result.finish_reason === "length" && !isCompleteJson(result.content)) {
     throw new Error(cutOffMessage(maxTokens));
   }
+  // Thinking models (e.g. DeepSeek V4) count their hidden reasoning against max_tokens: with a tight
+  // limit they use it all up thinking and send an empty answer. Say so instead of showing nothing.
+  if (!result.content.trim()) {
+    throw new Error(
+      result.finish_reason === "length"
+        ? `The model used up its token limit${maxTokens ? ` (${maxTokens})` : ""} before answering — thinking models need a high "Max tokens" in the provider profile.`
+        : "The model sent an empty answer. Try again, or try another model.",
+    );
+  }
   return result.content;
 }
 
@@ -520,6 +529,12 @@ export async function requestChatReply(
   options: { maxTokens: number; stop: string[] },
 ): Promise<string> {
   return callChatCompletion(config, messages, null, options);
+}
+
+/** One free-text answer with the profile's own token limit — for quick actions and the brainstorm
+ * chat. No tight limit here: thinking models spend part of it on hidden reasoning. */
+export async function requestFreeText(config: AiProviderConfig, messages: AiChatMessage[]): Promise<string> {
+  return callChatCompletion(config, messages, null);
 }
 
 /** Minimal connectivity/auth smoke test: asks for a tiny schema-constrained reply and returns

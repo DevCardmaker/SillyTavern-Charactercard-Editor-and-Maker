@@ -15,6 +15,7 @@ export function GreetingsTab({ card, onChange }: TabProps) {
         onChange={(alternate_greetings) => onChange({ alternate_greetings })}
         placeholder="Alternate first message..."
         multiline
+        aiLabel="Alternate greeting"
         getItemWarning={unbalancedMacroWarning}
       />
       <ListEditor
@@ -23,6 +24,7 @@ export function GreetingsTab({ card, onChange }: TabProps) {
         onChange={(group_only_greetings) => onChange({ group_only_greetings })}
         placeholder="First message in a group chat..."
         multiline
+        aiLabel="Group greeting"
         getItemWarning={unbalancedMacroWarning}
       />
       <p className="field-hint">

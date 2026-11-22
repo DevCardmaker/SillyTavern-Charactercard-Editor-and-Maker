@@ -1,5 +1,6 @@
-import type { ChangeEvent } from "react";
+import { useId, type ChangeEvent } from "react";
 import { useTokenCount } from "../../hooks/useTokenCount";
+import { AiTextarea, type AiFieldInfo } from "./AiTextarea";
 
 interface TextFieldProps {
   label: string;
@@ -10,6 +11,8 @@ interface TextFieldProps {
   hint?: string;
   showTokenCount?: boolean;
   warning?: string;
+  /** AI quick actions above the field (card text fields only). */
+  ai?: AiFieldInfo;
 }
 
 /** A labeled, full-width text input. */
@@ -29,7 +32,9 @@ export function TextField({ label, value, onChange, placeholder, warning }: Text
   );
 }
 
-/** A labeled, resizable multi-line text area. */
+/** A labeled, resizable multi-line text area. A div rather than a <label> around everything: the
+ * quick-action bar has inputs of its own, and a wrapping label would hand clicks on the label text
+ * to the first of them. */
 export function TextAreaField({
   label,
   value,
@@ -39,27 +44,23 @@ export function TextAreaField({
   hint,
   showTokenCount,
   warning,
+  ai,
 }: TextFieldProps) {
   const tokenCount = useTokenCount(value, showTokenCount ?? false);
+  const id = useId();
   return (
-    <label className="field">
+    <div className="field">
       <span className="field-label-row">
-        <span className="field-label">
+        <label className="field-label" htmlFor={id}>
           {label}
           {hint && <span className="field-hint"> — {hint}</span>}
-        </span>
+        </label>
         {showTokenCount && tokenCount !== null && (
           <span className="field-token-count">{tokenCount} Token</span>
         )}
       </span>
       {warning && <span className="field-warning">⚠ {warning}</span>}
-      <textarea
-        className="field-textarea"
-        value={value}
-        placeholder={placeholder}
-        rows={rows}
-        onChange={(e: ChangeEvent<HTMLTextAreaElement>) => onChange(e.target.value)}
-      />
-    </label>
+      <AiTextarea id={id} value={value} onChange={onChange} placeholder={placeholder} rows={rows} ai={ai} />
+    </div>
   );
 }

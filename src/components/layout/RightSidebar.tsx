@@ -1,4 +1,6 @@
 import { AiAssistPanel } from "../editor/AiAssistPanel";
+import { AiContextPanel } from "../editor/AiContextPanel";
+import { BrainstormPanel } from "../editor/BrainstormPanel";
 import { ContextBudgetPanel } from "../editor/ContextBudgetPanel";
 import { LorebookKeyTestPanel } from "../editor/LorebookKeyTestPanel";
 import { SnapshotsPanel } from "../editor/SnapshotsPanel";
@@ -6,12 +8,14 @@ import { TestChatPanel } from "../editor/TestChatPanel";
 import { useCardStore } from "../../state/cardStore";
 import { RecentPanel } from "./RecentPanel";
 
-export type ToolId = "snapshots" | "chat" | "assist" | "budget" | "keytest" | "recent";
+export type ToolId = "snapshots" | "chat" | "assist" | "brainstorm" | "context" | "budget" | "keytest" | "recent";
 
 export const TOOLS: { id: ToolId; label: string; title: string }[] = [
   { id: "snapshots", label: "Snapshots", title: "Older versions of this card and snapshots saved by name" },
   { id: "chat", label: "Test chat", title: "Try out the open character(s) in a chat — nothing is saved" },
   { id: "assist", label: "AI Assistant", title: "Write or refine fields of this card with the AI" },
+  { id: "brainstorm", label: "Brainstorm", title: "Talk with the AI about this card — it never changes the card" },
+  { id: "context", label: "Context", title: "Which parts of the card the AI sees for quick actions and brainstorming" },
   { id: "budget", label: "Budget", title: "How much of the model's context this card takes up" },
   { id: "keytest", label: "Key test", title: "Which lorebook entries SillyTavern would insert for a piece of chat text" },
   { id: "recent", label: "Recent", title: "Recently opened cards and groups" },
@@ -44,6 +48,10 @@ export function RightSidebar({ active, opened, onSelect, onCloseTool, onHide, on
     switch (tool) {
       case "snapshots":
         return <SnapshotsPanel />;
+      case "brainstorm":
+        return <BrainstormPanel />;
+      case "context":
+        return <AiContextPanel />;
       case "recent":
         return <RecentPanel onError={onError} />;
       case "chat":

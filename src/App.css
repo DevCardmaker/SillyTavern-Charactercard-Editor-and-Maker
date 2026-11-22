@@ -2006,3 +2006,247 @@ button.secondary.active {
   margin-top: 1rem;
   text-align: left;
 }
+
+.snapshot-row {
+  display: flex;
+  align-items: stretch;
+  gap: 0.25rem;
+}
+
+.snapshot-row .snapshot-item {
+  flex: 1;
+  min-width: 0;
+}
+
+.snapshot-delete {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 0 0.5rem;
+}
+
+.snapshot-delete:hover {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+/* AI quick actions above a text field: shown while the field (or the bar) has focus or is busy. */
+
+.inline-ai-bar {
+  display: none;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+  margin-bottom: 0.3rem;
+}
+
+.ai-textarea:focus-within .inline-ai-bar,
+.inline-ai.active .inline-ai-bar {
+  display: flex;
+}
+
+.inline-ai-button,
+.inline-ai-bar .menu-button {
+  padding: 0.15rem 0.55rem;
+  font-size: 0.82rem;
+}
+
+.inline-ai-bar .menu-list {
+  left: 0;
+  right: auto;
+}
+
+.inline-ai-busy {
+  margin-left: 0.3rem;
+}
+
+.inline-ai-custom {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 0.4rem;
+}
+
+.inline-ai-custom input {
+  flex: 1;
+  min-width: 0;
+}
+
+.inline-ai-error {
+  margin: 0 0 0.4rem;
+}
+
+.inline-ai-preview {
+  order: 2;
+  margin: 0.4rem 0;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  background: var(--bg-panel);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.inline-ai-preview-head {
+  display: flex;
+  gap: 0.6rem;
+  align-items: baseline;
+}
+
+.inline-ai-diff {
+  white-space: pre-wrap;
+  line-height: 1.45;
+  max-height: 22rem;
+  overflow-y: auto;
+}
+
+.inline-ai-diff del,
+.inline-ai-preview-head del {
+  background: rgba(224, 96, 122, 0.25);
+  color: #ffb3c1;
+}
+
+.inline-ai-diff ins,
+.inline-ai-preview-head ins {
+  background: rgba(96, 200, 130, 0.22);
+  color: #b8f5c8;
+  text-decoration: none;
+}
+
+.inline-ai-preview-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.list-editor-ai-item {
+  flex: 1;
+  min-width: 0;
+}
+
+.list-editor-ai-item .field-textarea {
+  width: 100%;
+}
+
+.custom-button-row {
+  display: grid;
+  grid-template-columns: 10rem 1fr auto;
+  gap: 0.4rem;
+  align-items: start;
+}
+
+/* Context tab */
+
+.ai-context-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.ai-context-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.ai-context-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ai-context-tokens {
+  font-variant-numeric: tabular-nums;
+}
+
+.ai-context-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Brainstorm tab */
+
+.brainstorm-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1;
+  min-height: 0;
+}
+
+.brainstorm-head {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+
+.brainstorm-messages {
+  flex: 1;
+  min-height: 8rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.brainstorm-message {
+  padding: 0.45rem 0.6rem;
+  border-radius: 8px;
+  max-width: 95%;
+}
+
+.brainstorm-message.user {
+  align-self: flex-end;
+  background: var(--bg-input);
+}
+
+.brainstorm-message.assistant {
+  align-self: flex-start;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+}
+
+.brainstorm-text {
+  white-space: pre-wrap;
+  line-height: 1.45;
+}
+
+.brainstorm-copy {
+  font-size: 0.8rem;
+  margin-top: 0.2rem;
+}
+
+.brainstorm-input {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.brainstorm-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+/* Bar, custom input and errors above the field; the preview below it. */
+.ai-textarea {
+  display: flex;
+  flex-direction: column;
+}
+
+.ai-textarea .inline-ai {
+  display: contents;
+}
+
+.ai-textarea > .field-textarea {
+  order: 1;
+}

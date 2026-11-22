@@ -16,6 +16,7 @@ export function BasicTab({ card, onChange }: TabProps) {
         label="Description"
         value={card.description}
         onChange={(description) => onChange({ description })}
+        ai={{ label: "Description", contextKey: "description" }}
         rows={8}
         showTokenCount
         warning={unbalancedMacroWarning(card.description)}
@@ -24,6 +25,7 @@ export function BasicTab({ card, onChange }: TabProps) {
         label="Personality"
         value={card.personality}
         onChange={(personality) => onChange({ personality })}
+        ai={{ label: "Personality", contextKey: "personality" }}
         rows={4}
         showTokenCount
         warning={unbalancedMacroWarning(card.personality)}
@@ -32,6 +34,7 @@ export function BasicTab({ card, onChange }: TabProps) {
         label="Scenario"
         value={card.scenario}
         onChange={(scenario) => onChange({ scenario })}
+        ai={{ label: "Scenario", contextKey: "scenario" }}
         rows={4}
         showTokenCount
         warning={unbalancedMacroWarning(card.scenario)}
@@ -40,6 +43,7 @@ export function BasicTab({ card, onChange }: TabProps) {
         label="First message"
         value={card.first_mes}
         onChange={(first_mes) => onChange({ first_mes })}
+        ai={{ label: "First message", contextKey: "first_mes" }}
         rows={6}
         showTokenCount
         warning={combineWarnings(emptyFirstMesWarning(card.first_mes), unbalancedMacroWarning(card.first_mes))}
@@ -48,6 +52,7 @@ export function BasicTab({ card, onChange }: TabProps) {
         label="Example dialogue"
         value={card.mes_example}
         onChange={(mes_example) => onChange({ mes_example })}
+        ai={{ label: "Example dialogue", contextKey: "mes_example" }}
         rows={8}
         hint="Usually formatted with <START> and {{user}}/{{char}}"
         showTokenCount

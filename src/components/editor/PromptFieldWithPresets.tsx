@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { PromptPresetField } from "../../io/promptPresets";
 import { usePromptPresetsStore } from "../../state/promptPresetsStore";
+import type { AiFieldInfo } from "../common/AiTextarea";
 import { TextAreaField } from "../common/FormField";
 
 interface Props {
@@ -10,12 +11,13 @@ interface Props {
   onChange: (text: string) => void;
   hint?: string;
   warning?: string;
+  ai?: AiFieldInfo;
 }
 
 /** A prompt-style textarea plus its preset controls: apply a saved preset, save the current text
  * as a new one, delete old ones, and a one-step undo after applying (cleared by editing the
  * field further or navigating away — no clipboard/tempfile side effects). */
-export function PromptFieldWithPresets({ field, label, value, onChange, hint, warning }: Props) {
+export function PromptFieldWithPresets({ field, label, value, onChange, hint, warning, ai }: Props) {
   const presets = usePromptPresetsStore((s) => s.presets);
   const ensureLoaded = usePromptPresetsStore((s) => s.ensureLoaded);
   const addPreset = usePromptPresetsStore((s) => s.addPreset);
@@ -57,7 +59,7 @@ export function PromptFieldWithPresets({ field, label, value, onChange, hint, wa
 
   return (
     <div className="prompt-field-with-presets">
-      <TextAreaField label={label} value={value} onChange={handleFieldChange} rows={6} hint={hint} warning={warning} />
+      <TextAreaField label={label} value={value} onChange={handleFieldChange} rows={6} hint={hint} warning={warning} ai={ai} />
 
       {undoText !== null && (
         <p className="preset-undo-hint">

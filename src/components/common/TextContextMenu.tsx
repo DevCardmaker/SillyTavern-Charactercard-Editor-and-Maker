@@ -27,7 +27,7 @@ function selectionIn(field: TextField): string {
 
 /** Types into a field the way the keyboard does, so React sees the change and Ctrl+Z still works.
  * The fallback for a webview without that command sets the value and reports the change itself. */
-function insertIntoField(field: TextField, text: string): void {
+export function insertIntoField(field: TextField, text: string): void {
   field.focus();
   if (document.execCommand("insertText", false, text)) return;
   const start = field.selectionStart ?? field.value.length;

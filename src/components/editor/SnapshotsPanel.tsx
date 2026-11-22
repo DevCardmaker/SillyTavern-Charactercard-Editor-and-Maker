@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { describeVersion, listCardVersions, namedSnapshotReason, type CardVersion } from "../../io/cardHistory";
+import { confirmAction } from "../../io/confirmDiscard";
 import { writeSnapshotBackup } from "../../io/fileIO";
+import { deleteFile } from "../../io/rawFile";
 import { useCardStore } from "../../state/cardStore";
 import { CardHistoryPanel } from "./CardHistoryPanel";
 
@@ -50,6 +52,19 @@ export function SnapshotsPanel() {
     }
   }
 
+  async function handleDelete(version: CardVersion) {
+    const { label, named } = describeVersion(version.reason);
+    const what = named ? `the snapshot “${label}”` : `the version from ${version.time.toLocaleString()}`;
+    if (!(await confirmAction(`Delete ${what}? The file in the backups folder is removed for good.`, "Delete snapshot"))) return;
+    setError(null);
+    try {
+      await deleteFile(version.path);
+      refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  }
+
   if (!card) return null;
 
   return (
@@ -86,10 +101,18 @@ export function SnapshotsPanel() {
               {versions?.map((version) => {
                 const { label, named } = describeVersion(version.reason);
                 return (
-                  <li key={version.path}>
+                  <li key={version.path} className="snapshot-row">
                     <button type="button" className="snapshot-item" onClick={() => setComparePath(version.path)}>
                       <span className={named ? "snapshot-label named" : "snapshot-label"}>{named ? `📌 ${label}` : label}</span>
                       <span className="field-hint">{version.time.toLocaleString()}</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="snapshot-delete"
+                      title="Delete this snapshot"
+                      onClick={() => void handleDelete(version)}
+                    >
+                      ✕
                     </button>
                   </li>
                 );
