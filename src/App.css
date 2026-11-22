@@ -51,11 +51,6 @@ body {
   border-bottom: 1px solid var(--border);
 }
 
-.toolbar-title {
-  margin-left: auto;
-  color: var(--text-dim);
-  font-size: 0.9rem;
-}
 
 .dirty-indicator {
   color: var(--accent);
@@ -224,71 +219,14 @@ body {
 /* Character tabs (one open card each) — sits above the .tab-bar for the active character's
    Basis/Prompts/Greetings/… sub-tabs. */
 
-.character-tab-bar {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.5rem 0.75rem;
-  background: var(--bg-panel);
-  border-bottom: 1px solid var(--border-strong);
-  flex-wrap: wrap;
-}
 
-.character-tab {
-  display: flex;
-  align-items: center;
-  gap: 0.2rem;
-  background: var(--bg-input);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 0.15rem 0.15rem 0.15rem 0.15rem;
-}
 
-.character-tab.active {
-  border-color: var(--accent);
-}
 
-.character-tab-select {
-  background: transparent;
-  border: none;
-  color: var(--text-dim);
-  padding: 0.35rem 0.5rem;
-  cursor: pointer;
-}
 
-.character-tab.active .character-tab-select {
-  color: var(--text);
-  font-weight: 600;
-}
 
-.character-tab-close {
-  background: transparent;
-  border: none;
-  color: var(--text-dim);
-  cursor: pointer;
-  padding: 0.2rem 0.4rem;
-  border-radius: 6px;
-}
 
-.character-tab-close:hover {
-  color: var(--danger);
-  background: var(--bg-panel);
-}
 
-.character-tab-add {
-  background: transparent;
-  border: 1px dashed var(--border-strong);
-  border-radius: 8px;
-  color: var(--text-dim);
-  width: 2rem;
-  height: 2rem;
-  cursor: pointer;
-}
 
-.character-tab-add:hover {
-  color: var(--text);
-  border-color: var(--accent);
-}
 
 /* Prompt presets */
 

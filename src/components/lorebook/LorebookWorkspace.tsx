@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { confirmDiscardChanges } from "../../io/confirmDiscard";
 import { openLorebookFiles, saveActiveLorebook } from "../../io/lorebookIO";
 import { shareStatus } from "../../schema/sharedLorebook";
 import { useCardStore } from "../../state/cardStore";
 import { useLorebookStore } from "../../state/lorebookStore";
 import { LorebookBody } from "../editor/LorebookBody";
+import { MenuButton } from "../layout/MenuButton";
+import { ModeHeader } from "../layout/ModeHeader";
 import { ShareLorebookPanel } from "./ShareLorebookPanel";
 
 interface Props {
@@ -24,8 +25,6 @@ export function LorebookWorkspace({ onError }: Props) {
   const activeId = useLorebookStore((s) => s.activeId);
   const newLorebook = useLorebookStore((s) => s.newLorebook);
   const updateActive = useLorebookStore((s) => s.updateActive);
-  const setActive = useLorebookStore((s) => s.setActive);
-  const close = useLorebookStore((s) => s.close);
 
   const active = lorebooks.find((l) => l.id === activeId) ?? null;
   const characters = useCardStore((s) => s.characters);
@@ -47,15 +46,6 @@ export function LorebookWorkspace({ onError }: Props) {
   async function handleSave(mode: "save" | "saveAs") {
     try {
       await saveActiveLorebook(mode);
-    } catch (err) {
-      onError(describe(err));
-    }
-  }
-
-  async function handleClose(id: string, isDirty: boolean) {
-    try {
-      if (isDirty && !(await confirmDiscardChanges())) return;
-      close(id);
     } catch (err) {
       onError(describe(err));
     }
@@ -83,23 +73,37 @@ export function LorebookWorkspace({ onError }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const fileName = active?.currentFilePath ? active.currentFilePath.split(/[\\/]/).pop() : "New lorebook";
+  const fileName = active?.currentFilePath ? active.currentFilePath.split(/[\\/]/).pop() : "not saved yet";
 
   return (
     <>
-      <div className="toolbar">
-        <button type="button" onClick={newLorebook} title="Ctrl+N">
-          New
-        </button>
-        <button type="button" onClick={handleOpen} title="Ctrl+O — several files at once open as separate tabs">
-          Open…
-        </button>
+      <ModeHeader
+        title={active ? active.book.name || "New lorebook" : "No lorebook open"}
+        meta={
+          active ? (
+            <>
+              {fileName}
+              {linked.length > 0 && (
+                <span title={linked.map((c) => c.card.name || "New card").join(", ")}>
+                  {" "}· shared with {linked.length} open card(s){outdated > 0 && `, ${outdated} out of date`}
+                </span>
+              )}
+            </>
+          ) : undefined
+        }
+        dirty={active?.isDirty}
+      >
         <button type="button" onClick={() => handleSave("save")} disabled={!active} title="Ctrl+S">
           Save
         </button>
-        <button type="button" className="secondary" onClick={() => handleSave("saveAs")} disabled={!active}>
-          Save As…
-        </button>
+        <MenuButton
+          label="File"
+          items={[
+            { label: "New", shortcut: "Ctrl+N", onSelect: newLorebook },
+            { label: "Open…", shortcut: "Ctrl+O", title: "Several files at once open side by side", onSelect: () => void handleOpen() },
+            { label: "Save As…", disabled: !active, onSelect: () => void handleSave("saveAs") },
+          ]}
+        />
         <button
           type="button"
           className="secondary"
@@ -113,42 +117,7 @@ export function LorebookWorkspace({ onError }: Props) {
         >
           Sync to characters…
         </button>
-        {linked.length > 0 && (
-          <span className="field-hint" title={linked.map((c) => c.card.name || "New card").join(", ")}>
-            Shared with {linked.length} open card(s){outdated > 0 && `, ${outdated} out of date`}
-          </span>
-        )}
-        {active && (
-          <div className="toolbar-title">
-            {fileName}
-            {active.isDirty && <span className="dirty-indicator" title="Unsaved changes"> ●</span>}
-          </div>
-        )}
-      </div>
-
-      {lorebooks.length > 0 && (
-        <div className="character-tab-bar">
-          {lorebooks.map((l) => (
-            <div key={l.id} className={l.id === activeId ? "character-tab active" : "character-tab"}>
-              <button type="button" className="character-tab-select" onClick={() => setActive(l.id)}>
-                {l.book.name || "New lorebook"}
-                {l.isDirty && <span className="dirty-indicator" title="Unsaved changes"> ●</span>}
-              </button>
-              <button
-                type="button"
-                className="character-tab-close"
-                title="Close tab"
-                onClick={() => handleClose(l.id, l.isDirty)}
-              >
-                ✕
-              </button>
-            </div>
-          ))}
-          <button type="button" className="character-tab-add" title="New lorebook as a tab" onClick={newLorebook}>
-            +
-          </button>
-        </div>
-      )}
+      </ModeHeader>
 
       {!active ? (
         <div className="empty-state">

@@ -2,6 +2,17 @@
 
 All notable changes to this project are documented here. The project follows [Semantic Versioning](https://semver.org/): new features raise the minor version, fixes the patch version.
 
+## [Unreleased]
+
+### Added
+- The **quick actions** above text fields also work for **lorebook entries** (with the entry's name and keys as background) and the **persona description**.
+- The window title shows the app's **version**.
+- The recent cards and recent groups lists keep **20** entries instead of 5, now that they have a tab of their own.
+
+### Changed
+- **Lorebooks, Personas and Presets in the new layout**: their open files are listed in the left sidebar like the open cards, and each mode has the same header as the characters — name and file, Save, its menus, the AI profile and Settings. The old rows of buttons and tabs are gone.
+- **Sending to SillyTavern remembers its target across restarts**: a saved card or persona that came from SillyTavern (or was sent there) overwrites the same character next time, even after closing the editor. The links are kept in the app's own folder, not in the cards.
+
 ## [1.19.0] – 2026-11-22
 
 ### Added

@@ -50,6 +50,13 @@ export function LorebookEntryEditor({ entry, defaultOpen = true, onChange, onRem
           value={entry.content}
           onChange={(content) => onChange({ content })}
           rows={5}
+          ai={{
+            label: "Lorebook entry",
+            // What the entry is about, so a rewrite stays on its subject; no character card here.
+            context: () =>
+              `This is a lorebook (World Info) entry${entry.comment ? ` called "${entry.comment}"` : ""}; SillyTavern inserts it into the prompt when one of its keys appears in the chat: ${entry.keys.join(", ") || "(no keys yet)"}. Keep it factual and self-contained.`,
+            charName: () => "",
+          }}
           warning={unbalancedMacroWarning(entry.content)}
         />
 

@@ -52,12 +52,12 @@ describe("loadRecentCards / recordRecentCard", () => {
     expect(result).toEqual(["/cards/A.png", "/cards/B.png"]);
   });
 
-  it("keeps only the 5 most recent entries", async () => {
-    for (let i = 1; i <= 7; i++) {
-      await recordRecentCard(`/cards/${i}.png`);
-    }
+  it("keeps only the 20 most recent entries", async () => {
+    for (let i = 1; i <= 22; i++) await recordRecentCard(`/cards/${i}.png`);
     const result = await loadRecentCards();
-    expect(result).toEqual(["/cards/7.png", "/cards/6.png", "/cards/5.png", "/cards/4.png", "/cards/3.png"]);
+    expect(result).toHaveLength(20);
+    expect(result[0]).toBe("/cards/22.png");
+    expect(result[19]).toBe("/cards/3.png");
   });
 
   it("falls back to an empty list if the config file is corrupted", async () => {

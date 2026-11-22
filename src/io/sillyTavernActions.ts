@@ -80,7 +80,7 @@ export async function planCardSend(slotId: string): Promise<CardSendPlan> {
   const slot = useCardStore.getState().characters.find((c) => c.id === slotId);
   if (!slot) throw new Error("This card isn't open any more.");
   const { characters } = await lists();
-  const linkedFile = useSillyTavernStore.getState().cardLinks[slotId];
+  const linkedFile = await useSillyTavernStore.getState().linkedCard(slotId);
   const linked = characters.find((c) => c.avatar === linkedFile) ?? null;
   const sameName = sameNameCharacters(characters, slot.card.name).filter((c) => c.avatar !== linked?.avatar);
   return { slotId, name: slot.card.name, linked, sameName };
@@ -192,7 +192,7 @@ export async function planPersonaSend(slotId: string): Promise<PersonaSendPlan> 
   const slot = usePersonaStore.getState().characters.find((c) => c.id === slotId);
   if (!slot) throw new Error("This persona isn't open any more.");
   const { personas } = await lists();
-  const linkedFile = useSillyTavernStore.getState().personaLinks[slotId];
+  const linkedFile = await useSillyTavernStore.getState().linkedPersona(slotId);
   const linked = personas.find((p) => p.avatar === linkedFile) ?? null;
   const sameName = sameNamePersonas(personas, slot.card.name).filter((p) => p.avatar !== linked?.avatar);
   return { slotId, name: slot.card.name, linked, sameName };

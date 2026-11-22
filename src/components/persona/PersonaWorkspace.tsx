@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { confirmDiscardChanges } from "../../io/confirmDiscard";
 import { openCardFile, saveCard, saveCardAsCopy } from "../../io/fileIO";
 import { buildPersonaFitContext, buildPersonaSystemPrompt, PERSONA_AI_FIELD_KEYS } from "../../schema/aiPrompt";
 import { overusedNameWarning } from "../../schema/overusedNames";
@@ -13,6 +12,8 @@ import { TextAreaField, TextField } from "../common/FormField";
 import { AiAssistPanel } from "../editor/AiAssistPanel";
 import { CardHistoryPanel } from "../editor/CardHistoryPanel";
 import { AvatarPanel } from "../image/AvatarPanel";
+import { MenuButton } from "../layout/MenuButton";
+import { ModeHeader } from "../layout/ModeHeader";
 
 interface Props {
   onError: (message: string) => void;
@@ -27,15 +28,12 @@ function describe(err: unknown): string {
  * shape as the other modes (toolbar → tab strip → editor) and the same card file handling, just
  * against `usePersonaStore` and with only the fields that survive the conversion. */
 export function PersonaWorkspace({ onError }: Props) {
-  const personas = usePersonaStore((s) => s.characters);
-  const activeId = usePersonaStore((s) => s.activeId);
   const persona = usePersonaStore((s) => s.card);
   const isDirty = usePersonaStore((s) => s.isDirty);
   const currentFilePath = usePersonaStore((s) => s.currentFilePath);
+  const avatarPng = usePersonaStore((s) => s.avatarPng);
   const newCard = usePersonaStore((s) => s.newCard);
   const updateCard = usePersonaStore((s) => s.updateCard);
-  const setActive = usePersonaStore((s) => s.setActiveCharacter);
-  const close = usePersonaStore((s) => s.closeCharacter);
   const [isAiAssistOpen, setIsAiAssistOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const openCharacters = useCardStore((s) => s.characters);
@@ -54,11 +52,6 @@ export function PersonaWorkspace({ onError }: Props) {
   function handleOpenAiAssist() {
     if (!usePersonaStore.getState().card) newCard();
     setIsAiAssistOpen(true);
-  }
-
-  async function handleClose(id: string, dirty: boolean) {
-    if (dirty && !(await confirmDiscardChanges())) return;
-    close(id);
   }
 
   // Ctrl+N/O/S act on personas while this mode is shown — the other modes' toolbars, which bind
@@ -83,91 +76,57 @@ export function PersonaWorkspace({ onError }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const fileName = currentFilePath ? currentFilePath.split(/[\\/]/).pop() : "New persona";
+  const fileName = currentFilePath ? currentFilePath.split(/[\\/]/).pop() : "not saved yet";
 
   return (
     <CardStoreContext.Provider value={usePersonaStore}>
-      <div className="toolbar">
-        <button type="button" onClick={newCard} title="Ctrl+N">
-          New
-        </button>
-        <button
-          type="button"
-          onClick={handleOpen}
-          title="Ctrl+O — a regular character card opened here becomes a persona"
-        >
-          Open…
-        </button>
+      <ModeHeader
+        title={persona ? persona.name || "New persona" : "No persona open"}
+        meta={persona ? fileName : undefined}
+        dirty={isDirty}
+        thumbPng={persona ? avatarPng : undefined}
+      >
         <button type="button" onClick={() => handleSave("save")} disabled={!persona} title="Ctrl+S">
           Save
         </button>
-        <button type="button" className="secondary" onClick={() => handleSave("saveAs")} disabled={!persona}>
-          Save As…
-        </button>
-        <button
-          type="button"
-          className="secondary"
-          onClick={() => run(() => saveCardAsCopy(usePersonaStore))}
-          disabled={!persona}
-        >
-          Save as Copy…
-        </button>
-        <button
-          type="button"
-          className="secondary"
-          onClick={() => setIsHistoryOpen(true)}
-          disabled={!persona}
-          title="Compare with older versions of this persona and bring back all or parts of them"
-        >
-          History…
-        </button>
-        {isHistoryOpen && <CardHistoryPanel store={usePersonaStore} onClose={() => setIsHistoryOpen(false)} />}
-        <button type="button" className="secondary" onClick={handleOpenAiAssist}>
-          AI Assistant…
-        </button>
-        <button
-          type="button"
-          className="secondary"
-          disabled={!persona}
-          title="Send this persona to SillyTavern — over the one it came from, or as a new persona"
-          onClick={() => {
-            const id = usePersonaStore.getState().activeId;
-            if (id) useStDialogStore.getState().openSend("persona", id);
-          }}
-        >
-          Send to SillyTavern…
-        </button>
-        {persona && (
-          <div className="toolbar-title">
-            {fileName}
-            {isDirty && <span className="dirty-indicator" title="Unsaved changes"> ●</span>}
-          </div>
-        )}
-      </div>
-
-      {personas.length > 0 && (
-        <div className="character-tab-bar">
-          {personas.map((p) => (
-            <div key={p.id} className={p.id === activeId ? "character-tab active" : "character-tab"}>
-              <button type="button" className="character-tab-select" onClick={() => setActive(p.id)}>
-                {p.card.name || "New persona"}
-                {p.isDirty && <span className="dirty-indicator" title="Unsaved changes"> ●</span>}
-              </button>
-              <button
-                type="button"
-                className="character-tab-close"
-                title="Close tab"
-                onClick={() => run(() => handleClose(p.id, p.isDirty))}
-              >
-                ✕
-              </button>
-            </div>
-          ))}
-          <button type="button" className="character-tab-add" title="New persona as a tab" onClick={newCard}>
-            +
-          </button>
-        </div>
-      )}
+        <MenuButton
+          label="File"
+          items={[
+            { label: "New", shortcut: "Ctrl+N", onSelect: newCard },
+            { label: "Open…", shortcut: "Ctrl+O", title: "A regular character card opened here becomes a persona", onSelect: handleOpen },
+            "separator",
+            { label: "Save As…", disabled: !persona, onSelect: () => handleSave("saveAs") },
+            {
+              label: "Save as Copy…",
+              disabled: !persona,
+              onSelect: () => run(() => saveCardAsCopy(usePersonaStore)),
+            },
+            "separator",
+            {
+              label: "Send to SillyTavern…",
+              disabled: !persona,
+              title: "Send this persona to SillyTavern — over the one it came from, or as a new persona",
+              onSelect: () => {
+                const id = usePersonaStore.getState().activeId;
+                if (id) useStDialogStore.getState().openSend("persona", id);
+              },
+            },
+          ]}
+        />
+        <MenuButton
+          label="Persona"
+          items={[
+            {
+              label: "History…",
+              disabled: !persona,
+              title: "Compare with older versions of this persona and bring back all or parts of them",
+              onSelect: () => setIsHistoryOpen(true),
+            },
+            { label: "AI Assistant…", onSelect: handleOpenAiAssist },
+          ]}
+        />
+      </ModeHeader>
+      {isHistoryOpen && <CardHistoryPanel store={usePersonaStore} onClose={() => setIsHistoryOpen(false)} />}
 
       {isAiAssistOpen && persona && (
         <AiAssistPanel
@@ -209,6 +168,12 @@ export function PersonaWorkspace({ onError }: Props) {
                 value={persona.description}
                 onChange={(description) => updateCard({ description })}
                 rows={12}
+                ai={{
+                  label: "Persona description",
+                  context: () =>
+                    `This is the user's own persona for roleplay — who they are in the story, what the characters can see and know about them. Their name: ${persona.name || "(not set)"}. In the text the persona is {{user}}.`,
+                  charName: () => "",
+                }}
                 hint="Who you are in the roleplay — what the characters you talk to can see and know about you"
                 showTokenCount
                 warning={combineWarnings(

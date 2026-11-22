@@ -26,6 +26,11 @@ export interface AiFieldInfo {
   label: string;
   /** The card part this field is, so the AI Context doesn't send it twice. */
   contextKey?: AiContextKey;
+  /** Background for fields outside a character card (a lorebook entry, a persona) — replaces the
+   * card's AI Context. Read when the request is sent. */
+  context?: () => string;
+  /** The name to turn back into {{char}} (see restoreCharMacro); the open card's by default, "" for none. */
+  charName?: () => string;
 }
 
 interface Props {
@@ -98,7 +103,8 @@ function InlineAiBar({ field, info }: { field: React.RefObject<HTMLTextAreaEleme
     setBusy(label);
     try {
       const profile = await activeAiProfileOrThrow();
-      const context = aiContextNow(info.contextKey);
+      const context = info.context ? info.context() : aiContextNow(info.contextKey);
+      const charName = info.charName ? info.charName() : (useCardStore.getState().card?.name ?? "");
       let problem: string | null = null;
       let result = "";
       // One more try when the code finds the answer unusable; small models often get it right then.
@@ -112,7 +118,7 @@ function InlineAiBar({ field, info }: { field: React.RefObject<HTMLTextAreaEleme
           problem: problem ?? undefined,
         });
         const raw = await requestFreeText(profile, messages);
-        result = restoreCharMacro(cleanInlineResult(raw, target.part), text, useCardStore.getState().card?.name ?? "");
+        result = restoreCharMacro(cleanInlineResult(raw, target.part), text, charName);
         problem = inlineProblem(action, target.part, result);
         if (!problem) break;
       }

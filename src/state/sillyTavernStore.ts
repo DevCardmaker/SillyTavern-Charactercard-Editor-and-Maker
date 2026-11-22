@@ -10,6 +10,9 @@ import {
   type StConfig,
 } from "../io/sillyTavernClient";
 import type { StCharacter, StGroup, StPersona } from "../schema/sillyTavern";
+import { loadStLinks, saveStLinks, type StLinks } from "../io/stLinks";
+import { useCardStore } from "./cardStore";
+import { usePersonaStore } from "./personaStore";
 
 interface SillyTavernState {
   config: StConfig | null;
@@ -34,6 +37,33 @@ interface SillyTavernState {
   personaLinks: Record<string, string>;
   linkCard: (slotId: string, avatar: string) => void;
   linkPersona: (slotId: string, avatar: string) => void;
+  /** The links of saved files, kept between starts (by local file path). */
+  savedLinks: StLinks | null;
+  /** The SillyTavern file an open card / persona belongs to: from this session, or from its file. */
+  linkedCard: (slotId: string) => Promise<string | undefined>;
+  linkedPersona: (slotId: string) => Promise<string | undefined>;
+}
+
+let linksOnce: Promise<StLinks> | null = null;
+
+async function savedLinks(): Promise<StLinks> {
+  const current = useSillyTavernStore.getState().savedLinks;
+  if (current) return current;
+  linksOnce ??= loadStLinks().then((links) => {
+    useSillyTavernStore.setState({ savedLinks: links });
+    return links;
+  });
+  return linksOnce;
+}
+
+/** Remembers the link of a slot that has a file, so it survives a restart. */
+async function persistLink(kind: "cards" | "personas", path: string | null, avatar: string): Promise<void> {
+  if (!path) return;
+  const links = await savedLinks();
+  if (links[kind][path] === avatar) return;
+  const next = { ...links, [kind]: { ...links[kind], [path]: avatar } };
+  useSillyTavernStore.setState({ savedLinks: next });
+  await saveStLinks(next).catch(() => undefined);
 }
 
 let configOnce: Promise<StConfig> | null = null;
@@ -95,6 +125,43 @@ export const useSillyTavernStore = create<SillyTavernState>((set, get) => ({
 
   cardLinks: {},
   personaLinks: {},
-  linkCard: (slotId, avatar) => set((s) => ({ cardLinks: { ...s.cardLinks, [slotId]: avatar } })),
-  linkPersona: (slotId, avatar) => set((s) => ({ personaLinks: { ...s.personaLinks, [slotId]: avatar } })),
+  linkCard: (slotId, avatar) => {
+    set((s) => ({ cardLinks: { ...s.cardLinks, [slotId]: avatar } }));
+    const path = useCardStore.getState().characters.find((c) => c.id === slotId)?.currentFilePath ?? null;
+    void persistLink("cards", path, avatar);
+  },
+  linkPersona: (slotId, avatar) => {
+    set((s) => ({ personaLinks: { ...s.personaLinks, [slotId]: avatar } }));
+    const path = usePersonaStore.getState().characters.find((c) => c.id === slotId)?.currentFilePath ?? null;
+    void persistLink("personas", path, avatar);
+  },
+  savedLinks: null,
+  linkedCard: async (slotId) => {
+    const inSession = get().cardLinks[slotId];
+    if (inSession) return inSession;
+    const path = useCardStore.getState().characters.find((c) => c.id === slotId)?.currentFilePath;
+    return path ? (await savedLinks()).cards[path] : undefined;
+  },
+  linkedPersona: async (slotId) => {
+    const inSession = get().personaLinks[slotId];
+    if (inSession) return inSession;
+    const path = usePersonaStore.getState().characters.find((c) => c.id === slotId)?.currentFilePath;
+    return path ? (await savedLinks()).personas[path] : undefined;
+  },
 }));
+
+// A card opened from SillyTavern has no file yet; once it's saved, its link is remembered too.
+for (const [store, kind] of [
+  [useCardStore, "cards"],
+  [usePersonaStore, "personas"],
+] as const) {
+  store.subscribe((state, previous) => {
+    const links = kind === "cards" ? useSillyTavernStore.getState().cardLinks : useSillyTavernStore.getState().personaLinks;
+    for (const slot of state.characters) {
+      const before = previous.characters.find((c) => c.id === slot.id);
+      if (slot.currentFilePath && slot.currentFilePath !== before?.currentFilePath && links[slot.id]) {
+        void persistLink(kind, slot.currentFilePath, links[slot.id]);
+      }
+    }
+  });
+}

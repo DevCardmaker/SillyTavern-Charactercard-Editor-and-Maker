@@ -1,6 +1,6 @@
 import { memo, useEffect, useMemo, useState } from "react";
 import { useTokenCounter } from "../../hooks/useTokenCount";
-import { confirmAction, confirmDiscardChanges } from "../../io/confirmDiscard";
+import { confirmAction } from "../../io/confirmDiscard";
 import { openPresetFiles, saveActivePreset } from "../../io/stPresetIO";
 import {
   addPrompt,
@@ -28,6 +28,8 @@ import {
 import { unbalancedMacroWarning } from "../../schema/warnings";
 import { useStPresetStore } from "../../state/stPresetStore";
 import { TextAreaField, TextField } from "../common/FormField";
+import { MenuButton } from "../layout/MenuButton";
+import { ModeHeader } from "../layout/ModeHeader";
 
 interface Props {
   onError: (message: string) => void;
@@ -399,8 +401,6 @@ export function PresetWorkspace({ onError }: Props) {
   const presets = useStPresetStore((s) => s.presets);
   const activeId = useStPresetStore((s) => s.activeId);
   const updateActive = useStPresetStore((s) => s.updateActive);
-  const setActive = useStPresetStore((s) => s.setActive);
-  const close = useStPresetStore((s) => s.close);
   const active = presets.find((p) => p.id === activeId) ?? null;
 
   async function handleOpen() {
@@ -415,15 +415,6 @@ export function PresetWorkspace({ onError }: Props) {
   async function handleSave(mode: "save" | "saveAs") {
     try {
       await saveActivePreset(mode);
-    } catch (err) {
-      onError(describe(err));
-    }
-  }
-
-  async function handleClose(id: string, isDirty: boolean) {
-    try {
-      if (isDirty && !(await confirmDiscardChanges())) return;
-      close(id);
     } catch (err) {
       onError(describe(err));
     }
@@ -449,44 +440,22 @@ export function PresetWorkspace({ onError }: Props) {
 
   return (
     <>
-      <div className="toolbar">
-        <button type="button" onClick={() => void handleOpen()} title="Ctrl+O — several files open as separate tabs">
-          Open…
-        </button>
+      <ModeHeader
+        title={active ? fileNameOf(active.path).replace(/\.json$/i, "") : "No preset open"}
+        meta={active ? fileNameOf(active.path) : undefined}
+        dirty={active?.isDirty}
+      >
         <button type="button" onClick={() => void handleSave("save")} disabled={!active} title="Ctrl+S">
           Save
         </button>
-        <button type="button" className="secondary" onClick={() => void handleSave("saveAs")} disabled={!active}>
-          Save As…
-        </button>
-        {active && (
-          <div className="toolbar-title">
-            {fileNameOf(active.path)}
-            {active.isDirty && <span className="dirty-indicator" title="Unsaved changes"> ●</span>}
-          </div>
-        )}
-      </div>
-
-      {presets.length > 0 && (
-        <div className="character-tab-bar">
-          {presets.map((p) => (
-            <div key={p.id} className={p.id === activeId ? "character-tab active" : "character-tab"}>
-              <button type="button" className="character-tab-select" onClick={() => setActive(p.id)}>
-                {fileNameOf(p.path).replace(/\.json$/i, "")}
-                {p.isDirty && <span className="dirty-indicator" title="Unsaved changes"> ●</span>}
-              </button>
-              <button
-                type="button"
-                className="character-tab-close"
-                title="Close tab"
-                onClick={() => void handleClose(p.id, p.isDirty)}
-              >
-                ✕
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
+        <MenuButton
+          label="File"
+          items={[
+            { label: "Open…", shortcut: "Ctrl+O", title: "Several files open side by side", onSelect: () => void handleOpen() },
+            { label: "Save As…", disabled: !active, onSelect: () => void handleSave("saveAs") },
+          ]}
+        />
+      </ModeHeader>
 
       {active ? (
         <PresetEditor key={active.id} preset={active.preset} onChange={updateActive} />

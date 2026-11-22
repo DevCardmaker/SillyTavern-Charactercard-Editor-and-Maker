@@ -5,6 +5,121 @@ import { useLorebookStore } from "../../state/lorebookStore";
 import { usePersonaStore } from "../../state/personaStore";
 import { useStPresetStore } from "../../state/stPresetStore";
 
+interface OpenItem {
+  id: string;
+  label: string;
+  dirty: boolean;
+  /** undefined = this kind has no pictures; null = no picture yet. */
+  png?: Uint8Array | null;
+}
+
+/** The open files of a mode (lorebooks, personas, presets) — the same list as the open cards. */
+function OpenFileList({
+  title,
+  items,
+  activeId,
+  onSelect,
+  onClose,
+  onNew,
+  onError,
+}: {
+  title: string;
+  items: OpenItem[];
+  activeId: string | null;
+  onSelect: (id: string) => void;
+  onClose: (id: string) => void;
+  onNew?: () => void;
+  onError: (message: string) => void;
+}) {
+  async function handleClose(item: OpenItem) {
+    if (item.dirty && !(await confirmDiscardChanges())) return;
+    onClose(item.id);
+  }
+  return (
+    <section className="sidebar-section">
+      <div className="sidebar-section-head">
+        <span>{title}</span>
+        {onNew && (
+          <button type="button" className="secondary sidebar-small-button" title="New (Ctrl+N)" onClick={onNew}>
+            +
+          </button>
+        )}
+      </div>
+      {items.length === 0 ? (
+        <p className="field-hint sidebar-hint">Nothing open.</p>
+      ) : (
+        <ul className="card-list">
+          {items.map((item) => (
+            <li key={item.id} className={item.id === activeId ? "card-list-item active" : "card-list-item"}>
+              <button type="button" className="card-list-select" onClick={() => onSelect(item.id)}>
+                {item.png !== undefined && <Thumb png={item.png} />}
+                <span className="card-list-name">{item.label}</span>
+                {item.dirty && <span className="dirty-indicator" title="Unsaved changes">●</span>}
+              </button>
+              <button
+                type="button"
+                className="card-list-close"
+                title="Close"
+                onClick={() => handleClose(item).catch((err) => onError(err instanceof Error ? err.message : String(err)))}
+              >
+                ✕
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+function LorebookList({ onError }: { onError: (message: string) => void }) {
+  const lorebooks = useLorebookStore((s) => s.lorebooks);
+  const activeId = useLorebookStore((s) => s.activeId);
+  const store = useLorebookStore.getState();
+  return (
+    <OpenFileList
+      title="Open lorebooks"
+      items={lorebooks.map((l) => ({ id: l.id, label: l.book.name || "New lorebook", dirty: l.isDirty }))}
+      activeId={activeId}
+      onSelect={(id) => store.setActive(id)}
+      onClose={(id) => useLorebookStore.getState().close(id)}
+      onNew={() => useLorebookStore.getState().newLorebook()}
+      onError={onError}
+    />
+  );
+}
+
+function PersonaList({ onError }: { onError: (message: string) => void }) {
+  const personas = usePersonaStore((s) => s.characters);
+  const activeId = usePersonaStore((s) => s.activeId);
+  return (
+    <OpenFileList
+      title="Open personas"
+      items={personas.map((p) => ({ id: p.id, label: p.card.name || "New persona", dirty: p.isDirty, png: p.avatarPng }))}
+      activeId={activeId}
+      onSelect={(id) => usePersonaStore.getState().setActiveCharacter(id)}
+      onClose={(id) => usePersonaStore.getState().closeCharacter(id)}
+      onNew={() => usePersonaStore.getState().newCard()}
+      onError={onError}
+    />
+  );
+}
+
+function PresetList({ onError }: { onError: (message: string) => void }) {
+  const presets = useStPresetStore((s) => s.presets);
+  const activeId = useStPresetStore((s) => s.activeId);
+  return (
+    <OpenFileList
+      title="Open presets"
+      items={presets.map((p) => ({ id: p.id, label: (p.path.split(/[\\/]/).pop() ?? p.path).replace(/\.json$/i, ""), dirty: p.isDirty }))}
+      activeId={activeId}
+      onSelect={(id) => useStPresetStore.getState().setActive(id)}
+      onClose={(id) => useStPresetStore.getState().close(id)}
+      onError={onError}
+    />
+  );
+}
+
 export type AppMode = "characters" | "lorebooks" | "personas" | "presets" | "sillytavern" | "library";
 
 interface Props {
@@ -107,6 +222,9 @@ export function LeftSidebar({ mode, onModeChange, onError, onHide }: Props) {
       </div>
       <div className="sidebar-body">
         {mode === "characters" && <OpenCardList onError={onError} />}
+        {mode === "lorebooks" && <LorebookList onError={onError} />}
+        {mode === "personas" && <PersonaList onError={onError} />}
+        {mode === "presets" && <PresetList onError={onError} />}
       </div>
     </>
   );

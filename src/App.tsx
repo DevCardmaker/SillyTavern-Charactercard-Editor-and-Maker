@@ -217,7 +217,7 @@ function App() {
         )}
 
         <div className="workspace-main">
-          {mode !== "characters" && <GlobalBar />}
+          {(mode === "library" || mode === "sillytavern") && <GlobalBar />}
           {mode === "characters" && (
             <HeaderBar
               onError={setError}

@@ -2,7 +2,7 @@ import { appConfigDir, join } from "@tauri-apps/api/path";
 import { readBinary, writeBinary } from "./rawFile";
 
 const RECENT_FILENAME = "recent-groups.json";
-const MAX_ENTRIES = 5;
+const MAX_ENTRIES = 20;
 
 /** Several cards opened or saved together, so they can be reopened together in one click. */
 export interface RecentGroup {

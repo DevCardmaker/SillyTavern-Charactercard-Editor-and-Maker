@@ -2,7 +2,7 @@ import { appConfigDir, join } from "@tauri-apps/api/path";
 import { readBinary, writeBinary } from "./rawFile";
 
 const RECENT_FILENAME = "recent-cards.json";
-const MAX_ENTRIES = 5;
+const MAX_ENTRIES = 20;
 
 async function recentFilePath(): Promise<string> {
   return join(await appConfigDir(), RECENT_FILENAME);
@@ -22,7 +22,7 @@ export async function loadRecentCards(): Promise<string[]> {
 }
 
 /** Moves `path` to the front of the recent list (removing any earlier occurrence first) and
- * truncates to the last 5 entries. Returns the updated list. */
+ * truncates to the last 20 entries. Returns the updated list. */
 export async function recordRecentCard(path: string): Promise<string[]> {
   const target = await recentFilePath();
   const current = await loadRecentCards();

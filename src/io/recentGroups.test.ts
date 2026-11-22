@@ -48,11 +48,11 @@ describe("recent groups", () => {
     expect(groups[0].paths).toEqual(["/f/Ben.png", "/f/Anna.png"]);
   });
 
-  it("keeps only the 5 most recent groups", async () => {
-    for (let i = 0; i < 7; i++) await recordRecentGroup([`/g${i}/a.png`, `/g${i}/b.png`]);
+  it("keeps only the 20 most recent groups", async () => {
+    for (let i = 0; i < 22; i++) await recordRecentGroup([`/g${i}/a.png`, `/g${i}/b.png`]);
     const groups = await loadRecentGroups();
-    expect(groups).toHaveLength(5);
-    expect(groups[0].paths[0]).toBe("/g6/a.png");
+    expect(groups).toHaveLength(20);
+    expect(groups[0].paths[0]).toBe("/g21/a.png");
   });
 
   it("removes a group and survives a broken file", async () => {
