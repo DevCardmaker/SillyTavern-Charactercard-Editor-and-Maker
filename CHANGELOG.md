@@ -2,6 +2,18 @@
 
 All notable changes to this project are documented here. The project follows [Semantic Versioning](https://semver.org/): new features raise the minor version, fixes the patch version.
 
+## [1.16.0] – 2026-11-22
+
+### Changed
+- **New layout.** The row of 16 buttons and the character tabs are gone. The open cards are now listed in a **left sidebar**, which also switches between Characters, Lorebooks, Personas and Presets. The tools for the open card sit in a **right sidebar**, one tab each: Snapshots, Test chat, AI Assistant, Context budget, Key test and Recent. Both sidebars can be resized by dragging and hidden; their width is remembered.
+- The header shows the open card with its picture and token count, "Save", and four menus: **File**, **Create**, **Group** and **Card**.
+- The avatar moved into a tab of its own, so the text fields get the full width.
+- Tools in the right sidebar keep running while you look at another tab, so a test chat or an AI request isn't lost. Tools that work on one card start over when you switch to another card, so nothing meant for one card lands in the next.
+
+### Added
+- **Recent cards** and **Recent groups** in a "Recent" tab of the right sidebar, always at hand instead of only while no card is open; the start screen shows the recent groups too. Opening a folder or "Save Group…" records the cards as one group; a click reopens all of them, skipping cards that are already open. These no longer push every single card into the recent cards.
+- **Snapshots**: save the card as it is right now under a name, unsaved edits and picture included. Snapshots are listed with every save's backup and open in the familiar comparison.
+
 ## [1.15.0] – 2026-11-15
 
 ### Fixed
