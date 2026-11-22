@@ -52,12 +52,95 @@ fn list_dir_files(path: String) -> Result<Vec<String>, String> {
 /// rationale as `read_binary_file`/`write_binary_file`. Used to clear a character tab's autosave
 /// snapshot once its tab is closed — the snapshot's job is done at that point, whether or not one
 /// was ever written for it.
+/// Names of the folders directly inside `path` (the library's groups). Missing folder = none.
+#[tauri::command]
+fn list_subdirs(path: String) -> Result<Vec<String>, String> {
+    let entries = match fs::read_dir(&path) {
+        Ok(entries) => entries,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(Vec::new()),
+        Err(e) => return Err(format!("Folder could not be read: {e}")),
+    };
+    let mut dirs = Vec::new();
+    for entry in entries.flatten() {
+        if entry.file_type().map(|t| t.is_dir()).unwrap_or(false) {
+            if let Some(name) = entry.file_name().to_str() {
+                dirs.push(name.to_string());
+            }
+        }
+    }
+    Ok(dirs)
+}
+
+#[derive(serde::Serialize)]
+struct DownloadResult {
+    status: u16,
+    content_type: String,
+    /// The file's name as the site gives it (Content-Disposition), if any.
+    content_disposition: Option<String>,
+    body: Vec<u8>,
+}
+
+/// Downloads a file from the internet (a card PNG linked directly), through the proxy if one is set.
+#[tauri::command]
+async fn http_download(url: String, proxy: Option<String>) -> Result<DownloadResult, String> {
+    let client = client_builder(proxy.as_deref())?
+        .timeout(Duration::from_secs(120))
+        .user_agent("Mozilla/5.0 (compatible; SillyTavern-Card-Editor)")
+        .build()
+        .map_err(|e| format!("HTTP client could not be created: {e}"))?;
+    let response = client.get(&url).send().await.map_err(|e| format!("Download failed: {e}"))?;
+    let status = response.status().as_u16();
+    let content_type = response
+        .headers()
+        .get(reqwest::header::CONTENT_TYPE)
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("")
+        .to_string();
+    let content_disposition = response
+        .headers()
+        .get(reqwest::header::CONTENT_DISPOSITION)
+        .and_then(|v| v.to_str().ok())
+        .map(|v| v.to_string());
+    let body = response.bytes().await.map_err(|e| format!("Download failed: {e}"))?.to_vec();
+    Ok(DownloadResult { status, content_type, content_disposition, body })
+}
+
+/// Shows a folder (the library) in the system's file manager. Only folders: the frontend can't
+/// use this to launch files. Created first if it doesn't exist yet.
+#[tauri::command]
+fn open_folder(app: tauri::AppHandle, path: String) -> Result<(), String> {
+    use tauri_plugin_opener::OpenerExt;
+    fs::create_dir_all(&path).map_err(|e| format!("Folder could not be created: {e}"))?;
+    if !std::path::Path::new(&path).is_dir() {
+        return Err("Not a folder.".into());
+    }
+    app.opener().open_path(path, None::<&str>).map_err(|e| format!("Folder could not be opened: {e}"))
+}
+
 #[tauri::command]
 fn delete_file(path: String) -> Result<(), String> {
     match fs::remove_file(&path) {
         Ok(()) => Ok(()),
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(()),
         Err(e) => Err(format!("File could not be deleted: {e}")),
+    }
+}
+
+/// Addresses that never go through the proxy: this computer and private networks, where local model
+/// servers and SillyTavern live — a VPN proxy couldn't reach them anyway.
+const NO_PROXY: &str = "localhost,127.0.0.1,::1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,100.64.0.0/10";
+
+/// A client builder that sends internet requests through `proxy` (http/https URL) when one is set.
+pub(crate) fn client_builder(proxy: Option<&str>) -> Result<reqwest::ClientBuilder, String> {
+    let builder = reqwest::Client::builder();
+    match proxy.map(str::trim).filter(|p| !p.is_empty()) {
+        Some(url) => {
+            let proxy = reqwest::Proxy::all(url)
+                .map_err(|e| format!("The proxy address \"{url}\" is not valid: {e}"))?
+                .no_proxy(reqwest::NoProxy::from_string(NO_PROXY));
+            Ok(builder.proxy(proxy))
+        }
+        None => Ok(builder),
     }
 }
 
@@ -77,6 +160,9 @@ struct ChatCompletionRequest {
     /// Stop sequences, e.g. "\nUser:" so a chat reply doesn't run on into the user's lines.
     #[serde(default)]
     stop: Option<Vec<String>>,
+    /// Proxy for internet requests (Settings → Library & downloads); local addresses bypass it.
+    #[serde(default)]
+    proxy: Option<String>,
 }
 
 #[derive(serde::Serialize)]
@@ -176,7 +262,7 @@ async fn ai_chat_completion(req: ChatCompletionRequest) -> Result<ChatCompletion
     // A heavy local model with most layers on CPU can take several minutes for one reply (a real
     // Magnum-v4-72B run took ~360s for a two-field patch) — 120s cut those off mid-generation.
     // 900s comfortably covers observed local runs while still bounding a genuinely hung request.
-    let client = reqwest::Client::builder()
+    let client = client_builder(req.proxy.as_deref())?
         .timeout(Duration::from_secs(900))
         .build()
         .map_err(|e| format!("HTTP client could not be created: {e}"))?;
@@ -226,6 +312,9 @@ pub fn run() {
             write_binary_file,
             list_dir_files,
             delete_file,
+            list_subdirs,
+            open_folder,
+            http_download,
             ai_chat_completion,
             sillytavern::st_request
         ])

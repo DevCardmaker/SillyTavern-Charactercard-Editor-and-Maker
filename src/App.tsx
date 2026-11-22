@@ -14,6 +14,8 @@ import { GlobalBar } from "./components/layout/GlobalTools";
 import { HeaderBar } from "./components/layout/HeaderBar";
 import { SettingsDialog } from "./components/settings/SettingsDialog";
 import { SillyTavernWorkspace } from "./components/sillytavern/SillyTavernWorkspace";
+import { LibraryWorkspace } from "./components/library/LibraryWorkspace";
+import { LibrarySaveDialog } from "./components/library/LibrarySaveDialog";
 import { StDialogs } from "./components/sillytavern/StDialogs";
 import { RecentGroupsSection } from "./components/layout/RecentPanel";
 import { LeftSidebar, type AppMode } from "./components/layout/LeftSidebar";
@@ -191,6 +193,7 @@ function App() {
       <TextContextMenu onError={setError} />
       <SettingsDialog />
       <StDialogs />
+      <LibrarySaveDialog onError={setError} />
       {isDragOver && (
         <div className="drop-overlay">
           <p>
@@ -241,6 +244,8 @@ function App() {
             <PersonaWorkspace onError={setError} />
           ) : mode === "presets" ? (
             <PresetWorkspace onError={setError} />
+          ) : mode === "library" ? (
+            <LibraryWorkspace onError={setError} onShowMode={setMode} />
           ) : mode === "sillytavern" ? (
             <SillyTavernWorkspace onError={setError} onShowMode={setMode} />
           ) : !card ? (

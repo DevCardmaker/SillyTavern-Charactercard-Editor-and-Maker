@@ -5,7 +5,7 @@ import { useLorebookStore } from "../../state/lorebookStore";
 import { usePersonaStore } from "../../state/personaStore";
 import { useStPresetStore } from "../../state/stPresetStore";
 
-export type AppMode = "characters" | "lorebooks" | "personas" | "presets" | "sillytavern";
+export type AppMode = "characters" | "lorebooks" | "personas" | "presets" | "sillytavern" | "library";
 
 interface Props {
   mode: AppMode;
@@ -81,6 +81,7 @@ export function LeftSidebar({ mode, onModeChange, onError, onHide }: Props) {
     { id: "lorebooks", label: "Lorebooks", dirty: anyLorebookDirty },
     { id: "personas", label: "Personas", dirty: anyPersonaDirty },
     { id: "presets", label: "Presets", dirty: anyPresetDirty },
+    { id: "library", label: "Library", dirty: false },
     { id: "sillytavern", label: "SillyTavern", dirty: false },
   ];
 

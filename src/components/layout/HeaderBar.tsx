@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useTotalTokenCount } from "../../hooks/useTokenCount";
 import { openCardFile, openFolderAsTabs, saveCard, saveCardAsCopy, saveGroupToFolder } from "../../io/fileIO";
 import { useCardStore } from "../../state/cardStore";
+import { useLibrarySaveStore } from "../../state/librarySaveStore";
 import { useStDialogStore } from "../../state/stDialogStore";
 import { AiConsistencyCheckPanel } from "../editor/AiConsistencyCheckPanel";
 import { AiGroupGeneratePanel } from "../editor/AiGroupGeneratePanel";
@@ -195,6 +196,12 @@ export function HeaderBar({ onError, onShowLorebooks, onOpenTool, isLeftOpen, is
             },
             "separator",
             {
+              label: "Save to Library…",
+              disabled: !card,
+              title: "Put a copy of this card into the card library",
+              onSelect: () => useLibrarySaveStore.getState().open("card"),
+            },
+            {
               label: "Send to SillyTavern…",
               disabled: !card,
               title: "Send this card to SillyTavern — over the one it came from, or as a new character",
@@ -249,6 +256,12 @@ export function HeaderBar({ onError, onShowLorebooks, onOpenTool, isLeftOpen, is
               disabled: openCount < 2,
               title: needsTwo ?? "Give every open character lorebook entries describing the other members (and open personas)",
               onSelect: () => setDialog("groupLorebook"),
+            },
+            {
+              label: "Save Group to Library…",
+              disabled: openCount < 2,
+              title: needsTwo ?? "Put copies of all open cards into the library as one group",
+              onSelect: () => useLibrarySaveStore.getState().open("group"),
             },
             {
               label: "Create Group in SillyTavern…",

@@ -5,12 +5,18 @@ import { useCardStore } from "../state/cardStore";
 import { usePersonaStore } from "../state/personaStore";
 import { useSillyTavernStore } from "../state/sillyTavernStore";
 import { cardFileForExport, writeSnapshotBytes } from "./fileIO";
+import { readLorebookAtPath } from "./lorebookIO";
+import { readBinary } from "./rawFile";
+import { toWorldInfo } from "../schema/lorebook";
 import {
   cardFromPng,
   stCreateGroup,
   stExportCharacterPng,
   stImportCharacter,
+  stGetWorld,
   stListCharacters,
+  stListWorlds,
+  stSaveWorld,
   stMergeAttributes,
   stPersonaPicture,
   stSendPersona,
@@ -86,27 +92,69 @@ export async function planCardSend(slotId: string): Promise<CardSendPlan> {
 export async function sendCardToSt(slotId: string, replace: string | null): Promise<string> {
   const slot = useCardStore.getState().characters.find((c) => c.id === slotId);
   if (!slot) throw new Error("This card isn't open any more.");
-  if (!slot.card.name.trim()) throw new Error("Give the card a name first — SillyTavern needs one.");
-  const cfg = await config();
+  const avatar = await sendCardDataToSt(
+    { name: slot.card.name, json: cardJson(slot.card), picture: slot.avatarPng, fallback: () => cardFileForExport(slot.card, null), filePath: slot.currentFilePath },
+    replace,
+  );
+  useSillyTavernStore.getState().linkCard(slotId, avatar);
+  return avatar;
+}
 
-  let picture = slot.avatarPng;
+/** Sends a card file (e.g. from the library) without opening it — same safety steps as above. */
+export async function sendCardFileToSt(path: string, name: string, replace: string | null): Promise<string> {
+  const bytes = await readBinary(path);
+  const isPng = /\.png$/i.test(path);
+  const card = isPng ? cardFromPng(bytes) : null;
+  return sendCardDataToSt(
+    {
+      name,
+      json: isPng && card ? cardJson(card) : new TextDecoder().decode(bytes),
+      picture: isPng ? bytes : null,
+      fallback: () => ({ bytes, format: "json" }),
+      filePath: null,
+    },
+    replace,
+  );
+}
+
+async function sendCardDataToSt(
+  data: {
+    name: string;
+    json: string;
+    picture: Uint8Array | null;
+    fallback: () => { bytes: Uint8Array; format: "png" | "json" };
+    filePath: string | null;
+  },
+  replace: string | null,
+): Promise<string> {
+  if (!data.name.trim()) throw new Error("Give the card a name first — SillyTavern needs one.");
+  const cfg = await config();
+  let picture = data.picture;
   // Read fresh, right before overwriting: the star and the current chat as they are now.
   const before = replace ? (await stListCharacters(cfg)).find((c) => c.avatar === replace) : undefined;
   if (replace) {
     const previous = await stExportCharacterPng(cfg, replace);
-    await writeSnapshotBytes(slot.card.name, slot.currentFilePath, "before-sillytavern", previous, "png");
+    await writeSnapshotBytes(data.name, data.filePath, "before-sillytavern", previous, "png");
     // Without a picture of its own the card would get SillyTavern's default one; keep the old one.
     picture ??= previous;
   }
-  const file = picture
-    ? { bytes: embedCardJson(picture, cardJson(slot.card)), format: "png" as const }
-    : cardFileForExport(slot.card, null);
+  const file = picture ? { bytes: embedCardJson(picture, data.json), format: "png" as const } : data.fallback();
   const avatar = await stImportCharacter(cfg, file, replace ?? undefined);
   // SillyTavern resets both on every import; put them back so overwriting changes only the card.
   if (before && (before.fav || before.chat)) await stMergeAttributes(cfg, keptAttributes(before));
-  useSillyTavernStore.getState().linkCard(slotId, avatar);
   forgetThumbnail(`avatar:${avatar}`);
   return avatar;
+}
+
+/** Sends a lorebook file to SillyTavern as World Info, under `name` — over a World Info file of that
+ * name if one exists, after keeping SillyTavern's version as a snapshot in the app's folder. */
+export async function sendLorebookFileToSt(path: string, name: string): Promise<void> {
+  const cfg = await config();
+  const book = await readLorebookAtPath(path);
+  if ((await stListWorlds(cfg)).includes(name)) {
+    await writeSnapshotBytes(name, null, "before-sillytavern", await stGetWorld(cfg, name), "json");
+  }
+  await stSaveWorld(cfg, name, toWorldInfo(book));
 }
 
 function cardJson(card: NormalizedCard): string {

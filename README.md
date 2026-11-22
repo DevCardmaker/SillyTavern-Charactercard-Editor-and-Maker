@@ -30,6 +30,7 @@ A desktop editor for [SillyTavern](https://github.com/SillyTavern/SillyTavern) c
 - "Save as Copy…" to export the current card to another path/format without changing what "Save" points at
 
 **Working with several characters at once**
+- A **card library**: a plain folder with groups as subfolders, and a downloader for Chub, JanitorAI and other sites (through SillyTavern) or direct card links — optionally through a proxy
 - A **SillyTavern connection**: list its characters, groups and personas, open them here, send them back (overwriting keeps the chats, with a snapshot first), copy and delete, and create groups there from the open cards
 - Multiple characters open simultaneously — build a whole group (a family, a class, an NPC roster) in one sitting
 - A shared "group folder" for saving a session's cards together, plus one-click bulk save/open for a whole folder
@@ -99,6 +100,12 @@ Click into a card text field and a row of quick actions appears above it: Enhanc
 Under **Settings → SillyTavern…** enter the address you open SillyTavern with (for example `http://127.0.0.1:8000`) and click "Test connection". From another computer, SillyTavern must allow it (`listen` and `whitelist` in its `config.yaml`); a login is only needed with `basicAuthMode`. Multi-user accounts aren't supported yet.
 
 The **SillyTavern** page in the left sidebar lists its characters, groups and personas. "Open" brings a character or persona into the editor; "Send to SillyTavern…" (File menu, the Personas toolbar or the SillyTavern page) sends it back — over the one it came from, over one with the same name, or as a new one. Overwriting a character keeps its chats, its favourite star and the chat SillyTavern opens, and SillyTavern's previous version is kept as a snapshot of the card first — for a card that was never saved, in the app's own folder, listed in the Snapshots tab all the same. "Create Group in SillyTavern…" (Group menu) sends the open cards and makes them a group there, in the order you choose. Sending a persona changes SillyTavern's settings file, so a settings snapshot is made first; if SillyTavern is open in a browser, reload it there afterwards.
+
+### The library and downloading cards
+
+The **Library** page in the left sidebar shows a normal folder of cards (Settings → Library & downloads chooses where it is): cards at the top, each subfolder as a group you can open in one go, and lorebooks from its "Lorebooks" folder. "Download…" takes a list of links, one per line — Chub, JanitorAI, Pygmalion, RisuRealm, Perchance and AICharacterCards through your SillyTavern (it only fetches them, nothing is added there), Botbooru character and lorebook pages and any direct link to a card PNG or JSON by the editor itself. A group name puts the whole batch into its own subfolder. Tick entries (or a whole group, or "Select all") to open, delete or send them to SillyTavern together — lorebooks go there as World Info. File → "Save to Library…" and Group → "Save Group to Library…" add copies of open cards.
+
+If a site is blocked where you live, set a proxy: the editor's own requests use the one under Settings → Library & downloads; downloads through SillyTavern use SillyTavern's `requestProxy` setting in its `config.yaml` (see the SillyTavern documentation).
 
 ### Using the AI assistant
 

@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-export type SettingsSection = "ai" | "prompts" | "buttons" | "sillytavern";
+export type SettingsSection = "ai" | "prompts" | "buttons" | "sillytavern" | "library";
 
 /** The settings window, opened from the header menu or from any panel's "Change…" link. */
 interface SettingsDialogState {

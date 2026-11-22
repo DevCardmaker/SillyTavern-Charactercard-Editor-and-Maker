@@ -38,6 +38,8 @@ pub struct StRequest {
 pub struct StResponse {
     status: u16,
     content_type: String,
+    /// Response headers, lower-case names (e.g. content-disposition, x-custom-content-type).
+    headers: HashMap<String, String>,
     body: Vec<u8>,
 }
 
@@ -108,10 +110,15 @@ pub async fn st_request(req: StRequest) -> Result<StResponse, String> {
         .and_then(|v| v.to_str().ok())
         .unwrap_or("")
         .to_string();
+    let headers = response
+        .headers()
+        .iter()
+        .filter_map(|(name, value)| value.to_str().ok().map(|v| (name.as_str().to_string(), v.to_string())))
+        .collect();
     let body = response
         .bytes()
         .await
         .map_err(|e| format!("Reading SillyTavern's answer failed: {e}"))?
         .to_vec();
-    Ok(StResponse { status, content_type, body })
+    Ok(StResponse { status, content_type, headers, body })
 }

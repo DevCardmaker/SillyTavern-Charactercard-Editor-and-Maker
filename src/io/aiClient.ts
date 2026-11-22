@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { proxyNow } from "../state/appSettingsStore";
 import { type AiFieldKey, type AiFieldPatch, aiFieldsToJsonSchema, parseAiPatch } from "../schema/aiAssist";
 import { type AiConsistencyFinding, aiConsistencyCheckToJsonSchema, parseAiConsistencyCheck } from "../schema/aiConsistencyCheck";
 import { type AiConsistencyFix, aiConsistencyFixToJsonSchema, parseAiConsistencyFix } from "../schema/aiConsistencyFix";
@@ -74,6 +75,7 @@ async function callChatCompletion(
   options: { maxTokens?: number; stop?: string[]; temperature?: number } = {},
 ): Promise<string> {
   usePromptFileStore.getState().setLastMessages(messages);
+  const proxy = await proxyNow();
   const maxTokens = options.maxTokens ?? config.maxTokens ?? null;
   const result = await invoke<{ content: string; finish_reason?: string | null }>("ai_chat_completion", {
     req: {
@@ -85,6 +87,7 @@ async function callChatCompletion(
       temperature: options.temperature ?? config.temperature ?? null,
       max_tokens: maxTokens,
       stop: options.stop ?? null,
+      proxy,
     },
   });
   if (jsonSchema && result.finish_reason === "length" && !isCompleteJson(result.content)) {

@@ -47,6 +47,7 @@ export function SettingsMenu() {
         { label: "AI providers…", onSelect: () => openSettings("ai") },
         { label: "Prompts…", onSelect: () => openSettings("prompts") },
         { label: "SillyTavern…", onSelect: () => openSettings("sillytavern") },
+        { label: "Library & downloads…", onSelect: () => openSettings("library") },
         { label: "My quick actions…", onSelect: () => openSettings("buttons") },
       ]}
     />

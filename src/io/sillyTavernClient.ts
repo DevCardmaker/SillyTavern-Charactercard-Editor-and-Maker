@@ -49,7 +49,15 @@ export async function saveStConfig(config: StConfig): Promise<void> {
 interface RawResponse {
   status: number;
   content_type: string;
+  headers: Record<string, string>;
   body: number[];
+}
+
+export interface StRawResult {
+  status: number;
+  contentType: string;
+  headers: Record<string, string>;
+  body: Uint8Array;
 }
 
 interface CallOptions {
@@ -59,7 +67,8 @@ interface CallOptions {
   fields?: Record<string, string>;
 }
 
-async function call(config: StConfig, path: string, options: CallOptions = {}): Promise<Uint8Array> {
+/** One request with SillyTavern's whole answer, error statuses included. */
+export async function stCallRaw(config: StConfig, path: string, options: CallOptions = {}): Promise<StRawResult> {
   const response = await invoke<RawResponse>("st_request", {
     req: {
       base_url: config.baseUrl,
@@ -72,7 +81,17 @@ async function call(config: StConfig, path: string, options: CallOptions = {}): 
       basic_password: config.basicPassword || null,
     },
   });
-  const body = Uint8Array.from(response.body);
+  return {
+    status: response.status,
+    contentType: response.content_type,
+    headers: response.headers ?? {},
+    body: Uint8Array.from(response.body),
+  };
+}
+
+async function call(config: StConfig, path: string, options: CallOptions = {}): Promise<Uint8Array> {
+  const response = await stCallRaw(config, path, options);
+  const body = response.body;
   if (response.status >= 400) {
     const text = new TextDecoder().decode(body.slice(0, 300)).trim();
     throw new Error(`SillyTavern answered ${response.status}${text ? `: ${text}` : ""} (${path.split("?")[0]})`);
@@ -168,6 +187,25 @@ export async function stCreateGroup(config: StConfig, name: string, members: str
 /** Deletes the group and, like SillyTavern itself does, its group chats. */
 export async function stDeleteGroup(config: StConfig, id: string): Promise<void> {
   await call(config, "/api/groups/delete", { json: { id } });
+}
+
+// ── Lorebooks (World Info) ─────────────────────────────────────────────────────────────────────
+
+/** The World Info files in SillyTavern, by file name without ".json" (what /edit and /get take). */
+export async function stListWorlds(config: StConfig): Promise<string[]> {
+  const raw = await callJson(config, "/api/worldinfo/list");
+  return Array.isArray(raw)
+    ? raw.map((w) => (w && typeof w === "object" ? String((w as Record<string, unknown>).file_id ?? "") : "")).filter(Boolean)
+    : [];
+}
+
+export async function stGetWorld(config: StConfig, name: string): Promise<Uint8Array> {
+  return call(config, "/api/worldinfo/get", { json: { name } });
+}
+
+/** Writes a World Info file — over one of the same name, if there is one. */
+export async function stSaveWorld(config: StConfig, name: string, data: Record<string, unknown>): Promise<void> {
+  await call(config, "/api/worldinfo/edit", { json: { name, data } });
 }
 
 // ── Personas ───────────────────────────────────────────────────────────────────────────────────
