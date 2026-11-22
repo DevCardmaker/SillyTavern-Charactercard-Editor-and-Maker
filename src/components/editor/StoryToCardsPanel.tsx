@@ -990,7 +990,7 @@ export function StoryToCardsPanel({ onClose, onShowLorebooks }: Props) {
         <p className="field-hint">
           Creates character cards from a story — your fan fiction, a short story, an excerpt from a book. The AI reads it
           part by part, you pick the characters and your own place in the story, and each card is written new (not copied
-          from the text) with an opening scene that continues after the story's end. Each card opens in its own tab.
+          from the text) with an opening scene that continues after the story's end. Each card opens as a card of its own.
         </p>
 
         <AiProviderSettings />

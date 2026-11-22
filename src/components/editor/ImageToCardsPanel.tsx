@@ -606,7 +606,7 @@ export function ImageToCardsPanel({ onClose }: Props) {
             Discard
           </button>
           <button type="button" onClick={() => void handleApply()} disabled={ready.length === 0 || isBusy}>
-            Add {ready.length || ""} as tabs
+            Add {ready.length || ""}
           </button>
         </div>
 

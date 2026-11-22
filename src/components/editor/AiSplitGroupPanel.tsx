@@ -204,7 +204,7 @@ export function AiSplitGroupPanel({ onClose }: Props) {
         <h3>Split Group Card</h3>
         <p className="field-hint">
           Splits “{card?.name || "this card"}” — one card describing several characters — into one card per person, each
-          added as its own tab. First find the people, pick who to extract, then each one is extracted on their own. The
+          added as a card of its own. First find the people, pick who to extract, then each one is extracted on their own. The
           group card itself stays unchanged.
         </p>
 
@@ -283,7 +283,7 @@ export function AiSplitGroupPanel({ onClose }: Props) {
             Discard
           </button>
           <button type="button" onClick={handleApply} disabled={ready.length === 0 || busy}>
-            Add {ready.length || ""} as tabs
+            Add {ready.length || ""}
           </button>
         </div>
       </div>

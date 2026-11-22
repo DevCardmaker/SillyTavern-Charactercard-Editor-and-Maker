@@ -11,7 +11,7 @@ A desktop editor for [SillyTavern](https://github.com/SillyTavern/SillyTavern) c
 - Open and save character cards as PNG (with the card embedded as a chunk) or standalone `.json`, spec V2 and V3
 - Avatar image handling with cropping
 - Lorebook (World Info) editor, with import/export as a standalone file
-- A separate **Lorebooks** mode for standalone World Info files, independent of any card: several open as tabs, saved in SillyTavern's World Info format (importable straight into ST), and SillyTavern exports / Chub downloads open directly
+- A separate **Lorebooks** mode for standalone World Info files, independent of any card: several open side by side, saved in SillyTavern's World Info format (importable straight into ST), and SillyTavern exports / Chub downloads open directly
 - **Shared lorebooks**: embed one lorebook into several cards and link them to it, with an up-to-date / out-of-date overview per card
 - **Merge lorebooks**: add the entries of another lorebook file or of a card's lorebook to the open one, skipping exact duplicates
 - A **key tester** that shows which lorebook entries SillyTavern would insert for a piece of chat text, and why — plus search across entries and a warning for keys shared between entries
@@ -99,7 +99,7 @@ Click into a card text field and a row of quick actions appears above it: Enhanc
 
 Under **Settings → SillyTavern…** enter the address you open SillyTavern with (for example `http://127.0.0.1:8000`) and click "Test connection". From another computer, SillyTavern must allow it (`listen` and `whitelist` in its `config.yaml`); a login is only needed with `basicAuthMode`. Multi-user accounts aren't supported yet.
 
-The **SillyTavern** page in the left sidebar lists its characters, groups and personas. "Open" brings a character or persona into the editor; "Send to SillyTavern…" (File menu, the Personas toolbar or the SillyTavern page) sends it back — over the one it came from, over one with the same name, or as a new one. Overwriting a character keeps its chats, its favourite star and the chat SillyTavern opens, and SillyTavern's previous version is kept as a snapshot of the card first — for a card that was never saved, in the app's own folder, listed in the Snapshots tab all the same. "Create Group in SillyTavern…" (Group menu) sends the open cards and makes them a group there, in the order you choose. Sending a persona changes SillyTavern's settings file, so a settings snapshot is made first; if SillyTavern is open in a browser, reload it there afterwards.
+The **SillyTavern** page in the left sidebar lists its characters, groups and personas. "Open" brings a character or persona into the editor; "Send to SillyTavern…" (File menu in the Characters and Personas modes, or the SillyTavern page) sends it back — over the one it came from, over one with the same name, or as a new one. Overwriting a character keeps its chats, its favourite star and the chat SillyTavern opens, and SillyTavern's previous version is kept as a snapshot of the card first — for a card that was never saved, in the app's own folder, listed in the Snapshots tab all the same. "Create Group in SillyTavern…" (Group menu) sends the open cards and makes them a group there, in the order you choose. Sending a persona changes SillyTavern's settings file, so a settings snapshot is made first; if SillyTavern is open in a browser, reload it there afterwards.
 
 ### The library and downloading cards
 
@@ -133,11 +133,11 @@ Local models work best with these step-by-step features: each request is a small
 
 ### Cards from a story
 
-"From Story…" reads a story you paste or load (`.txt`/`.md`). "Find people" lists everyone in it — tick who gets a card, and use "same person as" where the story calls one person by different names. Choose your own place in the story, then "Create cards". "Find places & terms" adds a lorebook of the story's world and its side characters; in a story character's place (or playing one), "Create persona" writes your persona. Everything is shown for review first, and "Add" opens the cards as tabs, the lorebook in the Lorebooks mode and the persona in the Personas mode.
+"From Story…" reads a story you paste or load (`.txt`/`.md`). "Find people" lists everyone in it — tick who gets a card, and use "same person as" where the story calls one person by different names. Choose your own place in the story, then "Create cards". "Find places & terms" adds a lorebook of the story's world and its side characters; in a story character's place (or playing one), "Create persona" writes your persona. Everything is shown for review first, and "Add" opens the cards, the lorebook in the Lorebooks mode and the persona in the Personas mode.
 
 ### Cards from an image
 
-"From Image…" loads a picture and describes it, with the model chosen under "Describe the picture with" — or describe it yourself if your model can't see images. Correct the description, tick who gets a card and get three story ideas. Pick one, adjust the story and your place in it, then create the cards. They use the picture as their avatar and are shown for review before they open as tabs.
+"From Image…" loads a picture and describes it, with the model chosen under "Describe the picture with" — or describe it yourself if your model can't see images. Correct the description, tick who gets a card and get three story ideas. Pick one, adjust the story and your place in it, then create the cards. They use the picture as their avatar and are shown for review before they open.
 
 In pictures with more than two people, models often miss some. Add them by hand with "Add a person", or adjust the `image_*` sections of the prompts file.
 

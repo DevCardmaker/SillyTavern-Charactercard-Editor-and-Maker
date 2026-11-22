@@ -208,7 +208,7 @@ export function AiGroupGeneratePanel({ onClose, onAddedWithReferences }: Props) 
       <div className="modal ai-assist-modal">
         <h3>Create Group</h3>
         <p className="field-hint">
-          Generates several new, mutually consistent characters from one prompt — each is added as its own tab.
+          Generates several new, mutually consistent characters from one prompt — each opens as a card of its own.
         </p>
 
         {referenceChoices.length > 0 && (
@@ -353,7 +353,7 @@ export function AiGroupGeneratePanel({ onClose, onAddedWithReferences }: Props) 
             Discard
           </button>
           <button type="button" onClick={() => void handleApply()} disabled={!canApply}>
-            Add selected as tabs
+            Add selected
           </button>
         </div>
       </div>

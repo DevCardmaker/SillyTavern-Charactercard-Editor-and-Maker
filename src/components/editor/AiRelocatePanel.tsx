@@ -95,7 +95,7 @@ export function AiRelocatePanel({ onClose }: Props) {
       // Keep the panel open on a partial/total mismatch instead of closing silently — the user
       // needs to see which names didn't match before deciding what to do next.
       setSendError(
-        `Applied to ${appliedCount} of ${appliedCount + skipped.length} selected character(s). No open tab matched: ${skipped.join(", ")}.`,
+        `Applied to ${appliedCount} of ${appliedCount + skipped.length} selected character(s). No open card has the name: ${skipped.join(", ")}.`,
       );
       return;
     }
@@ -123,7 +123,7 @@ export function AiRelocatePanel({ onClose }: Props) {
                   <input type="checkbox" checked={selected.has(i)} onChange={() => toggleSelected(i)} />
                   <div>
                     <span className="ai-assist-draft-label">{member.name || "Character"}</span>
-                    {!current && <p className="field-error">No open tab matches this name — will be skipped.</p>}
+                    {!current && <p className="field-error">No open card has this name — will be skipped.</p>}
                     {RELOCATE_FIELDS.map(({ key, label }) => (
                       <div key={key}>
                         <span className="ai-assist-draft-label">{label}</span>

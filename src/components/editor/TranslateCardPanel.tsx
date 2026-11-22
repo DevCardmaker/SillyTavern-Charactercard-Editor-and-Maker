@@ -206,7 +206,7 @@ export function TranslateCardPanel({ onClose }: Props) {
         <p className="field-hint">
           Translates “{card?.name || "this card"}” into another language — part by part, each part checked (macros like
           {" {{char}}"}, tags like {"<START>"}, length) and retried once if something looks wrong. The result opens as a
-          copy in a new tab; the original stays unchanged. Names aren't translated, but written in the new language's
+          copy that opens as a new card; the original stays unchanged. Names aren't translated, but written in the new language's
           script where it differs (e.g. Дарья → Darja).
         </p>
 
