@@ -12,8 +12,9 @@ export interface HighlightPart {
   token: HighlightToken;
 }
 
-// Straight quotes, “English”, „German“ (closed by “ or ”), «guillemets» — and *actions*. One line at most.
-const SPANS = /"[^"\n]*"|“[^”\n]*”|„[^“”\n]*[“”]|«[^»\n]*»|\*[^*\n]+\*/g;
+// Dialogue: any opening quote up to the next closing one — writers (and AI models) mix them, e.g.
+// „German“, „German", “English”, "straight", »German« and «French». And *actions*. One line at most.
+const SPANS = /„[^„“”"\n]*["“”]|“[^„“”"\n]*["“”]|"[^„“”"\n]*["“”]|»[^«»\n]*«|«[^«»\n]*»|\*[^*\n]+\*/g;
 const TOKENS = /\{\{[^{}\n]*\}\}|<\/?[A-Za-z][\w-]*>/g;
 
 function splitTokens(text: string, span: HighlightSpan, out: HighlightPart[]) {
