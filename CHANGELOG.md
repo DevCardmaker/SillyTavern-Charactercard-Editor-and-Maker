@@ -2,6 +2,20 @@
 
 All notable changes to this project are documented here. The project follows [Semantic Versioning](https://semver.org/): new features raise the minor version, fixes the patch version.
 
+## [1.17.0] – 2026-11-22
+
+### Added
+- **Quick actions above every card text field**: Enhance, Rephrase, Shorten, Lengthen, Fix and **Less AI slop**, plus Vivid, Emotion and a custom instruction under "More". They work on the selected part, or on the whole field when nothing is selected, and always show old and new side by side first: Accept, Reject or Retry. Accept can be undone with Ctrl+Z.
+- **Your own quick actions**: "More → Manage my buttons…" adds buttons with an instruction of your own; they appear under "More" above every field.
+- The code checks each answer before showing it: macros like {{char}} and {{user}} must survive (a character name the model wrote instead of {{char}} is turned back), Shorten must really shorten, Lengthen really lengthen, and the language must stay the same. Otherwise the AI gets one more try, and a remaining problem is shown above the preview.
+- **Context** tab in the right sidebar: which parts of the card (and which persona) the AI sees as background for quick actions and brainstorming, with the tokens each part costs. Name, Description, Personality and Scenario by default.
+- **Brainstorm** tab: talk with the AI about the open card — ideas, weaknesses, questions. It never changes the card. One conversation per card, kept until the program closes; nothing is saved.
+- **Delete snapshots**: a ✕ next to every entry in the Snapshots tab removes that backup file, after asking.
+- New prompt sections for all of this in the prompts file (`inline_*`, `brainstorm`).
+
+### Fixed
+- An empty answer from the AI is now reported as an error instead of silently showing nothing — with a hint when a thinking model (such as DeepSeek V4) used up its token limit on hidden reasoning. Quick actions and the brainstorm chat use the provider profile's "Max tokens" for this reason.
+
 ## [1.16.0] – 2026-11-22
 
 ### Changed
