@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented here. The project follows [Semantic Versioning](https://semver.org/): new features raise the minor version, fixes the patch version.
 
+## [1.18.0] – 2026-11-22
+
+### Added
+- **SillyTavern connection.** Enter SillyTavern's address under Settings → SillyTavern (with a login for basicAuthMode if needed) and test it. A new **SillyTavern** page in the left sidebar lists its characters, groups and personas, with search and preview pictures.
+- **Characters**: open any of them as a card here, copy or delete them in SillyTavern (chats are kept unless you tick "Also delete its chats").
+- **Send to SillyTavern** (File menu, or on the SillyTavern page): over the character the card came from, over one with the same name, or as a new character. Overwriting works like SillyTavern's own "Replace / Update", so the chats stay; SillyTavern's previous version is kept as a snapshot of the card first ("before sillytavern" in the Snapshots tab). A card without a picture keeps SillyTavern's picture. SillyTavern resets the favourite star and forgets the current chat on every import (even its own "Replace / Update"); the editor puts both back, so overwriting changes only the card.
+- **Groups**: open all members of a SillyTavern group, delete a group (the warning says that SillyTavern deletes its group chats too), and **Create Group in SillyTavern…** (Group menu) from the open cards, in an order you choose — the order of first messages in a group chat.
+- **Snapshots of unsaved cards**: a card that was never saved (e.g. opened from SillyTavern) now lists its snapshots too — kept in the app's own folder under the card's name — and can save snapshots by name.
+- **Personas**: open SillyTavern's personas in the Personas mode, and send personas there ("Send to SillyTavern…" in the Personas toolbar). SillyTavern can only save its settings as a whole, so a settings snapshot is made first.
+
 ## [1.17.0] – 2026-11-22
 
 ### Added
