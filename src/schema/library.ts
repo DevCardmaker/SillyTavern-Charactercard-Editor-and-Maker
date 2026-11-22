@@ -1,7 +1,23 @@
 /** Rules for the card library and the downloader — pure, so they're tested without files. */
 
 /** Sites SillyTavern's own downloader knows (POST /api/content/importURL). */
-const ST_HOSTS = ["chub.ai", "characterhub.org", "janitorai", "pygmalion.chat", "aicharactercards.com", "realm.risuai.net", "perchance.org"];
+const ST_HOSTS = ["chub.ai", "characterhub.org", "janitorai", "jannyai", "pygmalion.chat", "aicharactercards.com", "realm.risuai.net", "perchance.org"];
+
+const UUID = /[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/;
+
+/** The link as SillyTavern's downloader wants it. JannyAI (an archive of JanitorAI cards) isn't on
+ * its list, but SillyTavern fetches JanitorAI cards from JannyAI anyway, by the same id. */
+export function sillyTavernImportUrl(url: string): string {
+  const trimmed = url.trim();
+  try {
+    const host = new URL(trimmed).hostname.toLowerCase();
+    const id = UUID.exec(trimmed)?.[0];
+    if (host.includes("jannyai") && id) return `https://janitorai.com/characters/${id}`;
+  } catch {
+    // Not a URL: SillyTavern reports it.
+  }
+  return trimmed;
+}
 
 export type DownloadRoute = "sillytavern" | "direct";
 
@@ -23,7 +39,7 @@ export function downloadRoute(url: string): DownloadRoute | null {
  * Botbooru: /character/99635 → /download/png/99635 (a PNG card), /lorebook/909 →
  * /api/lorebooks/909/download.json (a SillyTavern lorebook). Any other link is used as it is and has
  * to point straight at a card file then. */
-export function directDownload(url: string): { url: string; kind: "card" | "lorebook" } {
+export function directDownload(url: string): { url: string; kind: "card" | "lorebook" | "wyvern" } {
   try {
     const parsed = new URL(url.trim());
     const host = parsed.hostname.toLowerCase().replace(/^www\./, "");
@@ -32,6 +48,16 @@ export function directDownload(url: string): { url: string; kind: "card" | "lore
       if (card) return { url: `https://botbooru.com/download/png/${card}`, kind: "card" };
       const book = /^\/lorebook\/(\d+)/.exec(parsed.pathname)?.[1];
       if (book) return { url: `https://botbooru.com/api/lorebooks/${book}/download.json`, kind: "lorebook" };
+    }
+    // Character Tavern: /character/<creator>/<name> → the card PNG in its storage.
+    if (host === "character-tavern.com") {
+      const match = /^\/character\/([^/]+)\/([^/?#]+)/.exec(parsed.pathname);
+      if (match) return { url: `https://ct-cards.storage.character-tavern.com/${match[1]}/${match[2]}.png?action=download`, kind: "card" };
+    }
+    // WyvernChat: no public card file, but the character's fields are public — the card is built from them.
+    if (host === "wyvern.chat" || host.endsWith(".wyvern.chat")) {
+      const id = /\/characters?\/([A-Za-z0-9_-]+)/.exec(parsed.pathname)?.[1];
+      if (id) return { url: `https://api.wyvern.chat/characters/${id}`, kind: "wyvern" };
     }
   } catch {
     // Not a URL: the caller reports it.
@@ -123,4 +149,13 @@ export function stProxyExample(proxy: string, profileUrls: readonly string[]): s
     "  bypass:",
     ...[...hosts].map((h) => `    - ${h.includes(":") ? `"${h}"` : h}`),
   ].join("\n");
+}
+
+/** Whether a downloaded JSON is a lorebook rather than a character card: World Info / V2 lorebook
+ * files have entries but none of a card's fields. */
+export function isLorebookJson(value: unknown): boolean {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const v = value as Record<string, unknown>;
+  if (v.spec === "chara_card_v2" || v.spec === "chara_card_v3" || "first_mes" in v || "char_name" in v) return false;
+  return "entries" in v && (Array.isArray(v.entries) || (typeof v.entries === "object" && v.entries !== null));
 }

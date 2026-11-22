@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { directDownload, downloadRoute, fileNameFromDisposition, parseUrlList, placeInLibrary, safeName, stProxyExample } from "./library";
+import { directDownload, downloadRoute, isLorebookJson, sillyTavernImportUrl, fileNameFromDisposition, parseUrlList, placeInLibrary, safeName, stProxyExample } from "./library";
 
 describe("downloadRoute", () => {
   it("sends known sites through SillyTavern and anything else directly", () => {
@@ -73,5 +73,33 @@ describe("directDownload", () => {
     expect(directDownload("https://www.botbooru.com/character/99635?tab=info").url).toBe("https://botbooru.com/download/png/99635");
     expect(directDownload("https://botbooru.com/lorebook/909")).toEqual({ url: "https://botbooru.com/api/lorebooks/909/download.json", kind: "lorebook" });
     expect(directDownload(" https://example.org/a.png ")).toEqual({ url: "https://example.org/a.png", kind: "card" });
+  });
+});
+
+describe("more card sites", () => {
+  it("knows Character Tavern and WyvernChat pages", () => {
+    expect(directDownload("https://character-tavern.com/character/franklin/arisha_velveteen")).toEqual({
+      url: "https://ct-cards.storage.character-tavern.com/franklin/arisha_velveteen.png?action=download",
+      kind: "card",
+    });
+    expect(directDownload("https://app.wyvern.chat/characters/_reRYgwMPHhVWtUnVHHjAh")).toEqual({
+      url: "https://api.wyvern.chat/characters/_reRYgwMPHhVWtUnVHHjAh",
+      kind: "wyvern",
+    });
+  });
+
+  it("sends JannyAI links to SillyTavern as JanitorAI links", () => {
+    expect(downloadRoute("https://jannyai.com/characters/57a9501b-4bdf-4dd3-b095-1386c1d2ffb1_character-anna")).toBe("sillytavern");
+    expect(sillyTavernImportUrl("https://jannyai.com/characters/57a9501b-4bdf-4dd3-b095-1386c1d2ffb1_character-anna")).toBe(
+      "https://janitorai.com/characters/57a9501b-4bdf-4dd3-b095-1386c1d2ffb1",
+    );
+    expect(sillyTavernImportUrl(" https://chub.ai/characters/a/b ")).toBe("https://chub.ai/characters/a/b");
+  });
+
+  it("tells lorebook JSON from card JSON", () => {
+    expect(isLorebookJson({ name: "World", entries: [] })).toBe(true);
+    expect(isLorebookJson({ entries: { 0: {} } })).toBe(true);
+    expect(isLorebookJson({ spec: "chara_card_v2", data: { character_book: { entries: [] } } })).toBe(false);
+    expect(isLorebookJson({ name: "Anna", first_mes: "Hi", entries: [] })).toBe(false);
   });
 });

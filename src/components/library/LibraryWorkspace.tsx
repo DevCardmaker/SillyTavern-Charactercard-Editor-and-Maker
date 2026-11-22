@@ -1,7 +1,8 @@
 import { invoke } from "@tauri-apps/api/core";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { confirmAction } from "../../io/confirmDiscard";
-import { downloadToLibrary, type DownloadResult } from "../../io/downloader";
+import { addFilesToLibrary, downloadToLibrary, type DownloadResult } from "../../io/downloader";
+import { open as openFileDialog } from "@tauri-apps/plugin-dialog";
 import { exportLibraryGroupAsGroupx, importGroupxToLibrary, pickGroupxFile } from "../../io/groupxIO";
 import { openCardAtPath } from "../../io/fileIO";
 import { scanLibrary, type LibraryCard, type LibraryContent, type LibraryLorebook } from "../../io/library";
@@ -205,6 +206,26 @@ export function LibraryWorkspace({ onError, onShowMode }: Props) {
           Download…
         </button>
         <input className="field-input st-search" type="search" placeholder="Search name or tag…" value={search} onChange={(e) => setSearch(e.target.value)} />
+        <button
+          type="button"
+          className="secondary"
+          title="Add card (PNG/JSON) and lorebook files, e.g. downloaded in the browser — lorebooks go into “Lorebooks”"
+          onClick={() =>
+            void run("Adding…", async () => {
+              const picked = await openFileDialog({
+                multiple: true,
+                filters: [{ name: "Character card or lorebook", extensions: ["png", "json"] }],
+              });
+              const paths = Array.isArray(picked) ? picked : picked ? [picked] : [];
+              if (paths.length === 0) return;
+              const { failed } = await addFilesToLibrary(paths, null);
+              if (failed.length > 0) onError(`Not added: ${failed.join(" — ")}`);
+              await refresh();
+            })
+          }
+        >
+          Add files…
+        </button>
         <button
           type="button"
           className="secondary"
@@ -528,8 +549,9 @@ function DownloadDialog({
                 onChange={(e) => setText(e.target.value)}
               />
               <span className="field-hint">
-                Chub, JanitorAI, Pygmalion, RisuRealm, Perchance and AICharacterCards are downloaded through SillyTavern; Botbooru
-                characters and lorebooks and links pointing straight at a card PNG or JSON are downloaded by the editor. Lorebooks go into the “Lorebooks” folder.
+                Chub, JanitorAI, JannyAI, Pygmalion, RisuRealm, Perchance and AICharacterCards are downloaded through SillyTavern;
+                Botbooru, Character Tavern and WyvernChat pages and links pointing straight at a card PNG or JSON (e.g. CharaVault's
+                download links) by the editor. Lorebooks go into the “Lorebooks” folder.
               </span>
             </label>
             <label className="field">
