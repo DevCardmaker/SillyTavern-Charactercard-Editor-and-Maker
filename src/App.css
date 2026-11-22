@@ -2574,3 +2574,176 @@ button.secondary.active {
   justify-content: center;
   font-size: 1.3rem;
 }
+
+/* Coloured text fields: a transparent text area over a coloured copy of its text. */
+
+.hl-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  order: 1;
+  background: var(--bg-input);
+  border-radius: 6px;
+}
+
+.hl-backdrop {
+  position: absolute;
+  z-index: 0;
+  overflow: hidden;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: normal;
+  color: var(--text);
+  pointer-events: none;
+  box-sizing: border-box;
+}
+
+.hl-text {
+  position: relative;
+  z-index: 1;
+  background: transparent !important;
+  color: transparent !important;
+  caret-color: var(--text);
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+
+.hl-text::placeholder {
+  color: var(--text-dim);
+}
+
+.hl-text::selection {
+  background: rgba(124, 159, 255, 0.35);
+  color: transparent;
+}
+
+.hl-dialogue {
+  color: #e9c46a;
+}
+
+/* Colour only: italic or bold would change the letter widths and move the text away from the caret. */
+.hl-action {
+  color: #8fb8ff;
+}
+
+.hl-macro {
+  color: #c792ea;
+}
+
+.hl-tag {
+  color: #6fd6c0;
+}
+
+.hl-sample {
+  white-space: pre-wrap;
+  font-family: var(--font);
+  font-size: 0.95rem;
+  color: var(--text);
+}
+
+/* Recursion map */
+
+.rmap-modal {
+  width: min(1150px, 95vw);
+  height: 88vh;
+}
+
+.rmap-layout {
+  display: flex;
+  gap: 1rem;
+  flex: 1;
+  min-height: 0;
+}
+
+.rmap-picture {
+  flex: 0 0 auto;
+  width: min(560px, 50%);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.rmap-picture svg {
+  width: 100%;
+  height: auto;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.rmap-link {
+  stroke: #7c9fff;
+  stroke-opacity: 0.45;
+  stroke-width: 1.2;
+}
+
+.rmap-link.lit {
+  stroke-opacity: 1;
+  stroke-width: 2;
+}
+
+.rmap-link.dim {
+  stroke-opacity: 0.08;
+}
+
+.rmap-arrowhead {
+  fill: #7c9fff;
+}
+
+.rmap-dot {
+  fill: var(--bg-input);
+  stroke: var(--text-dim);
+  stroke-width: 1.5;
+}
+
+.rmap-dot.loop {
+  stroke: #e9c46a;
+}
+
+.rmap-node.lit .rmap-dot {
+  fill: var(--accent);
+  stroke: var(--accent);
+}
+
+.rmap-label {
+  fill: var(--text);
+  font-size: 14px;
+  font-family: var(--font);
+}
+
+.rmap-node {
+  cursor: default;
+}
+
+.rmap-loop-mark {
+  color: #e9c46a;
+}
+
+.rmap-list {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.rmap-list ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.rmap-row {
+  padding: 0.25rem 0.4rem;
+  border-radius: 5px;
+}
+
+.rmap-row:hover {
+  background: var(--bg-input);
+}
+
+.rmap-row.blocked {
+  opacity: 0.55;
+}

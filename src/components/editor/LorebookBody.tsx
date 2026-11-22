@@ -8,6 +8,7 @@ import { AiLorebookAssistPanel } from "./AiLorebookAssistPanel";
 import { AiLorebookEditPanel } from "./AiLorebookEditPanel";
 import { LorebookEntryEditor } from "./LorebookEntryEditor";
 import { LorebookKeyTestPanel } from "./LorebookKeyTestPanel";
+import { RecursionMapPanel } from "./RecursionMapPanel";
 
 interface Props {
   book: Lorebook;
@@ -33,6 +34,7 @@ export function LorebookBody({ book, onChange, actions, notice }: Props) {
   const [isAiAssistOpen, setIsAiAssistOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [isKeyTestOpen, setIsKeyTestOpen] = useState(false);
+  const [isRecursionOpen, setIsRecursionOpen] = useState(false);
   const [mergeMessage, setMergeMessage] = useState<{ text: string; isError: boolean } | null>(null);
   const dupes = useMemo(() => duplicateKeys(book), [book]);
   const [isAiEditOpen, setIsAiEditOpen] = useState(false);
@@ -130,6 +132,15 @@ export function LorebookBody({ book, onChange, actions, notice }: Props) {
         >
           Test keys…
         </button>
+        <button
+          type="button"
+          className="secondary"
+          disabled={book.entries.length < 2}
+          onClick={() => setIsRecursionOpen(true)}
+          title="Which entries bring in which others through recursion"
+        >
+          Recursion map…
+        </button>
         <span className="field-hint">
           {isFiltering ? `${visible.length} of ${book.entries.length} entries` : `${book.entries.length} entries`}
         </span>
@@ -168,6 +179,7 @@ export function LorebookBody({ book, onChange, actions, notice }: Props) {
         <AiLorebookAssistPanel book={book} onChange={onChange} onClose={() => setIsAiAssistOpen(false)} />
       )}
       {isKeyTestOpen && <LorebookKeyTestPanel book={book} onClose={() => setIsKeyTestOpen(false)} />}
+      {isRecursionOpen && <RecursionMapPanel book={book} onClose={() => setIsRecursionOpen(false)} />}
       {isAiEditOpen && <AiLorebookEditPanel book={book} onChange={onChange} onClose={() => setIsAiEditOpen(false)} />}
     </div>
   );

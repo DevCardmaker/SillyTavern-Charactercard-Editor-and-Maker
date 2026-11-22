@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Lorebook, LorebookEntry } from "./lorebook";
-import { DEFAULT_KEY_TEST_SETTINGS as DEFAULTS, duplicateKeys, matchKey, testKeys } from "./lorebookKeyTest";
+import { DEFAULT_KEY_TEST_SETTINGS as DEFAULTS, duplicateKeys, matchKey, testKeys, recursionMap } from "./lorebookKeyTest";
 
 function entry(keys: string[], content = "", extra: Partial<LorebookEntry> = {}): LorebookEntry {
   return { keys, content, extensions: {}, enabled: true, insertion_order: 0, ...extra };
@@ -92,5 +92,35 @@ describe("duplicateKeys", () => {
     expect(dupes.get(0)).toEqual(["mother"]);
     expect(dupes.get(1)).toEqual(["mother"]);
     expect(dupes.has(2)).toBe(false);
+  });
+});
+
+describe("recursionMap", () => {
+  it("links an entry to the ones its content triggers, and finds loops", () => {
+    const book = {
+      entries: [
+        entry(["Anna"], "Anna lives in Berg with her brother Ben."),
+        entry(["Ben"], "Ben is Anna's brother."),
+        entry(["Berg"], "A small town."),
+      ],
+    } as unknown as Lorebook;
+    const map = recursionMap(book, DEFAULTS);
+    expect(map.links.map((l) => `${l.from}->${l.to}:${l.key}`).sort()).toEqual(["0->1:Ben", "0->2:Berg", "1->0:Anna"]);
+    expect(map.loops).toEqual([[0, 1]]);
+  });
+
+  it("marks links SillyTavern wouldn't follow, and leaves out constant and disabled entries", () => {
+    const book = {
+      entries: [
+        entry(["Anna"], "Anna knows Ben and Cara.", { extensions: { prevent_recursion: true } }),
+        entry(["Ben"], "Ben.", { extensions: { exclude_recursion: true } }),
+        entry(["Cara"], "Cara.", { constant: true }),
+        entry(["Dora"], "Dora knows Ben.", { enabled: false }),
+        entry(["Emil"], "Emil knows Ben."),
+      ],
+    } as unknown as Lorebook;
+    const map = recursionMap(book, DEFAULTS);
+    expect(map.links.map((l) => `${l.from}->${l.to}:${l.blockedBy ?? "ok"}`).sort()).toEqual(["0->1:prevent", "4->1:exclude"]);
+    expect(map.loops).toEqual([]);
   });
 });

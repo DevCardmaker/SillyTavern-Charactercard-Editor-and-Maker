@@ -3,6 +3,7 @@ import { useSettingsDialogStore, type SettingsSection } from "../../state/settin
 import { CustomAiButtonsEditor } from "../common/CustomAiButtonsEditor";
 import { AiProviderProfilesEditor } from "../editor/AiProviderSettings";
 import { PromptsSettings } from "../editor/PromptsSettings";
+import { EditorSettings } from "./EditorSettings";
 import { LibrarySettingsEditor } from "./LibrarySettingsEditor";
 import { StSettingsEditor } from "./StSettingsEditor";
 
@@ -27,6 +28,11 @@ const SECTIONS: { id: SettingsSection; label: string; about: string }[] = [
     id: "library",
     label: "Library & downloads",
     about: "Where the card library lives, and a proxy for downloads and cloud AI.",
+  },
+  {
+    id: "editor",
+    label: "Editor",
+    about: "How the text fields look.",
   },
   {
     id: "buttons",
@@ -79,6 +85,7 @@ export function SettingsDialog() {
             {section === "buttons" && <CustomAiButtonsEditor />}
             {section === "sillytavern" && <StSettingsEditor />}
             {section === "library" && <LibrarySettingsEditor />}
+            {section === "editor" && <EditorSettings />}
           </div>
         </div>
         <div className="modal-actions">

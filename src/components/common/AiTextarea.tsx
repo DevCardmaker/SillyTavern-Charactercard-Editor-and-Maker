@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { requestFreeText } from "../../io/aiClient";
 import type { AiContextKey } from "../../schema/aiContext";
 import {
@@ -12,7 +12,9 @@ import {
   type InlineActionId,
   type InlineTarget,
 } from "../../schema/inlineAi";
+import { highlightParts } from "../../schema/highlight";
 import { promptText } from "../../schema/promptTexts";
+import { useAppSettingsStore } from "../../state/appSettingsStore";
 import { wordDiff } from "../../schema/textDiff";
 import { aiContextNow } from "../../state/aiContextNow";
 import { activeAiProfileOrThrow } from "../../state/aiProviderConfigStore";
@@ -58,18 +60,92 @@ interface Preview {
  * when nothing is selected, and always show old and new before anything changes. */
 export function AiTextarea({ value, onChange, rows, placeholder, id, ai }: Props) {
   const ref = useRef<HTMLTextAreaElement>(null);
+  const highlightSetting = useAppSettingsStore((s) => s.settings?.highlight ?? true);
+  const ensureSettings = useAppSettingsStore((s) => s.ensureLoaded);
+  useEffect(() => {
+    void ensureSettings();
+  }, [ensureSettings]);
+  // The card's text fields (the ones with the AI bar) get the colours.
+  const highlight = !!ai && highlightSetting;
+  const textarea = (
+    <textarea
+      ref={ref}
+      id={id}
+      className={highlight ? "field-textarea hl-text" : "field-textarea"}
+      value={value}
+      placeholder={placeholder}
+      rows={rows}
+      onChange={(e) => onChange(e.target.value)}
+    />
+  );
   return (
     <div className={ai ? "ai-textarea" : undefined}>
       {ai && <InlineAiBar field={ref} info={ai} />}
-      <textarea
-        ref={ref}
-        id={id}
-        className="field-textarea"
-        value={value}
-        placeholder={placeholder}
-        rows={rows}
-        onChange={(e) => onChange(e.target.value)}
-      />
+      {highlight ? (
+        <div className="hl-wrap">
+          <HighlightBackdrop field={ref} value={value} />
+          {textarea}
+        </div>
+      ) : (
+        textarea
+      )}
+    </div>
+  );
+}
+
+/** The coloured copy of the text behind a transparent text area. It copies the area's font,
+ * padding and inner size, and follows its scrolling, so every character sits exactly under the
+ * real one — only the caret and the selection come from the text area itself. */
+function HighlightBackdrop({ field, value }: { field: React.RefObject<HTMLTextAreaElement | null>; value: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const parts = useMemo(() => highlightParts(value), [value]);
+
+  useLayoutEffect(() => {
+    const area = field.current;
+    const backdrop = ref.current;
+    if (!area || !backdrop) return;
+    const sync = () => {
+      const style = getComputedStyle(area);
+      Object.assign(backdrop.style, {
+        top: `${area.offsetTop + area.clientTop}px`,
+        left: `${area.offsetLeft + area.clientLeft}px`,
+        // clientWidth leaves out a scrollbar, so lines wrap at the same place as in the area.
+        width: `${area.clientWidth}px`,
+        height: `${area.clientHeight}px`,
+        padding: style.padding,
+        font: style.font,
+        letterSpacing: style.letterSpacing,
+        wordSpacing: style.wordSpacing,
+        lineHeight: style.lineHeight,
+        tabSize: style.tabSize,
+      });
+      backdrop.scrollTop = area.scrollTop;
+      backdrop.scrollLeft = area.scrollLeft;
+    };
+    sync();
+    const observer = new ResizeObserver(sync);
+    observer.observe(area);
+    area.addEventListener("scroll", sync);
+    return () => {
+      observer.disconnect();
+      area.removeEventListener("scroll", sync);
+    };
+  }, [field, value]);
+
+  return (
+    <div className="hl-backdrop" ref={ref} aria-hidden="true">
+      {parts.map((part, i) => {
+        const className = [part.span && `hl-${part.span}`, part.token && `hl-${part.token}`].filter(Boolean).join(" ");
+        return className ? (
+          <span key={i} className={className}>
+            {part.text}
+          </span>
+        ) : (
+          part.text
+        );
+      })}
+      {/* A last empty line only shows when something follows it. */}
+      {value.endsWith("\n") ? " " : null}
     </div>
   );
 }

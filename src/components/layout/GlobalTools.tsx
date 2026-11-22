@@ -48,6 +48,7 @@ export function SettingsMenu() {
         { label: "Prompts…", onSelect: () => openSettings("prompts") },
         { label: "SillyTavern…", onSelect: () => openSettings("sillytavern") },
         { label: "Library & downloads…", onSelect: () => openSettings("library") },
+        { label: "Editor…", onSelect: () => openSettings("editor") },
         { label: "My quick actions…", onSelect: () => openSettings("buttons") },
       ]}
     />

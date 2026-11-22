@@ -175,3 +175,77 @@ export function duplicateKeys(book: Lorebook): Map<number, string[]> {
   }
   return result;
 }
+
+/** One entry's content triggering another entry through its key (recursion). */
+export interface RecursionLink {
+  from: number;
+  to: number;
+  key: string;
+  /** Set when SillyTavern wouldn't follow it: the source prevents further recursion, or the target
+   * is excluded from recursion. */
+  blockedBy?: "prevent" | "exclude";
+}
+
+export interface RecursionMap {
+  links: RecursionLink[];
+  /** Groups of entries that trigger each other in a loop (each group has two or more entries). */
+  loops: number[][];
+}
+
+/** Which entries pull in which others through recursion — every pair where a key of one entry
+ * appears in the content of another, with the same key rules as the key tester. Constant entries
+ * are always in anyway, so nothing leads to them; disabled entries take no part. */
+export function recursionMap(book: Lorebook, settings: KeyTestSettings): RecursionMap {
+  const links: RecursionLink[] = [];
+  book.entries.forEach((source, from) => {
+    if (!source.enabled || !source.content.trim()) return;
+    const prevents = optBool(source, "preventRecursion", "prevent_recursion") === true;
+    book.entries.forEach((target, to) => {
+      if (to === from || !target.enabled || target.constant) return;
+      const key = matchEntry(target, source.content, settings);
+      if (!key) return;
+      const excluded = optBool(target, "excludeRecursion", "exclude_recursion") === true;
+      links.push({ from, to, key, ...(prevents ? { blockedBy: "prevent" as const } : excluded ? { blockedBy: "exclude" as const } : {}) });
+    });
+  });
+  return { links, loops: findLoops(book.entries.length, links.filter((l) => !l.blockedBy)) };
+}
+
+/** Strongly connected groups of two or more (Tarjan's algorithm). */
+function findLoops(count: number, links: RecursionLink[]): number[][] {
+  const next = Array.from({ length: count }, () => [] as number[]);
+  for (const link of links) next[link.from].push(link.to);
+  const index = new Array<number>(count).fill(-1);
+  const low = new Array<number>(count).fill(0);
+  const onStack = new Array<boolean>(count).fill(false);
+  const stack: number[] = [];
+  const loops: number[][] = [];
+  let counter = 0;
+
+  function visit(v: number) {
+    index[v] = low[v] = counter++;
+    stack.push(v);
+    onStack[v] = true;
+    for (const w of next[v]) {
+      if (index[w] === -1) {
+        visit(w);
+        low[v] = Math.min(low[v], low[w]);
+      } else if (onStack[w]) {
+        low[v] = Math.min(low[v], index[w]);
+      }
+    }
+    if (low[v] === index[v]) {
+      const group: number[] = [];
+      let w: number;
+      do {
+        w = stack.pop() as number;
+        onStack[w] = false;
+        group.push(w);
+      } while (w !== v);
+      if (group.length > 1) loops.push(group.sort((a, b) => a - b));
+    }
+  }
+
+  for (let v = 0; v < count; v++) if (index[v] === -1) visit(v);
+  return loops;
+}

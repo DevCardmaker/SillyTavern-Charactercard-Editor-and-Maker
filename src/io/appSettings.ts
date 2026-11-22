@@ -7,10 +7,12 @@ export interface AppSettings {
   libraryDir: string;
   /** Proxy for the editor's own internet requests (cloud AI, direct downloads); "" = none. */
   proxy: string;
+  /** Colour dialogue, actions and macros in the card text fields. */
+  highlight: boolean;
 }
 
 const FILE = "app-settings.json";
-export const DEFAULT_APP_SETTINGS: AppSettings = { libraryDir: "", proxy: "" };
+export const DEFAULT_APP_SETTINGS: AppSettings = { libraryDir: "", proxy: "", highlight: true };
 
 async function filePath(): Promise<string> {
   return join(await appConfigDir(), FILE);
@@ -22,6 +24,7 @@ export async function loadAppSettings(): Promise<AppSettings> {
     return {
       libraryDir: typeof parsed.libraryDir === "string" ? parsed.libraryDir : "",
       proxy: typeof parsed.proxy === "string" ? parsed.proxy : "",
+      highlight: parsed.highlight !== false,
     };
   } catch {
     return { ...DEFAULT_APP_SETTINGS };
