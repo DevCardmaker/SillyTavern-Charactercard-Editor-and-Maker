@@ -2,6 +2,15 @@
 
 All notable changes to this project are documented here. The project follows [Semantic Versioning](https://semver.org/): new features raise the minor version, fixes the patch version.
 
+## [1.19.0] – 2026-11-22
+
+### Added
+- **Library**: a new page in the left sidebar for your card collection. It's a normal folder (by default in the app's data folder, changeable under Settings → Library & downloads): cards at the top, every subfolder shown as a **group** with "Open all", and lorebooks from the "Lorebooks" folder. Search by name or tag; tick cards and lorebooks (single ones, a whole group, or "Select all" for everything the search shows) and **open**, **delete** or **send** them **to SillyTavern** together; open the folder in the file manager.
+- **To SillyTavern…** from the library lists every ticked entry with its target: a card overwrites the character with the same name or is added as new (like "Send to SillyTavern", without opening it first); a lorebook becomes SillyTavern World Info — over the one of the same name, or as a copy "Name (2)". Whatever is overwritten is kept as a snapshot first.
+- **Download…** on the Library page: paste links, one per line. Chub, JanitorAI, Pygmalion, RisuRealm, Perchance and AICharacterCards are fetched through SillyTavern's own downloader (nothing is added to SillyTavern itself); **Botbooru** character and lorebook pages and direct links to a card PNG or JSON are fetched by the editor. A link to a web page of an unsupported site says so, instead of failing silently. Give the batch a **group** name to put the cards into that subfolder, and tick "Open them afterwards" to open them right away. Lorebooks go into the "Lorebooks" folder under their own name. A card that's already there unchanged is simply written again; a changed one is added as a second file ("Anna-2.png").
+- **File → Save to Library…** and **Group → Save Group to Library…** put copies of the open card(s) into the library, a group into its own subfolder.
+- **Proxy** under Settings → Library & downloads, for the editor's own internet requests (cloud AI providers and direct card links), e.g. a VPN container's HTTP proxy; addresses on this computer and the home network never go through it. Downloads through SillyTavern use SillyTavern's own proxy setting: the page shows a ready-made `requestProxy` block for its `config.yaml` (filled in with your proxy and your local model servers as exceptions) to copy, with a short explanation and a link to SillyTavern's documentation.
+
 ## [1.18.0] – 2026-11-22
 
 ### Added
