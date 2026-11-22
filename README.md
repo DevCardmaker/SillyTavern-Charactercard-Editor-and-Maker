@@ -191,4 +191,6 @@ This tool performs **no content moderation or filtering** of any kind. You are s
 
 ## License
 
-[MIT](LICENSE)
+SillyTavern Card Editor is free software: you can redistribute it and/or modify it under the terms of the **GNU General Public License, version 3 or (at your option) any later version** — see [LICENSE](LICENSE). In short: you may use, share and change it, and if you pass on a changed version, you pass it on under the same license, with its source.
+
+Versions up to and including 1.10.0 were released under the MIT License; those releases stay under MIT.

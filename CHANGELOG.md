@@ -4,6 +4,20 @@ All notable changes to this project are documented here. The project follows [Se
 
 ## [Unreleased]
 
+## [1.20.0] – 2026-11-22
+
+The first public release since 1.10.0 — it brings everything from 1.11 to 1.20 (each version's details are in [CHANGELOG.md](https://github.com/DevCardmaker/SillyTavern-Charactercard-Editor-and-Maker/blob/master/CHANGELOG.md)). In short:
+
+- **A new layout**: the open cards, lorebooks, personas and presets in a left sidebar; snapshots, brainstorm, AI context, test chat, budget, key test and recent files as tabs in a right sidebar; menus in the header. (1.16, 1.20)
+- **AI help right where you write**: quick actions above every text field (Enhance, Shorten, Less AI slop … and your own), always shown as a word-by-word preview first; a **Brainstorm** chat about the card; a **Context** tab for what the AI knows; an AI profile switcher. (1.17)
+- **SillyTavern connection**: open, send, copy and delete characters, groups and personas in your SillyTavern, with a snapshot before anything is overwritten. (1.18, 1.20)
+- **A small library** for your cards and lorebooks, with groups, a downloader for links from Chub, JanitorAI, Character Tavern, WyvernChat, Botbooru and more, and an optional proxy. (1.19, 1.20)
+- **GroupX** files for whole groups, a **recursion map** for lorebooks, **coloured** dialogue and actions, **Find & Replace**, and cards from a story with a **wiki page** as background. (1.20)
+- **Image prompts** for Anima and Pony, with negative prompt, rating, framing, size and 27 art styles. (1.11–1.15)
+
+### License
+- From this version on, the editor is licensed under the **GNU General Public License v3.0 or later** (GPL-3.0-or-later). Releases up to 1.10.0 stay under MIT.
+
 ### Added
 - The **quick actions** above text fields also work for **lorebook entries** (with the entry's name and keys as background) and the **persona description**.
 - **Coloured text fields**: dialogue in quotes (also „German“, “English” and «French» ones) in amber, *actions* between asterisks in blue, {{macros}} in violet and tags like <START> in teal — in every card text field, lorebook entry and persona description. Only colours, so the text and the caret stay exactly where they are; Settings → Editor turns it off.
