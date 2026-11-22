@@ -10,6 +10,7 @@ All notable changes to this project are documented here. The project follows [Se
 - **Recursion map** (next to "Test keys…" in every lorebook): which entries bring in which others through recursion, as a picture and as a list with the key that does it. Links SillyTavern won't follow ("prevent further recursion", "exclude from recursion") are shown greyed with the reason, and loops of entries that always bring each other in are pointed out.
 - **GroupX**: a whole group as one file to pass on — a ZIP like CharX with the cards in their order (the order of first messages in a group chat) and their shared lorebooks. Group → **Export as GroupX…** (choose name and order), File → **Open GroupX…** or drag the file onto the window; the Library exports a group as GroupX and imports one as a group folder.
 - Library groups **keep their order** (a small `group.json` in the folder, written by "Save Group to Library" and the GroupX import); "Open all" and the GroupX export follow it.
+- **Cards from a Story with a wiki page as background**: add Fandom or Wikipedia links below the story. The page is fetched as plain text (infobox facts like age or job kept as "field: value" lines), marked as background the AI uses only for facts the story leaves out — the story wins where they differ — and shortened at a paragraph if it's very long.
 - The window title shows the app's **version**.
 - The recent cards and recent groups lists keep **20** entries instead of 5, now that they have a tab of their own.
 

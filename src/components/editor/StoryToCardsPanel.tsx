@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { fetchWikiPage } from "../../io/wikiFetch";
 import { useTokenCounter } from "../../hooks/useTokenCount";
 import {
   type AiProviderConfig,
@@ -164,6 +165,10 @@ export function StoryToCardsPanel({ onClose, onShowLorebooks }: Props) {
 
   const [text, setText] = useState("");
   const [fileName, setFileName] = useState<string | null>(null);
+  /** Wiki pages added as background: facts the story doesn't give (canon details, looks, ages). */
+  const [wikiPages, setWikiPages] = useState<{ title: string; text: string; shortened: boolean }[]>([]);
+  const [wikiUrl, setWikiUrl] = useState("");
+  const [wikiBusy, setWikiBusy] = useState(false);
   const [candidates, setCandidates] = useState<Candidate[] | null>(null);
   const [extraName, setExtraName] = useState("");
   const [roleChoice, setRoleChoice] = useState<RoleChoice>("joins");
@@ -198,14 +203,61 @@ export function StoryToCardsPanel({ onClose, onShowLorebooks }: Props) {
     ensureConfigLoaded();
   }, [ensureConfigLoaded]);
 
-  const paragraphs = useMemo(() => (count && text.trim() ? storyParagraphs(text, count) : []), [text, count]);
+  // Wiki pages go after the story as clearly marked background, so every pass can use their facts.
+  const storyText = useMemo(() => {
+    if (!text.trim() || wikiPages.length === 0) return text;
+    const blocks = wikiPages.map(
+      (w) =>
+        `[Background from the wiki page "${w.title}" — not part of the story. Use it only for facts the story doesn't mention; where they differ, the story is right.]\n\n${w.text}`,
+    );
+    return [text, ...blocks].join("\n\n");
+  }, [text, wikiPages]);
+  const paragraphs = useMemo(() => (count && storyText.trim() ? storyParagraphs(storyText, count) : []), [storyText, count]);
   const parts = useMemo(() => (count ? storyParts(paragraphs, count) : []), [paragraphs, count]);
-  const tokens = useMemo(() => (count && text ? count(text) : 0), [text, count]);
+  const tokens = useMemo(() => (count && storyText ? count(storyText) : 0), [storyText, count]);
   const detectedLanguage = useMemo(() => detectStoryLanguage(text), [text]);
   useEffect(() => {
     if (!languageEdited) setLanguage(detectedLanguage ?? "");
   }, [detectedLanguage, languageEdited]);
   const writeLanguage = language.trim() || "the language of the story";
+
+  /** Found people and written results belong to the text they came from. */
+  function resetResults() {
+    setCandidates(null);
+    setResults({});
+    setLoreItems(null);
+    setLoreResults({});
+  }
+
+  /** At most this much of one wiki page — enough for the facts, without crowding out the story. */
+  const WIKI_MAX_TOKENS = 3000;
+
+  async function addWikiPage() {
+    setWikiBusy(true);
+    setError(null);
+    try {
+      const page = await fetchWikiPage(wikiUrl);
+      let text = page.text;
+      let shortened = false;
+      if (count && count(text) > WIKI_MAX_TOKENS) {
+        // Cut at a paragraph: keep whole paragraphs while they fit.
+        const kept: string[] = [];
+        for (const paragraph of text.split(/\n{2,}/)) {
+          if (count([...kept, paragraph].join("\n\n")) > WIKI_MAX_TOKENS) break;
+          kept.push(paragraph);
+        }
+        text = kept.join("\n\n");
+        shortened = true;
+      }
+      setWikiPages((list) => [...list, { title: page.title, text, shortened }]);
+      setWikiUrl("");
+      resetResults();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setWikiBusy(false);
+    }
+  }
 
   const providerReady = !!activeProfile?.baseUrl && !!activeProfile.model;
   const busy = isFinding || isWriting || isFindingLore || isWritingLore || isWritingPersona;
@@ -957,13 +1009,55 @@ export function StoryToCardsPanel({ onClose, onShowLorebooks }: Props) {
             onChange={(e) => {
               setText(e.target.value);
               setFileName(null);
-              setCandidates(null);
-              setResults({});
-              setLoreItems(null);
-              setLoreResults({});
+              resetResults();
             }}
           />
         </label>
+        <div className="wiki-sources">
+          <div className="wiki-add">
+            <input
+              className="field-input"
+              type="url"
+              placeholder="Wiki page (optional) — e.g. https://sherlock.fandom.com/wiki/Irene_Adler"
+              value={wikiUrl}
+              disabled={busy || wikiBusy}
+              onChange={(e) => setWikiUrl(e.target.value)}
+            />
+            <button type="button" className="secondary" disabled={!wikiUrl.trim() || busy || wikiBusy} onClick={() => void addWikiPage()}>
+              {wikiBusy ? "Fetching…" : "Add"}
+            </button>
+          </div>
+          {wikiPages.length > 0 ? (
+            <ul className="wiki-list">
+              {wikiPages.map((w, i) => (
+                <li key={`${w.title}-${i}`}>
+                  📖 {w.title}
+                  <span className="field-hint">
+                    {" "}
+                    · {count ? count(w.text).toLocaleString() : "…"} tokens{w.shortened ? " (shortened)" : ""}
+                  </span>
+                  <button
+                    type="button"
+                    className="link-button"
+                    disabled={busy}
+                    onClick={() => {
+                      setWikiPages((list) => list.filter((_, j) => j !== i));
+                      resetResults();
+                    }}
+                  >
+                    remove
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="field-hint">
+              A Fandom or Wikipedia page as background, for facts the story leaves out (looks, age, history). It's marked as
+              background, and the story wins where they differ — leave it out for fan fiction that changes the canon.
+            </p>
+          )}
+        </div>
+
         <div className="modal-actions">
           <button type="button" className="secondary" disabled={busy} onClick={() => void loadFile()}>
             Load .txt/.md…
