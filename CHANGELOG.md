@@ -14,6 +14,8 @@ All notable changes to this project are documented here. The project follows [Se
 - **More download sites**: **Character Tavern** and **WyvernChat** pages (Wyvern only offers files to logged-in users, so the card is built from its public fields and embedded in its picture), **JannyAI** links (handed to SillyTavern like JanitorAI ones), and direct download links such as **CharaVault**'s. A JSON from a direct link is recognised as a card or a lorebook. A site that refuses because of the country (451) points to the proxy setting; JanitorAI/JannyAI explain that JannyAI currently blocks automatic downloads.
 - **Add files…** in the Library takes card and lorebook files downloaded in the browser — for sites without an open download.
 - The window title shows the app's **version**.
+- The brainstorm chat shows **bold** and *italic* from the AI's answers as such.
+- Screenshots in the README.
 - The recent cards and recent groups lists keep **20** entries instead of 5, now that they have a tab of their own.
 
 ### Changed

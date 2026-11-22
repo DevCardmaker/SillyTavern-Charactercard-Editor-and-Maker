@@ -7,6 +7,7 @@ import { aiContextNow } from "../../state/aiContextNow";
 import { activeAiProfileOrThrow } from "../../state/aiProviderConfigStore";
 import { useBrainstormStore } from "../../state/brainstormStore";
 import { useCardStore } from "../../state/cardStore";
+import { SimpleMarkdown } from "./SimpleMarkdown";
 
 const EMPTY: AiChatMessage[] = [];
 
@@ -93,7 +94,7 @@ export function BrainstormPanel() {
         )}
         {messages.map((m, i) => (
           <div key={i} className={m.role === "user" ? "brainstorm-message user" : "brainstorm-message assistant"}>
-            <div className="brainstorm-text">{m.content}</div>
+            <div className="brainstorm-text">{m.role === "assistant" ? <SimpleMarkdown text={m.content} /> : m.content}</div>
             {m.role === "assistant" && (
               <button
                 type="button"

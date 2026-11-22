@@ -4,6 +4,19 @@ A desktop editor for [SillyTavern](https://github.com/SillyTavern/SillyTavern) c
 
 > **Unofficial project.** Not affiliated with, endorsed by, or sponsored by SillyTavern or its developers. "SillyTavern" is used here only to describe compatibility with its character card format. See [Disclaimer](#disclaimer) below.
 
+## Screenshots
+
+![The editor: open cards on the left, the card's fields with coloured dialogue, actions and macros in the middle, a brainstorm chat on the right](docs/screenshots/main.png)
+
+| | |
+|---|---|
+| ![Quick actions above a text field, with the AI's change shown word by word before it is applied](docs/screenshots/quick-actions.png) | ![The card library with groups, lorebooks and ticked entries](docs/screenshots/library.png) |
+| Quick actions: every change is shown before it's applied | The library: groups, lorebooks, open / send / delete together |
+| ![The SillyTavern page listing its characters](docs/screenshots/sillytavern.png) | ![The recursion map of a lorebook](docs/screenshots/recursion-map.png) |
+| Characters, groups and personas straight from SillyTavern | The recursion map: which lorebook entries bring in which others |
+
+<sub>The example cards use public-domain paintings by Johannes Vermeer and Rembrandt van Rijn (Wikimedia Commons). The characters are made up.</sub>
+
 ## Features
 
 **Core editing**
