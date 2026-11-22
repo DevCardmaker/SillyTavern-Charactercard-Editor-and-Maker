@@ -34,6 +34,7 @@ import { useLorebookStore } from "./state/lorebookStore";
 import { usePersonaStore } from "./state/personaStore";
 import { usePromptFileStore } from "./state/promptFileStore";
 import { useStPresetStore } from "./state/stPresetStore";
+import { version as APP_VERSION } from "../package.json";
 import "./App.css";
 
 const TABS: { id: string; label: string; Component: (props: TabProps) => React.JSX.Element }[] = [
@@ -109,7 +110,7 @@ function App() {
             ? [activePreset?.path, activePreset?.isDirty, "No preset"]
             : [currentFilePath, isDirty, "New card"];
     const fileName = path ? path.split(/[\\/]/).pop() : fallback;
-    getCurrentWindow().setTitle(`${dirty ? "● " : ""}${fileName} — SillyTavern Card Editor`);
+    getCurrentWindow().setTitle(`${dirty ? "● " : ""}${fileName} — SillyTavern Card Editor ${APP_VERSION}`);
   }, [mode, activeLorebook, currentFilePath, isDirty, personaPath, personaDirty, activePreset]);
 
   // Warn before the window closes with unsaved changes, same confirmation as New/Open.
