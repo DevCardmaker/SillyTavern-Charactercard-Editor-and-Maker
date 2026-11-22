@@ -83,8 +83,10 @@ export function AiTextarea({ value, onChange, rows, placeholder, id, ai }: Props
       {ai && <InlineAiBar field={ref} info={ai} />}
       {highlight ? (
         <div className="hl-wrap">
-          <HighlightBackdrop field={ref} value={value} />
+          {/* The text area first: React attaches its ref before the backdrop's layout effect runs,
+              so the backdrop can measure it on the very first render (it stays behind via z-index). */}
           {textarea}
+          <HighlightBackdrop field={ref} value={value} />
         </div>
       ) : (
         textarea
@@ -106,14 +108,22 @@ function HighlightBackdrop({ field, value }: { field: React.RefObject<HTMLTextAr
     if (!area || !backdrop) return;
     const sync = () => {
       const style = getComputedStyle(area);
+      // Longhand properties only: WebKit (the Linux app) can leave shorthands like `font` or
+      // `padding` empty in computed styles, which left the coloured copy without its padding.
       Object.assign(backdrop.style, {
         top: `${area.offsetTop + area.clientTop}px`,
         left: `${area.offsetLeft + area.clientLeft}px`,
         // clientWidth leaves out a scrollbar, so lines wrap at the same place as in the area.
         width: `${area.clientWidth}px`,
         height: `${area.clientHeight}px`,
-        padding: style.padding,
-        font: style.font,
+        paddingTop: style.paddingTop,
+        paddingRight: style.paddingRight,
+        paddingBottom: style.paddingBottom,
+        paddingLeft: style.paddingLeft,
+        fontFamily: style.fontFamily,
+        fontSize: style.fontSize,
+        fontWeight: style.fontWeight,
+        fontStyle: style.fontStyle,
         letterSpacing: style.letterSpacing,
         wordSpacing: style.wordSpacing,
         lineHeight: style.lineHeight,
