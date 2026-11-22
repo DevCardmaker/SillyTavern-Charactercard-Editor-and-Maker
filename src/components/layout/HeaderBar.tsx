@@ -11,6 +11,8 @@ import { AiGroupScenePanel } from "../editor/AiGroupScenePanel";
 import { AiRelocatePanel } from "../editor/AiRelocatePanel";
 import { AiSplitGroupPanel } from "../editor/AiSplitGroupPanel";
 import { GroupLorebookPanel } from "../editor/GroupLorebookPanel";
+import { GroupxExportDialog } from "../editor/GroupxExportDialog";
+import { openGroupx, pickGroupxFile } from "../../io/groupxIO";
 import { ImageToCardsPanel } from "../editor/ImageToCardsPanel";
 import { MergeCardsPanel } from "../editor/MergeCardsPanel";
 import { StoryToCardsPanel } from "../editor/StoryToCardsPanel";
@@ -40,7 +42,8 @@ type DialogId =
   | "groupLorebook"
   | "merge"
   | "split"
-  | "translate";
+  | "translate"
+  | "groupx";
 
 /** The characters mode's top bar: which card is open, Save, and the menus that replace the old row
  * of buttons. Dialogs that create new cards open from here; tools for the open card live in the
@@ -194,6 +197,14 @@ export function HeaderBar({ onError, onShowLorebooks, onOpenTool, isLeftOpen, is
               title: "Additionally export the current state elsewhere, without switching the currently open file",
               onSelect: () => saveCardAsCopy().catch(report),
             },
+            {
+              label: "Open GroupX…",
+              title: "Open all cards of a GroupX file, in their order, and its lorebooks",
+              onSelect: () =>
+                void pickGroupxFile()
+                  .then((path) => (path ? openGroupx(path) : null))
+                  .catch(report),
+            },
             "separator",
             {
               label: "Save to Library…",
@@ -264,6 +275,12 @@ export function HeaderBar({ onError, onShowLorebooks, onOpenTool, isLeftOpen, is
               onSelect: () => useLibrarySaveStore.getState().open("group"),
             },
             {
+              label: "Export as GroupX…",
+              disabled: openCount < 2,
+              title: needsTwo ?? "All open cards in one file, in an order you choose, with their shared lorebooks",
+              onSelect: () => setDialog("groupx"),
+            },
+            {
               label: "Create Group in SillyTavern…",
               disabled: openCount < 2,
               title: needsTwo ?? "Send the open cards to SillyTavern and make them a group there, in an order you choose",
@@ -320,6 +337,7 @@ export function HeaderBar({ onError, onShowLorebooks, onOpenTool, isLeftOpen, is
       {dialog === "merge" && <MergeCardsPanel onClose={() => setDialog(null)} />}
       {dialog === "split" && <AiSplitGroupPanel onClose={() => setDialog(null)} />}
       {dialog === "translate" && <TranslateCardPanel onClose={() => setDialog(null)} />}
+      {dialog === "groupx" && <GroupxExportDialog onClose={() => setDialog(null)} />}
     </header>
   );
 }

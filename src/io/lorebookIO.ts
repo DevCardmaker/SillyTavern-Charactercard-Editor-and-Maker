@@ -33,13 +33,19 @@ export async function importLorebook(): Promise<Lorebook | null> {
 /** Reads and validates a lorebook JSON file (V2 or SillyTavern World Info). Throws with a
  * readable message if it isn't one. */
 export async function readLorebookAtPath(path: string): Promise<Lorebook> {
-  const bytes = await readBinary(path);
-  const json = JSON.parse(new TextDecoder().decode(bytes));
-  const result = lorebookSchema.safeParse(normalizeWorldInfo(json));
-  if (!result.success) {
-    const fileName = path.split(/[\\/]/).pop();
+  return parseLorebookBytes(await readBinary(path), path.split(/[\\/]/).pop() ?? path);
+}
+
+/** The same for a lorebook that isn't a file on disk (e.g. inside a GroupX archive). */
+export function parseLorebookBytes(bytes: Uint8Array, fileName: string): Lorebook {
+  let json: unknown;
+  try {
+    json = JSON.parse(new TextDecoder().decode(bytes));
+  } catch {
     throw new Error(`"${fileName}" is not a lorebook (World Info) file.`);
   }
+  const result = lorebookSchema.safeParse(normalizeWorldInfo(json));
+  if (!result.success) throw new Error(`"${fileName}" is not a lorebook (World Info) file.`);
   return result.data;
 }
 

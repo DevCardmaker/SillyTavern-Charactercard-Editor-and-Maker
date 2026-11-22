@@ -2,6 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { confirmAction } from "../../io/confirmDiscard";
 import { downloadToLibrary, type DownloadResult } from "../../io/downloader";
+import { exportLibraryGroupAsGroupx, importGroupxToLibrary, pickGroupxFile } from "../../io/groupxIO";
 import { openCardAtPath } from "../../io/fileIO";
 import { scanLibrary, type LibraryCard, type LibraryContent, type LibraryLorebook } from "../../io/library";
 import { openLorebookPaths } from "../../io/lorebookIO";
@@ -168,7 +169,7 @@ export function LibraryWorkspace({ onError, onShowMode }: Props) {
     );
   }
 
-  function sectionHead(title: string, items: Item[], extra?: string) {
+  function sectionHead(title: string, items: Item[], extra?: string, groupCards?: LibraryCard[]) {
     const paths = items.map(itemPath);
     const all = paths.length > 0 && paths.every((p) => selected.has(p));
     return (
@@ -182,6 +183,17 @@ export function LibraryWorkspace({ onError, onShowMode }: Props) {
         />
         <h3>{title}</h3>
         {extra && <span className="field-hint">{extra}</span>}
+        {groupCards && (
+          <button
+            type="button"
+            className="secondary sidebar-small-button"
+            disabled={groupCards.length === 0}
+            title="Pack this group into one GroupX file to pass on"
+            onClick={() => void run("Exporting…", async () => void (await exportLibraryGroupAsGroupx(title, groupCards)))}
+          >
+            Export GroupX…
+          </button>
+        )}
       </div>
     );
   }
@@ -193,6 +205,20 @@ export function LibraryWorkspace({ onError, onShowMode }: Props) {
           Download…
         </button>
         <input className="field-input st-search" type="search" placeholder="Search name or tag…" value={search} onChange={(e) => setSearch(e.target.value)} />
+        <button
+          type="button"
+          className="secondary"
+          title="Unpack a GroupX file into the library as a group"
+          onClick={() =>
+            void run("Importing…", async () => {
+              const path = await pickGroupxFile();
+              if (path) await importGroupxToLibrary(path);
+              await refresh();
+            })
+          }
+        >
+          Import GroupX…
+        </button>
         <button type="button" className="secondary" disabled={loading} onClick={() => void refresh()}>
           {loading ? "Loading…" : "Refresh"}
         </button>
@@ -255,7 +281,7 @@ export function LibraryWorkspace({ onError, onShowMode }: Props) {
           .filter((g) => g.shown.length > 0 || !needle)
           .map((g) => (
             <section key={g.name} className="library-section">
-              {sectionHead(g.name, g.shown.map((card) => ({ kind: "card", card })), `group · ${g.cards.length} cards`)}
+              {sectionHead(g.name, g.shown.map((card) => ({ kind: "card", card })), `group · ${g.cards.length} cards`, g.cards)}
               <ul className="st-list">{g.shown.map((card) => row({ kind: "card", card }))}</ul>
             </section>
           ))}

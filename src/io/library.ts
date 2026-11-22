@@ -58,9 +58,28 @@ async function listFiles(dir: string): Promise<string[]> {
   }
 }
 
+/** A group folder may hold "group.json" with the members' order (written when a GroupX file or
+ * open cards are saved as a group) — the order of first messages in a group chat. */
+export const GROUP_ORDER_FILE = "group.json";
+
+async function groupOrder(dir: string): Promise<string[]> {
+  try {
+    const parsed = JSON.parse(new TextDecoder().decode(await readBinary(await join(dir, GROUP_ORDER_FILE))));
+    return Array.isArray(parsed?.order) ? parsed.order.filter((n: unknown): n is string => typeof n === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Remembers the order of a group's files (by file name). */
+export async function writeGroupOrder(group: string, fileNames: string[]): Promise<void> {
+  const dir = await join(await libraryDirNow(), safeName(group, "group"));
+  await writeBinary(await join(dir, GROUP_ORDER_FILE), new TextEncoder().encode(JSON.stringify({ order: fileNames }, null, 2)));
+}
+
 async function cardsIn(dir: string, group: string | null): Promise<LibraryCard[]> {
   const cards: LibraryCard[] = [];
-  for (const fileName of (await listFiles(dir)).filter((f) => CARD_FILE.test(f)).sort()) {
+  for (const fileName of (await listFiles(dir)).filter((f) => CARD_FILE.test(f) && f !== GROUP_ORDER_FILE).sort()) {
     const path = await join(dir, fileName);
     try {
       const bytes = await readBinary(path);
@@ -72,7 +91,15 @@ async function cardsIn(dir: string, group: string | null): Promise<LibraryCard[]
       // Unreadable: skip it.
     }
   }
-  return cards.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
+  const byName = (a: LibraryCard, b: LibraryCard) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+  const order = group ? await groupOrder(dir) : [];
+  if (order.length === 0) return cards.sort(byName);
+  // Listed files first, in their order; anything added later by hand after them, by name.
+  const rank = (c: LibraryCard) => {
+    const i = order.indexOf(c.fileName);
+    return i === -1 ? order.length : i;
+  };
+  return cards.sort((a, b) => rank(a) - rank(b) || byName(a, b));
 }
 
 /** Everything in the library: cards at the top level, each subfolder as a group, and the lorebooks

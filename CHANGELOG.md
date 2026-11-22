@@ -8,6 +8,8 @@ All notable changes to this project are documented here. The project follows [Se
 - The **quick actions** above text fields also work for **lorebook entries** (with the entry's name and keys as background) and the **persona description**.
 - **Coloured text fields**: dialogue in quotes (also „German“, “English” and «French» ones) in amber, *actions* between asterisks in blue, {{macros}} in violet and tags like <START> in teal — in every card text field, lorebook entry and persona description. Only colours, so the text and the caret stay exactly where they are; Settings → Editor turns it off.
 - **Recursion map** (next to "Test keys…" in every lorebook): which entries bring in which others through recursion, as a picture and as a list with the key that does it. Links SillyTavern won't follow ("prevent further recursion", "exclude from recursion") are shown greyed with the reason, and loops of entries that always bring each other in are pointed out.
+- **GroupX**: a whole group as one file to pass on — a ZIP like CharX with the cards in their order (the order of first messages in a group chat) and their shared lorebooks. Group → **Export as GroupX…** (choose name and order), File → **Open GroupX…** or drag the file onto the window; the Library exports a group as GroupX and imports one as a group folder.
+- Library groups **keep their order** (a small `group.json` in the folder, written by "Save Group to Library" and the GroupX import); "Open all" and the GroupX export follow it.
 - The window title shows the app's **version**.
 - The recent cards and recent groups lists keep **20** entries instead of 5, now that they have a tab of their own.
 

@@ -26,6 +26,7 @@ import { PersonaWorkspace } from "./components/persona/PersonaWorkspace";
 import { PresetWorkspace } from "./components/preset/PresetWorkspace";
 import { confirmDiscardChanges } from "./io/confirmDiscard";
 import { openCardAtPath } from "./io/fileIO";
+import { openGroupx } from "./io/groupxIO";
 import { openLorebookPaths } from "./io/lorebookIO";
 import { openPresetPaths } from "./io/stPresetIO";
 import { readStored, storeChoice } from "./io/storedChoice";
@@ -178,6 +179,15 @@ function App() {
       }
       const [path] = payload.paths;
       if (!path) return;
+      if (/\.groupx$/i.test(path)) {
+        try {
+          await openGroupx(path);
+          setMode("characters");
+        } catch (err) {
+          setError(err instanceof Error ? err.message : String(err));
+        }
+        return;
+      }
       try {
         await openCardAtPath(path, modeRef.current === "personas" ? usePersonaStore : undefined);
       } catch (err) {
